@@ -3,7 +3,7 @@ module Clash.Lattice.ECP5.Colorlight.TopEntity (topEntity) where
 import Clash.Annotations.TH
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
-import Clash.Prelude
+import Clash.Explicit.Prelude
 
 import Clash.Cores.UART
 
@@ -52,6 +52,21 @@ topEntity clk25 uartRxBit dq_in mdio_in eth0RxClk _eth0RxCtl _eth0RxData eth1RxC
     -- Simply echo back uart signals through IO flip flops
     uartTxBit = ofs1p3bx clk50 rst50 en50 $ ifs1p3bx clk50 rst50 en50 uartRxBit
 
+    -- Bidirectional signals require special care.
+    -- As an example below we switch between reading from the signal
+    -- in one cycle and writing to it in the next.
+    -- We combine this with IO flip flops.
+    -- We simply write back the signal we got.
+    dq :: Signal Dom50 (BitVector 32)
+    mdio :: Signal Dom50 Bit
+    (dq_out, dq) = bb dq_in onoff (ofs1p3bx clk50 rst50 en50 dqReg) -- sdram_dq
+    (mdio_out, mdio) = bb mdio_in onoff (ofs1p3bx clk50 rst50 en50 mdioReg) -- sdram_dq
+
+    dqReg = ifs1p3bx clk50 rst50 en50 dq
+    mdioReg = ifs1p3bx clk50 rst50 en50 mdio
+
+    onoff = register clk50 rst50 en50 0 $ fmap complement onoff
+
     result =
       ( uartTxBit -- uart_tx
       , clk50 -- sdram_clock
@@ -60,8 +75,8 @@ topEntity clk25 uartRxBit dq_in mdio_in eth0RxClk _eth0RxCtl _eth0RxData eth1RxC
       , pure 1 -- sdram_ras_n
       , pure 1 -- sdram_cas_n
       , pure 0 -- sdram_ba
-      , writeToBiSignal dq_in (pure (Nothing @(BitVector 32))) -- sdram_dq
-      , writeToBiSignal mdio_in (pure (Nothing @Bit)) -- eth_mdio
+      , dq_out -- sdram_dq
+      , mdio_out -- eth_mdio
       , pure 0 -- eth_mdc
       , pure 1 -- eth_rst_n
       , eth0RxClk -- eth0_tx_clk
