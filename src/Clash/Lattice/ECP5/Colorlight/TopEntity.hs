@@ -1,9 +1,9 @@
 module Clash.Lattice.ECP5.Colorlight.TopEntity (topEntity) where
 
 import Clash.Annotations.TH
+import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
-import Clash.Explicit.Prelude
 
 import Clash.Cores.UART
 

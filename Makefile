@@ -1,6 +1,7 @@
+.PHONY: clean
 clean:
 	rm -rf verilog
-	rm -rf synthesized
+	rm -rf netlist
 
 format:
 	stylish-haskell -c ./.stylish-haskell.yaml -r -i src
@@ -8,26 +9,45 @@ format:
 test:
 	cabal test
 
-verilog: src
-	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog
+HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
-netlist: verilog
-	mkdir -p synthesized
-	yosys -p "synth_ecp5 -dff -abc2 -top topEntity -json ./synthesized/synth.json;" verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+verilog=verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/topEntity.v
+netlist=netlist/synth.json
+pnr=netlist/pnr.cfg
+bitstream=netlist/clash-eth.bit
 
-pnr: synthesized/synth.json pinout.lpf
-	nextpnr-ecp5 --json synthesized/synth.json \
+${verilog}: ${HASKELL_SOURCES}
+	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -fclash-clear
+
+.PHONY: verilog
+verilog: $(verilog)
+
+${netlist}: ${verilog}
+	mkdir -p netlist
+	yosys -p "synth_ecp5 -dff -abc2 -top topEntity -json ${netlist};" verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+
+.PHONY: netlist
+netlist: $(netlist)
+
+${pnr}: ${netlist} pinout.lpf
+	nextpnr-ecp5 --json ${netlist} \
 		--lpf pinout.lpf \
-		--textcfg synthesized/pnr.cfg --25k \
+		--textcfg ${pnr} --25k \
 		--speed 6 \
 		--package CABGA256 \
 		--randomize-seed --timing-allow-fail
 
-bitstream: synthesized/pnr.cfg
-	ecppack synthesized/pnr.cfg --bit synthesized/clash-eth.bit --bootaddr 0
+.PHONY: pnr
+pnr: $(pnr)
 
-prog: synthesized/clash-eth.bit
-	sudo ecpprog -S synthesized/clash-eth.bit
+${bitstream}: ${pnr}
+	ecppack ${pnr} --bit ${bitstream} --bootaddr 0
 
-flash: synthesized/clash-eth.bit
-	sudo ecpprog -p -a synthesized/clash-eth.bit
+.PHONY: bitstream
+bitstream: $(bitstream)
+
+prog: ${bitstream}
+	sudo ecpprog -S ${bitstream}
+
+flash: ${bitstream}
+	sudo ecpprog -p -a ${bitstream}
