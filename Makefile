@@ -47,7 +47,7 @@ ${bitstream}: ${pnr}
 bitstream: $(bitstream)
 
 prog: ${bitstream}
-	sudo ecpprog -S ${bitstream}
+	sudo "PATH=$$PATH" env ecpprog -S ${bitstream}
 
 flash: ${bitstream}
-	sudo ecpprog -p -a ${bitstream}
+	sudo "PATH=$$PATH" env ecpprog -p -a ${bitstream}
