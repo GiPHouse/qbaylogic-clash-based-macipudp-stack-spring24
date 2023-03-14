@@ -19,29 +19,29 @@ data RGMIIChannel domain = RGMIIChannel
 
 data SDRAMOut domain = SDRAMOut
   {
-    sdram_clock :: Clock domain,
-    sdram_a :: Signal domain (BitVector 11),
-    sdram_we_n :: Signal domain Bit,
-    sdram_ras_n :: Signal domain Bit,
-    sdram_cas_n :: Signal domain Bit,
-    sdram_ba :: Signal domain (BitVector 2),
-    sdram_dq :: BiSignalOut 'Floating domain 32
+    sdram_clock :: "sdram_clock" :::Clock domain,
+    sdram_a :: "sdram_a" ::: Signal domain (BitVector 11),
+    sdram_we_n :: "sdram_we_n" ::: Signal domain Bit,
+    sdram_ras_n :: "sdram_ras_n" :::Signal domain Bit,
+    sdram_cas_n :: "sdram_cas_n" ::: Signal domain Bit,
+    sdram_ba :: "sdram_ba" ::: Signal domain (BitVector 2),
+    sdram_dq :: "sdram_dq" ::: BiSignalOut 'Floating domain 32
   }
 
 data MDIOOut domain = MDIOOut
   {
-    mdio_out :: BiSignalOut 'Floating domain 1,
-    mdio_in :: BiSignalIn 'Floating domain 1,
-    mdio_mdc :: Signal domain Bit
+    mdio_out :: "eth_mdio" ::: BiSignalOut 'Floating domain 1,
+    mdio_in :: "eth_mdio" ::: BiSignalIn 'Floating domain 1,
+    mdio_mdc :: "eth_mdc" ::: Signal domain Bit
   }
 
 data HubOut domain = HubOut
   {
-    hub_clk :: Signal domain Bit,
-    hub_line_select :: Signal domain (BitVector 5),
-    hub_latch :: Signal domain Bit,
-    hub_output_enable :: Signal domain Bit,
-    hub_data :: Signal domain (BitVector 48)
+    hub_clk :: "hub_clk" ::: Signal domain Bit,
+    hub_line_select :: "hub_line_select" ::: Signal domain (BitVector 5),
+    hub_latch :: "hub_latch" ::: Signal domain Bit,
+    hub_output_enable :: "hub_output_enable" ::: Signal domain Bit,
+    hub_data :: "hub_data" ::: Signal domain (BitVector 48)
   }
 
 topEntity
