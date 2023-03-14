@@ -12,9 +12,9 @@ LOCATE COMP "uart_rx" SITE "R7";
 IOBUF PORT "uart_rx" IO_TYPE=LVCMOS33;
 
 # sdram
-LOCATE COMP "sdram_clock" SITE "C8";
-IOBUF PORT "sdram_clock" IO_TYPE=LVCMOS33;
-IOBUF PORT "sdram_clock" SLEWRATE=FAST;
+LOCATE COMP "sdram_clk" SITE "C8";
+IOBUF PORT "sdram_clk" IO_TYPE=LVCMOS33;
+IOBUF PORT "sdram_clk" SLEWRATE=FAST;
 LOCATE COMP "sdram_a[0]" SITE "A9";
 IOBUF PORT "sdram_a[0]" IO_TYPE=LVCMOS33;
 IOBUF PORT "sdram_a[0]" SLEWRATE=FAST;
