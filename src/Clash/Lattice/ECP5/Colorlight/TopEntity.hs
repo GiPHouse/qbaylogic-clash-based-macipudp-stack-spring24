@@ -1,11 +1,15 @@
 module Clash.Lattice.ECP5.Colorlight.TopEntity (topEntity) where
 
+import Data.Maybe ( isNothing )
+
 import Clash.Annotations.TH
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
+import Clash.Prelude ( exposeClockResetEnable )
 
-import Clash.Cores.UART
+import Clash.Cores.Ethernet.MDIO ( mdioComponent )
+import Clash.Lattice.ECP5.Colorlight.Bridge ( uartToMdioBridge )
 
 data RGMIIChannel domain = RGMIIChannel
   {
@@ -54,29 +58,28 @@ topEntity
      , "eth1_tx" ::: RGMIIChannel DomEth1
      , "hub" ::: HubOut Dom50
      )
-
-topEntity clk25 uartRxBit dq_in mdio_in eth0_rx eth1_rx =
+topEntity clk25 uartRxBit _dq_in mdio_in eth0_rx eth1_rx =
   let
     (clk50, rst50) = crg clk25
     en50 = enableGen
 
-    -- Simply echo back uart signals through IO flip flops
-    uartTxBit = ofs1p3bx clk50 rst50 en50 $ ifs1p3bx clk50 rst50 en50 uartRxBit
+    -- MDIO component
+    mdio, mdioReg :: Signal Dom50 Bit
+    (mdio_output, mdio) = bb mdio_in
+                         (register clk50 rst50 en50 1 $ boolToBit . isNothing <$> mdioWrite)
+                         (ofs1p3bx clk50 rst50 en50 $ fromJustX <$> mdioWrite)
 
-    -- Bidirectional signals require special care.
-    -- As an example below we switch between reading from the signal
-    -- in one cycle and writing to it in the next.
-    -- We combine this with IO flip flops.
-    -- We simply write back the signal we got.
-    dq :: Signal Dom50 (BitVector 32)
-    mdio :: Signal Dom50 Bit
-    (dq_out, dq) = bb dq_in onoff (ofs1p3bx clk50 rst50 en50 dqReg) -- sdram_dq
-    (eth_mdio_out, mdio) = bb mdio_in onoff (ofs1p3bx clk50 rst50 en50 mdioReg) -- sdram_dq
-
-    dqReg = ifs1p3bx clk50 rst50 en50 dq
     mdioReg = ifs1p3bx clk50 rst50 en50 mdio
+    (mdioWrite, mdioResponse, mdc) = (exposeClockResetEnable mdioComponent clk50 rst50 en50) mdioReg mdioRequest
 
-    onoff = register clk50 rst50 en50 0 $ fmap complement onoff
+    -- UART-MDIO bridge
+    (uartTxBit, mdioRequest) = (ofs1p3bx clk50 rst50 en50 $ txBit, req)
+      where
+        (txBit, req) = (exposeClockResetEnable uartToMdioBridge clk50 rst50 en50) (SNat @9600) rxBit mdioResponse
+        rxBit = ifs1p3bx clk50 rst50 en50 uartRxBit
+
+    -- TODO: What to do with this one?
+    dq_out = undefined
 
     in
       ( uartTxBit
@@ -90,8 +93,8 @@ topEntity clk25 uartRxBit dq_in mdio_in eth0_rx eth1_rx =
           , sdram_dq = dq_out
           }
       , MDIOOut
-          { mdio_out = eth_mdio_out
-          , mdio_mdc = pure 0
+          { mdio_out = mdio_output
+          , mdio_mdc = mdc
           }
       , RGMIIChannel  -- eth0
           { rgmii_clk = rgmii_clk eth0_rx

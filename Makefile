@@ -1,5 +1,6 @@
 .PHONY: clean
 clean:
+	rm -rf dist-newstyle
 	rm -rf verilog
 	rm -rf netlist
 
