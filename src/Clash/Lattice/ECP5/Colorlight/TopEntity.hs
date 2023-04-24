@@ -1,22 +1,23 @@
-module Clash.Lattice.ECP5.Colorlight.TopEntity (topEntity) where
+{-# LANGUAGE NumericUnderscores #-}
 
-import Data.Maybe ( isNothing )
+module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
 import Clash.Annotations.TH
+import Clash.Cores.Ethernet.Frame ( sendFrameOnPulse )
+import Clash.Cores.Ethernet.RGMII
+    ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 import Clash.Prelude ( exposeClockResetEnable )
+import Clash.Signal ( exposeClockResetEnable, hideClockResetEnable )
 
 import Clash.Cores.Ethernet.MDIO ( mdioComponent )
 import Clash.Lattice.ECP5.Colorlight.Bridge ( uartToMdioBridge )
 
-data RGMIIChannel domain = RGMIIChannel
-  {
-    rgmii_clk  :: "clk" ::: Clock domain,
-    rgmii_ctl  :: "ctl" ::: Signal domain Bit,
-    rgmii_data :: "data" ::: Signal domain (BitVector 4)
-  }
+import Data.Maybe (isNothing)
+
+import Clash.Cores.UART
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -49,13 +50,13 @@ topEntity
   -> "uart_rx" ::: Signal Dom50 Bit
   -> "sdram_dq" ::: BiSignalIn 'Floating Dom50 32
   -> "eth_mdio" ::: BiSignalIn 'Floating Dom50 1
-  -> "eth0_rx" ::: RGMIIChannel DomEth0
-  -> "eth1_rx" ::: RGMIIChannel DomEth1
+  -> "eth0" ::: RGMIIRXChannel DomEth0 DomDDREth0
+  -> "eth1" ::: RGMIIRXChannel DomEth1 DomDDREth1
   -> ( "uart_tx" ::: Signal Dom50 Bit
      , "sdram" ::: SDRAMOut Dom50
      , "eth" ::: MDIOOut Dom50
-     , "eth0_tx" ::: RGMIIChannel DomEth0
-     , "eth1_tx" ::: RGMIIChannel DomEth1
+     , "eth0" ::: RGMIITXChannel DomDDREth0
+     , "eth1" ::: RGMIITXChannel DomDDREth1
      , "hub" ::: HubOut Dom50
      )
 topEntity clk25 uartRxBit _dq_in mdio_in eth0_rx eth1_rx =
@@ -81,6 +82,20 @@ topEntity clk25 uartRxBit _dq_in mdio_in eth0_rx eth1_rx =
     -- TODO: What to do with this one?
     dq_out = undefined
 
+    {- ETH0 ~ RGMII SETUP -}
+    eth0Txclk = rgmii_rx_clk eth0_rx
+    macInput = rgmiiReceiver eth0_rx (delayg d80)
+    eth0Tx = rgmiiSender eth0Txclk resetGen enableGen (delayg d0) (\a b _ -> oddrx1f a b) macOutput
+
+    {- ETH1 ~ RGMII SETUP -}
+    eth1Txclk = rgmii_rx_clk eth1_rx
+    macInput1 = rgmiiReceiver eth1_rx (delayg d80)
+    eth1Tx = rgmiiSender eth1Txclk resetGen enableGen (delayg d0) (\a b _ -> oddrx1f a b) macOutput1
+
+    {- SETUP MAC LAYER -}
+    macOutput = exposeClockResetEnable (sendFrameOnPulse $ hideClockResetEnable riseEvery (SNat :: SNat 125_000_000)) eth0Txclk resetGen enableGen
+    macOutput1 = exposeClockResetEnable (sendFrameOnPulse $ hideClockResetEnable riseEvery (SNat :: SNat 125_000_000)) eth1Txclk resetGen enableGen
+
     in
       ( uartTxBit
       , SDRAMOut
@@ -96,16 +111,8 @@ topEntity clk25 uartRxBit _dq_in mdio_in eth0_rx eth1_rx =
           { mdio_out = mdio_output
           , mdio_mdc = mdc
           }
-      , RGMIIChannel  -- eth0
-          { rgmii_clk = rgmii_clk eth0_rx
-          , rgmii_ctl = rgmii_ctl eth0_rx
-          , rgmii_data = rgmii_data eth0_rx
-          }
-      , RGMIIChannel  --eth1
-          { rgmii_clk = rgmii_clk eth1_rx
-          , rgmii_ctl = rgmii_ctl eth1_rx
-          , rgmii_data = rgmii_data eth1_rx
-          }
+      , eth0Tx
+      , eth1Tx
       , HubOut
           { hub_clk = pure 0
           , hub_line_select = pure 0
