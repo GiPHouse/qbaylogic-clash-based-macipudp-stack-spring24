@@ -7,7 +7,7 @@
 module Clash.Lattice.ECP5.Prims where
 
 import Clash.Annotations.Primitive
-import Clash.Explicit.DDR ( ddrOut )
+import Clash.Explicit.DDR ( ddrOut, ddrIn )
 import Clash.Explicit.Prelude
 import Clash.Signal.BiSignal
 import Data.String.Interpolate ( i )
@@ -183,6 +183,60 @@ fs1p3bx# !_ clk rst en inp = let rst' = unsafeFromHighPolarity rst
   |]) #-}
 {-# NOINLINE fs1p3bx# #-}
 
+
+-- | x1 input DDR
+iddrx1f
+  :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity)     -- 0
+  => KnownConfiguration slow ('DomainConfiguration slow (2*fPeriod) edge reset init polarity) -- 1
+  => NFDataX a     -- 2
+  => BitPack a     -- 3
+  => Clock slow    -- 4
+  -- ^ Clock
+  -> Reset slow    -- 5
+  -- ^ Reset
+  -> Signal fast a -- 6
+  -- ^ Input
+  -> Signal slow (a, a)
+  -- ^ Output on rising/falling edge
+iddrx1f clk rst xs = ddrIn clk rst enableGen (unpack 0, unpack 0, unpack 0) xs
+{-# ANN iddrx1f (InlinePrimitive [Verilog] $ unindent [i|
+  [ { "BlackBox" :
+      { "name"     : "Clash.Lattice.ECP5.Prims.iddrx1f"
+      , "kind"     : "Declaration"
+      , "template" :
+  "// IDDRX1F begin
+  ~IF~ISSCALAR[6]~THEN
+    IDDRX1F ~GENSYM[iddrx1f][0] (
+      .D(~VAR[d][6]),
+      .SCLK(~ARG[4]),
+      .RST(~ARG[5]),
+      .Q0(~RESULT[0]),
+      .Q1(~RESULT[1])
+    );
+  ~ELSE
+    genvar ~GENSYM[i][1];
+    wire [~SIZE[~TYP[6]]-1:0] ~GENSYM[q0][4];
+    wire [~SIZE[~TYP[6]]-1:0] ~GENSYM[q1][5];
+
+    for (~SYM[1] = 0; ~SYM[1] < ~SIZE[~TYP[6]]; ~SYM[1] = ~SYM[1] + 1) begin : ~GENSYM[IDDRX1F_GEN][2]
+      IDDRX1F ~GENSYM[iddrx1f][3] (
+        .D(~VAR[d][6][~SYM[1]]),
+        .SCLK(~ARG[4]),
+        .RST(~ARG[5]),
+        .Q0(~SYM[4][~SYM[1]]),
+        .Q1(~SYM[5][~SYM[1]])
+      );
+
+      assign ~RESULT = { ~SYM[4], ~SYM[5] };
+    end
+  ~FI
+  // IDDRX1F end"
+      }
+    }
+  ]
+  |]) #-}
+{-# NOINLINE iddrx1f #-}
+
 -- | x1 output DDR
 oddrx1f
   :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity)     -- 0
@@ -235,45 +289,48 @@ oddrx1f clk rst xs ys = ddrOut clk rst enableGen (unpack 0) ((,) <$> xs <*> ys)
 
 -- | Dynamic delay element
 delayf
-  :: Signal domLogic Bit -- 0
-  -- ^ LOADN: 0 on this line resets to 0 delay setting
-  -> Signal domLogic Bit -- 1
-  -- ^ MOVE: Pulsing changes delay on falling edge according to DIRECTION
+  :: delValue <= 127     -- 0
+  => SNat delValue       -- 1
+  -- ^ Initial delay in 25ps increments
   -> Signal domLogic Bit -- 2
+  -- ^ LOADN: 0 on this line resets to 0 delay setting
+  -> Signal domLogic Bit -- 3
+  -- ^ MOVE: Pulsing changes delay on falling edge according to DIRECTION
+  -> Signal domLogic Bit -- 4
   -- ^ DIRECTION: 0 to increase delay by 25ps, 1 to decrease delay by 25ps
   -- Delay min is 0(0ps) max is 127(3175ps) and it's saturating.
-  -> Signal domDelay a   -- 3
+  -> Signal domDelay a   -- 5
   -- ^ Data input from pin or output register block
   -> Signal domDelay a
-delayf !_ !_ !_ inp = inp
+delayf !_ !_ !_ !_ inp = inp
 {-# ANN delayf (InlinePrimitive [Verilog] $ unindent [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.delayf"
       , "kind"     : "Declaration"
       , "template" :
   "// DELAYF begin
-  ~IF~ISSCALAR[3]~THEN
+  ~IF~ISSCALAR[5]~THEN
     DELAYF #(
       .DEL_MODE(\\"USER_DEFINED\\"),
-      .DEL_VALUE(7'd0)
+      .DEL_VALUE(7'd~LIT[1])
     ) ~GENSYM[DELAYF_INST][3] (
-      .A(~VAR[d][3]),
-      .LOADN(~VAR[loadn][0]),
-      .MOVE(~VAR[move][1]),
-      .DIRECTION(~VAR[direction][2]),
+      .A(~VAR[d][5]),
+      .LOADN(~VAR[loadn][2]),
+      .MOVE(~VAR[move][3]),
+      .DIRECTION(~VAR[direction][4]),
       .Z(~RESULT)
     );
   ~ELSE
     genvar ~GENSYM[i][0];
-    for (~SYM[0] = 0; ~SYM[0] < ~SIZE[~TYP[3]]; ~SYM[0] = ~SYM[0] + 1) begin : ~GENSYM[DELAYF_GEN][1]
+    for (~SYM[0] = 0; ~SYM[0] < ~SIZE[~TYP[5]]; ~SYM[0] = ~SYM[0] + 1) begin : ~GENSYM[DELAYF_GEN][1]
       DELAYF #(
         .DEL_MODE(\\"USER_DEFINED\\"),
-        .DEL_VALUE(7'd0)
+        .DEL_VALUE(7'd~LIT[1])
       ) ~GENSYM[DELAYF_INST][2] (
-        .A(~VAR[d][3][~SYM[0]]),
-        .LOADN(~VAR[loadn][0]),
-        .MOVE(~VAR[move][1]),
-        .DIRECTION(~VAR[direction][2]),
+        .A(~VAR[d][5][~SYM[0]]),
+        .LOADN(~VAR[loadn][2]),
+        .MOVE(~VAR[move][3]),
+        .DIRECTION(~VAR[direction][4]),
         .Z(~RESULT[~SYM[0]])
       );
     end
@@ -284,3 +341,45 @@ delayf !_ !_ !_ inp = inp
   ]
   |]) #-}
 {-# NOINLINE delayf #-}
+
+-- | Static delay element
+delayg
+  :: delValue <= 127     -- 0
+  => SNat delValue       -- 1
+  -- ^ Delay in 25ps increments
+  -> Signal domDelay a   -- 2
+  -- ^ Data input from pin or output register block
+  -> Signal domDelay a
+delayg !_ inp = inp
+{-# ANN delayg (InlinePrimitive [Verilog] $ unindent [i|
+  [ { "BlackBox" :
+      { "name"     : "Clash.Lattice.ECP5.Prims.delayg"
+      , "kind"     : "Declaration"
+      , "template" :
+  "// DELAYG begin
+  ~IF~ISSCALAR[2]~THEN
+    DELAYG #(
+      .DEL_MODE(\\"USER_DEFINED\\"),
+      .DEL_VALUE(7'd~LIT[1])
+    ) ~GENSYM[DELAYG_INST][3] (
+      .A(~VAR[d][2]),
+      .Z(~RESULT)
+    );
+  ~ELSE
+    genvar ~GENSYM[i][0];
+    for (~SYM[0] = 0; ~SYM[0] < ~SIZE[~TYP[2]]; ~SYM[0] = ~SYM[0] + 1) begin : ~GENSYM[DELAYG_GEN][1]
+      DELAYG #(
+        .DEL_MODE(\\"USER_DEFINED\\"),
+        .DEL_VALUE(7'd~LIT[1])
+      ) ~GENSYM[DELAYG_INST][2] (
+        .A(~VAR[d][2][~SYM[0]]),
+        .Z(~RESULT[~SYM[0]])
+      );
+    end
+  ~FI
+  // DELAYG end"
+      }
+    }
+  ]
+  |]) #-}
+{-# NOINLINE delayg #-}

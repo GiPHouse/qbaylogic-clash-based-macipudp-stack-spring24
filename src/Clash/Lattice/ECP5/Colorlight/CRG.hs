@@ -37,8 +37,26 @@ createDomain vSystem
   }
 
 createDomain vSystem
+  { vName="DomDDREth0"
+  , vPeriod=4000
+  , vActiveEdge=Rising
+  , vResetKind=Asynchronous
+  , vInitBehavior=Unknown
+  , vResetPolarity=ActiveHigh
+  }
+
+createDomain vSystem
   { vName="DomEth1"
   , vPeriod=8000
+  , vActiveEdge=Rising
+  , vResetKind=Asynchronous
+  , vInitBehavior=Unknown
+  , vResetPolarity=ActiveHigh
+  }
+
+createDomain vSystem
+  { vName="DomDDREth1"
+  , vPeriod=4000
   , vActiveEdge=Rising
   , vResetKind=Asynchronous
   , vInitBehavior=Unknown
