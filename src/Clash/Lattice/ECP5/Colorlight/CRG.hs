@@ -85,7 +85,7 @@ crg clkin = (clk50, clkEthTx, rst50, rstEthTx)
     (clk50, locked50) = pll50 clkin
     (clkEthTx, lockedEthTx) = pll125 clkin
     rst50 = resetSynchronizer clk50 (unsafeFromLowPolarity locked50)
-    rstEthTx = resetSynchronizer clkEthTx (unsafeFromLowPolarity $ unsafeSynchronizer clk50 clkEthTx locked50)
+    rstEthTx = resetSynchronizer clkEthTx (unsafeFromLowPolarity lockedEthTx)
 
 -- | Generate a 50Mhz clock from 25Mhz
 pll50
