@@ -73,6 +73,7 @@ common common-options
 
     -- clash-prelude will set suitable version bounds for the plugins and clash-ghc
     clash-prelude >= 1.6.4 && < 1.8,
+    clash-protocols,
     ghc-typelits-natnormalise,
     ghc-typelits-extra,
     ghc-typelits-knownnat

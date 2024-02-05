@@ -12,6 +12,10 @@ let
     haskellPackages = pkgs.haskellPackages.override {
       overrides = self: super: {
         # Add overrides here
+        circuit-notation = self.callCabal2nix "circuit-notation" sources.circuit-notation {};
+        # dontCheck disables test dependencies which gave problems here
+        clash-protocols =
+          pkgs.haskell.lib.dontCheck (self.callCabal2nix "clash-protocols" sources.clash-protocols {});
         doctest-parallel =
           self.callCabal2nix "doctest-parallel" sources.doctest-parallel {};
         clash-prelude =
