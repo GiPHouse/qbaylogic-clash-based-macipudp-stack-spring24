@@ -8,6 +8,7 @@ in colorlight-eth.env.overrideAttrs (oldEnv: {
   nativeBuildInputs = oldEnv.nativeBuildInputs ++ [
     pkgs.haskellPackages.cabal-install
     pkgs.haskellPackages.stylish-haskell
+    pkgs.haskellPackages.haskell-language-server
     pkgs.yosys
     pkgs.nextpnr
     pkgs.trellis
