@@ -22,11 +22,20 @@ eth_type = b'\xff\xff'
 message = sys.argv[2]
 
 payload = message.encode('utf-8')
-assert len(payload) <= 1500 # Max 1500 bytes of payload.
+# pad payload to minimum ethernet length
+padding_needed = 46 - len(payload)
+if padding_needed > 0:
+    payload += b'\x00' * padding_needed
 
-with socket.socket(socket.AF_PACKET, socket.SOCK_RAW) as s:
+assert len(payload) <= 1500
+
+ETH_P_ALL=3
+with socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_ALL)) as s:
     s.bind((ifname, 0)) # Bind it to the interface.
     mac = get_mac_addr(s, ifname)
     # Send frame to self
     print(mac + mac + eth_type + payload)
     s.send(mac + mac + eth_type + payload)
+
+    reponse = s.recv(1500)
+    print(f"received response: \"{reponse}\"")
