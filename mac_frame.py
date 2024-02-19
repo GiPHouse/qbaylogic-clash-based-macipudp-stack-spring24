@@ -34,8 +34,11 @@ with socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_ALL)) a
     s.bind((ifname, 0)) # Bind it to the interface.
     mac = get_mac_addr(s, ifname)
     # Send frame to self
-    print(mac + mac + eth_type + payload)
-    s.send(mac + mac + eth_type + payload)
+    print("Transmitting frame:")
+    frame = mac + mac + eth_type + payload
+    print(frame)
+    s.send(frame)
 
     reponse = s.recv(1500)
-    print(f"received response: \"{reponse}\"")
+    print("Received response:")
+    print(reponse)
