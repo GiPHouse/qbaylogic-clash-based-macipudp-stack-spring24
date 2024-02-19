@@ -83,8 +83,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
-    Clash.Cores.Ethernet.Ethernet
-    Clash.Cores.Ethernet.MDIO
+    Clash.Cores.Ethernet.RGMII
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   default-language: Haskell2010

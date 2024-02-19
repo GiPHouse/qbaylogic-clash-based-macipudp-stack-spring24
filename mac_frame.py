@@ -12,20 +12,21 @@ import socket
 import struct
 import sys
 
+def get_mac_addr(socket, ifname):
+    ifname_c = struct.pack('256s', ifname[:15].encode())
+    info = fcntl.ioctl(socket.fileno(), 0x8927, ifname_c)
+    return bytes.fromhex(info[18:24].hex())
+
 ifname = sys.argv[1]
-dest_mac = bytes.fromhex(sys.argv[2].replace(':', ''))
-eth_type = b'\x7A\x05' # Two bytes. (Arbitrary ?)
-message = sys.argv[3]
+eth_type = b'\xff\xff'
+message = sys.argv[2]
 
 payload = message.encode('utf-8')
 assert len(payload) <= 1500 # Max 1500 bytes of payload.
 
 with socket.socket(socket.AF_PACKET, socket.SOCK_RAW) as s:
     s.bind((ifname, 0)) # Bind it to the interface.
-
-    # https://stackoverflow.com/questions/159137/getting-mac-address
-    info = fcntl.ioctl(s.fileno(), 0x8927, struct.pack('256s', bytes(ifname, 'utf-8')[:15]))
-    src_mac = bytes.fromhex(''.join('%02x' % b for b in info[18:24]))
-
-    s.send(dest_mac + src_mac + eth_type + payload)
-
+    mac = get_mac_addr(s, ifname)
+    # Send frame to self
+    print(mac + mac + eth_type + payload)
+    s.send(mac + mac + eth_type + payload)
