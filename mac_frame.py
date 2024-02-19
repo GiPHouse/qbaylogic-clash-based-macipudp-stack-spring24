@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-# This file can be used as a script to sent messages to a given mac address.
-# Usage:                        sudo ./mac_frame.py [Dev] [Mac_Dest] [Message]
-# Example (broadcast):          sudo ./mac_frame.py eno1 ff:ff:ff:ff:ff:ff 'Hello everybody!'
+# This file can be used as a script to sent messages to yourself using the colorlight transceiver echo
+# Usage:                        sudo ./mac_frame.py [Dev] [Message]
+# Example (broadcast):          sudo ./mac_frame.py eno1 'Hello everybody!'
 #
 # Bind IP address to device:    sudo ip addr add [IP] dev [Dev]
 # Example:                      sudo ip addr add 100.1.1.1 dev eno1
