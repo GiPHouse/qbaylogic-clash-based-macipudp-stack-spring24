@@ -4,8 +4,10 @@ let
     pkgs.haskellPackages.callCabal2nix "clash-eth"
       (pkgs.nix-gitignore.gitignoreSourcePure [./.gitignore] ./.) { };
 
-in colorlight-eth.env.overrideAttrs (oldEnv: {
-  nativeBuildInputs = oldEnv.nativeBuildInputs ++ [
+in pkgs.haskellPackages.shellFor {
+  withHoogle = true;
+  packages = p: [ colorlight-eth ];
+  nativeBuildInputs = [
     pkgs.haskellPackages.cabal-install
     pkgs.haskellPackages.stylish-haskell
     pkgs.haskellPackages.haskell-language-server
@@ -15,4 +17,8 @@ in colorlight-eth.env.overrideAttrs (oldEnv: {
     pkgs.ecpprog
     pkgs.python3
   ];
-})
+
+  shellHook = ''
+    echo "Run a local hoogle server with \"hoogle server --local\""
+  '';
+}
