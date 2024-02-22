@@ -14,5 +14,6 @@ in colorlight-eth.env.overrideAttrs (oldEnv: {
     pkgs.trellis
     pkgs.ecpprog
     pkgs.python3
+    pkgs.plantuml
   ];
 })
