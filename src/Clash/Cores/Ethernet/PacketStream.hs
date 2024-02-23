@@ -2,14 +2,29 @@
 
 module Clash.Cores.Ethernet.PacketStream where
 
-import Clash.Prelude
-import Protocols (Protocol, Fwd, Bwd)
+import           Data.Hashable (Hashable, hashWithSalt)
+import Control.DeepSeq (NFData)
+import Clash.Prelude hiding (sample)
 import Protocols.Internal
+import qualified Protocols.Df as Df
+import qualified Protocols.DfConv as DfConv
 import Protocols.DfConv hiding (pure)
 import qualified Data.Maybe as Maybe
 import  Data.Proxy
-import  Protocols.Hedgehog.Internal
+import  Protocols.Hedgehog.Internal 
+import qualified Prelude as P
 
+deriving instance
+  ( KnownNat dataWidth, NFDataX metaType)
+  => NFDataX (PacketStreamM2S dataWidth metaType)
+
+deriving instance
+  ( KnownNat dataWidth, Eq metaType)
+  => Eq (PacketStreamM2S dataWidth metaType)
+
+deriving instance
+  ( KnownNat dataWidth, Hashable metaType)
+  => Hashable (PacketStreamM2S dataWidth metaType)
 -- Simplified AXI4-Stream (master to slave).
 -- We bundled _tstrb, _tdest and _tuser into one big _tmeta field which holds metadata.
 -- We removed _tid.
@@ -23,14 +38,13 @@ data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
   -- ^ the type of the metaData if necessary
   _abort :: Bool
   -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
-} deriving (Generic, Show, ShowX, Bundle)
-
+} deriving (Generic, ShowX, Show, NFData, Bundle)
 -- Slave to master: only a simple signal which tells the master whether
 -- the slave is ready to receive data
 newtype PacketStreamS2M = PacketStreamS2M {
   _ready :: Bool
   -- ^ If True, the slave is ready to receive data
-} deriving (Generic, Show, ShowX, Bundle)
+} deriving (Generic, ShowX, Show, NFData, Bundle, Eq, NFDataX)
 
 data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 
@@ -66,12 +80,41 @@ instance (KnownDomain dom) =>
   
   simToSigFwd _ = fromList_lazy
   simToSigBwd _ = fromList_lazy
-  sigToSimFwd _ = sample_lazy
-  sigToSimBwd _ = sample_lazy
+  sigToSimFwd _ s = sample_lazy s
+  sigToSimBwd _ s = sample_lazy s
 
   stallC conf (head -> (stallAck, stalls))
     = withClockResetEnable clockGen resetGen enableGen
     $ stall Proxy Proxy conf stallAck stalls
 
+instance (KnownDomain dom) => 
+  Drivable (PacketStream dom dataWidth metaType) where
+  type ExpectType (PacketStream dom dataWidth metaType) = 
+    [PacketStreamM2S dataWidth metaType]
 
+  toSimulateType Proxy = fmap Just
+  fromSimulateType Proxy = Maybe.catMaybes
 
+  driveC conf vals
+    = withClockResetEnable clockGen resetGen enableGen
+    $ drive Proxy conf vals
+  sampleC conf ckt
+    = withClockResetEnable clockGen resetGen enableGen
+    $ sample Proxy conf ckt
+   
+
+instance
+  ( 
+    KnownNat dataWidth
+  , NFDataX metaType
+  , NFData metaType
+  , ShowX metaType
+  , Show metaType
+  , Eq metaType
+  , KnownDomain dom ) =>
+  Test (PacketStream dom dataWidth metaType) where
+
+  expectToLengths Proxy = pure . P.length
+  expectN Proxy options nExpected sampled
+    = expectN (Proxy @(Df.Df dom _)) options nExpected
+    $ Df.maybeToData <$> sampled
