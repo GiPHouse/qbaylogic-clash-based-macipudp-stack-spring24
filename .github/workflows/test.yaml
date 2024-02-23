@@ -12,9 +12,8 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     - uses: DeterminateSystems/magic-nix-cache-action@v2
     - name: build the nix environment
-    - run: nix-build
+      run: nix-build
     - name: Test suite
-    - run: nix-shell --run "make test"
+      run: nix-shell --run "make test"
     - name: Test synthesis
-    - run: nix-shell --run "make verilog"
-    
+      run: nix-shell --run "make verilog"
