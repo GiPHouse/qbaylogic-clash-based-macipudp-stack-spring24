@@ -20,3 +20,5 @@ jobs:
       run: nix-shell --run "make test"
     - name: Test synthesis
       run: nix-shell --run "make verilog"
+    - name: Create netlist
+      run: nix-shell --run "make netlist"
