@@ -22,7 +22,8 @@ upConverter
   -- ^ Error occured
   -> Signal dom Bool
   -- ^ The consumer is ready to receive a word
-  -> ( Signal dom (Maybe (Bool, Vec p (BitVector n)))
+  -> ( Signal dom (Maybe (Vec p Bool))
+     , Signal dom (Maybe (Vec p (BitVector n)))
      , Signal dom Bool
      , Signal dom Bool
      )
