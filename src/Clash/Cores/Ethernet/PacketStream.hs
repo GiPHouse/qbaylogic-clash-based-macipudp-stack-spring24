@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module StreamProtocol where
+module Clash.Cores.Ethernet.PacketStream where
 
 import Clash.Prelude
 import Protocols (Protocol, Fwd, Bwd)
