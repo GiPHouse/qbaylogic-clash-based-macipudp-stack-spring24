@@ -1,4 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-} -- Hashable (Unsigned n)
 
 module Clash.Cores.Ethernet.PacketStream where
 
@@ -7,12 +13,15 @@ import Control.DeepSeq (NFData)
 import Clash.Prelude hiding (sample)
 import Protocols.Internal
 import qualified Protocols.Df as Df
-import qualified Protocols.DfConv as DfConv
 import Protocols.DfConv hiding (pure)
 import qualified Data.Maybe as Maybe
 import  Data.Proxy
 import  Protocols.Hedgehog.Internal 
 import qualified Prelude as P
+
+instance (KnownNat n) => Hashable (Unsigned n)
+instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
+  hashWithSalt s v = hashWithSalt s (toList v)
 
 deriving instance
   ( KnownNat dataWidth, NFDataX metaType)
