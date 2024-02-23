@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
 jobs:
-  check_nix:
+  build_and_synthesize:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -11,5 +11,10 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - name: build the nix environment
     - run: nix-build
+    - name: Test suite
     - run: nix-shell --run "make test"
+    - name: Test synthesis
+    - run: nix-shell --run "make verilog"
+    
