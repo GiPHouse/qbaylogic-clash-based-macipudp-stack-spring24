@@ -1,6 +1,7 @@
 name: "CI pipeline"
 on:
   push:
+  pull_request:
 jobs:
   check_nix:
     runs-on: ubuntu-latest
@@ -9,5 +10,5 @@ jobs:
     - uses: cachix/install-nix-action@v22
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - uses: DeterminateSystems/magic-nix-cache-action@v2
-    - run: nix-shell
+    - run: nix-build
+    - run: nix-shell --run "make test"
