@@ -33,6 +33,7 @@ common common-options
     TypeFamilies
     TypeOperators
     ViewPatterns
+    ImportQualifiedPost
 
     -- TemplateHaskell is used to support convenience functions such as
     -- 'listToVecTH' and 'bLit'.

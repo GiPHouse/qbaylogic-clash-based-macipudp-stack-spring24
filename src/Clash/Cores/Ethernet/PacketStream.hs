@@ -1,27 +1,53 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-} -- Hashable (Unsigned n)
+{-# language FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-} -- Orphhan Hashable instances
 
-module Clash.Cores.Ethernet.PacketStream where
+module Clash.Cores.Ethernet.PacketStream
+  ( PacketStreamM2S(..)
+  , PacketStreamS2M(..)
+  , PacketStream
+  ) where
 
-import           Data.Hashable (Hashable, hashWithSalt)
-import Control.DeepSeq (NFData)
-import Clash.Prelude hiding (sample)
+import Clash.Prelude hiding ( sample )
+import Prelude qualified as P
+
+import Data.Hashable ( Hashable, hashWithSalt )
+import Data.Maybe qualified as Maybe
+import Data.Proxy
+
+import Control.DeepSeq ( NFData )
+
+import Protocols.Df qualified as Df
+import Protocols.DfConv hiding ( pure )
+import Protocols.Hedgehog.Internal
 import Protocols.Internal
-import qualified Protocols.Df as Df
-import Protocols.DfConv hiding (pure)
-import qualified Data.Maybe as Maybe
-import  Data.Proxy
-import  Protocols.Hedgehog.Internal 
-import qualified Prelude as P
 
-instance (KnownNat n) => Hashable (Unsigned n)
-instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
-  hashWithSalt s v = hashWithSalt s (toList v)
+-- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
+--   with metadata that can only change on packet delineation.
+--   We bundled _tdest, _tuser and _tid into one big _meta field which holds metadata.
+--   We don't have null or position bytes so _tstrb is replaced by a last indicator
+--   that includes how many bytes are valid from the front of the vector.
+--   _tvalid is modeled via wrapping this in a `Maybe`
+data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
+  = PacketStreamM2S {
+  _data :: Vec dataWidth (BitVector 8),
+  -- ^ The bytes to be transmitted
+  _last :: Maybe (Index dataWidth),
+  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
+  _meta :: metaType,
+  -- ^ the metaData of a packet, `_meta` must be constant during a packet.
+  _abort :: Bool
+  -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
+} deriving (Generic, ShowX, Show, NFData, Bundle)
+
+-- | Data sent from the subordinate to the manager
+-- The only information transmitted is whether the slave is ready to receive data
+newtype PacketStreamS2M = PacketStreamS2M {
+  _ready :: Bool
+  -- ^ Iff True, the slave is ready to receive data
+} deriving (Generic, ShowX, Show, NFData, Bundle, Eq, NFDataX)
+
+-- This data type is used for communication between components
+data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 
 deriving instance
   ( KnownNat dataWidth, NFDataX metaType)
@@ -31,36 +57,15 @@ deriving instance
   ( KnownNat dataWidth, Eq metaType)
   => Eq (PacketStreamM2S dataWidth metaType)
 
-deriving instance
-  ( KnownNat n) => Hashable (Index n)
+-- Orphan hashable instances
+deriving instance (KnownNat n) => Hashable (BitVector n)
+deriving instance (KnownNat n) => Hashable (Index n)
+instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
+  hashWithSalt s v = hashWithSalt s (toList v)
 
 deriving instance
-  ( KnownNat dataWidth, Hashable metaType)
+  (KnownNat dataWidth, Hashable metaType)
   => Hashable (PacketStreamM2S dataWidth metaType)
--- Simplified AXI4-Stream (master to slave).
--- We bundled _tstrb, _tdest and _tuser into one big _tmeta field which holds metadata.
--- We removed _tid.
--- No _tvalid, we wrap the Stream into a Maybe where the Stream is Nothing when _tvalid is False.
-data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
-  = PacketStreamM2S {
-  _data :: Vec dataWidth (Unsigned 8),
-  -- ^ The data to be transmitted
-  _last :: Maybe (Index dataWidth),
-  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
-  _meta :: metaType,
-  -- ^ the metaData of a packet, _meta must be constant during a packet.
-
-  _abort :: Bool
-  -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
-} deriving (Generic, ShowX, Show, NFData, Bundle)
--- Slave to master: only a simple signal which tells the master whether
--- the slave is ready to receive data
-newtype PacketStreamS2M = PacketStreamS2M {
-  _ready :: Bool
-  -- ^ If True, the slave is ready to receive data
-} deriving (Generic, ShowX, Show, NFData, Bundle, Eq, NFDataX)
-
-data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 
 instance Protocol (PacketStream dom dataWidth metaType) where
   type Fwd (PacketStream dom dataWidth metaType) = Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
@@ -76,13 +81,13 @@ instance DfConv (PacketStream dom dataWidth metaType) where
   toDfCircuit proxy = toDfCircuitHelper proxy s0 blankOtp stateFn where
     s0 = ()
     blankOtp = Nothing
-    stateFn ack _ optItem 
+    stateFn ack _ optItem
       = pure (optItem, Nothing, Maybe.isJust optItem && _ready ack)
 
   fromDfCircuit proxy =  fromDfCircuitHelper proxy s0 blankOtp stateFn where
     s0 = ()
     blankOtp = PacketStreamS2M { _ready = False }
-    stateFn m2s ack _ 
+    stateFn m2s ack _
       = pure (PacketStreamS2M {_ready = ack }, m2s, False)
 
 instance (KnownDomain dom) =>
@@ -100,9 +105,9 @@ instance (KnownDomain dom) =>
     = withClockResetEnable clockGen resetGen enableGen
     $ stall Proxy Proxy conf stallAck stalls
 
-instance (KnownDomain dom) => 
+instance (KnownDomain dom) =>
   Drivable (PacketStream dom dataWidth metaType) where
-  type ExpectType (PacketStream dom dataWidth metaType) = 
+  type ExpectType (PacketStream dom dataWidth metaType) =
     [PacketStreamM2S dataWidth metaType]
 
   toSimulateType Proxy = fmap Just

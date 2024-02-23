@@ -7,7 +7,7 @@
 module Clash.Lattice.ECP5.Prims where
 
 import Clash.Annotations.Primitive
-import Clash.Explicit.DDR ( ddrOut, ddrIn )
+import Clash.Explicit.DDR ( ddrIn, ddrOut )
 import Clash.Explicit.Prelude
 import Clash.Signal.BiSignal
 import Data.String.Interpolate ( i )
