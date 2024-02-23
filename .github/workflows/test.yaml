@@ -17,4 +17,5 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-nix
     steps:
+      - name: make test
       - run: make test
