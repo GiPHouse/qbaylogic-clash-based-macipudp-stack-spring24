@@ -1,0 +1,20 @@
+@startuml
+skinparam rectangle<<PhyRxDomain>> {
+	roundCorner 25
+	backgroundColor LightCyan
+}
+
+
+rectangle "Phy Receiver" as PhyRx <<PhyRxDomain>>
+rectangle "Phy Transmitter" as PhyTx <<PhyRxDomain>>
+rectangle "Stream FIFO" as StreamFIFO <<PhyRxDomain>>
+rectangle "Packet Buffer" as PacketBuf <<PhyRxDomain>>
+rectangle "UART transmitter" as UARTTx <<PhyRxDomain>>
+rectangle "UART reciever" as UARTRx <<PhyRxDomain>>
+
+PhyRx -down-> StreamFIFO : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+StreamFIFO -down-> UARTTx : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload :: Vec 1 (BitVector 8)
+
+UARTRx -up-> PacketBuf : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+PacketBuf -up-> PhyTx : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+@enduml
