@@ -31,3 +31,5 @@ jobs:
       run: nix-shell --run "make verilog"
     - name: Create netlist
       run: nix-shell --run "make netlist"
+    - name: Create Place and Route
+      run: nix-shell --run "make pnr"
