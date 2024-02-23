@@ -1,8 +1,8 @@
-name: "Test"
+name: "CI pipeline"
 on:
   push:
 jobs:
-  tests:
+  check_nix:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -10,4 +10,11 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixos-unstable
     - uses: DeterminateSystems/magic-nix-cache-action@v2
+    - name: run "nix-shell"
     - run: nix-shell
+
+  test-suite:
+    runs-on: ubuntu-latest
+    needs: check-nix
+    steps:
+      - run: make test
