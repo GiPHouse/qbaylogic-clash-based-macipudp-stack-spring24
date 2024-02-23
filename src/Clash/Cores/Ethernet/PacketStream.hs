@@ -4,8 +4,11 @@ module Clash.Cores.Ethernet.PacketStream where
 
 import Clash.Prelude
 import Protocols (Protocol, Fwd, Bwd)
+import Protocols.Internal
 import Protocols.DfConv hiding (pure)
 import qualified Data.Maybe as Maybe
+import  Data.Proxy
+import  Protocols.Hedgehog.Internal
 
 -- Simplified AXI4-Stream (master to slave).
 -- We bundled _tstrb, _tdest and _tuser into one big _tmeta field which holds metadata.
@@ -35,6 +38,9 @@ instance Protocol (PacketStream dom dataWidth metaType) where
   type Fwd (PacketStream dom dataWidth metaType) = Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
   type Bwd (PacketStream dom dataWidth metaType) = Signal dom PacketStreamS2M
 
+instance Backpressure (PacketStream dom dataWidth metaType) where
+  boolsToBwd _ = fromList_lazy . fmap PacketStreamS2M
+
 instance DfConv (PacketStream dom dataWidth metaType) where
   type Dom (PacketStream dom dataWidth metaType) = dom
   type FwdPayload (PacketStream dom dataWidth metaType) = PacketStreamM2S dataWidth metaType
@@ -50,3 +56,22 @@ instance DfConv (PacketStream dom dataWidth metaType) where
     blankOtp = PacketStreamS2M { _ready = False }
     stateFn m2s ack _ 
       = pure (PacketStreamS2M {_ready = ack }, m2s, False)
+
+instance (KnownDomain dom) =>
+  Simulate (PacketStream dom dataWidth metaType) where
+  type SimulateFwdType (PacketStream dom dataWidth metaType) = [Maybe (PacketStreamM2S dataWidth metaType)]
+  type SimulateBwdType (PacketStream dom dataWidth metaType) = [PacketStreamS2M]
+  type SimulateChannels (PacketStream dom dataWidth metaType) = 1
+
+  
+  simToSigFwd _ = fromList_lazy
+  simToSigBwd _ = fromList_lazy
+  sigToSimFwd _ = sample_lazy
+  sigToSimBwd _ = sample_lazy
+
+  stallC conf (head -> (stallAck, stalls))
+    = withClockResetEnable clockGen resetGen enableGen
+    $ stall Proxy Proxy conf stallAck stalls
+
+
+
