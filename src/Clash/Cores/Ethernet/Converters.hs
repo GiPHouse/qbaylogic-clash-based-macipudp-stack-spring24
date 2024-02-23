@@ -59,3 +59,21 @@ upConverter payload abort sinkRdy = case compareSNat (SNat @n) (SNat @1) of
         in (UpConverterSt xs' i', (payload'', abort', canWrite))
 
       s_0 = UpConverterSt (repeat 0) 0
+
+payloadInp :: [Maybe (Bool, BitVector 8)]
+payloadInp = [Nothing]
+
+abortInp :: [Bool]
+abortInp = [False]
+
+sinkReadyInp :: [Bool]
+sinkReadyInp = [False]
+
+clk = systemClockGen
+rst = systemResetGen
+en = enableGen
+
+(payloadOut, abortOut, sinkReadyOut) = exposeClockResetEnable (upConverter @4) clk rst en (fromList payloadInp) (fromList abortInp) (fromList sinkReadyInp)
+
+sampleOut 
+sampleOut = sampleN 60 $ bundle (payloadOut, abortOut, sinkReadyOut)
