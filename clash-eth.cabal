@@ -114,11 +114,13 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
-    Test.Cores.Ethernet.Ethernet
+    Test.Cores.Ethernet.PacketStream
   build-depends:
     clash-eth,
     QuickCheck,
     hedgehog,
+    hashable,
+    unordered-containers,
     tasty >= 1.2 && < 1.5,
     tasty-hedgehog,
     tasty-th
