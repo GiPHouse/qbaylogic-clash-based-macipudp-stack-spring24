@@ -1,93 +1,123 @@
+{-# LANGUAGE RecordWildCards #-}
 module Clash.Cores.Ethernet.Converters
   ( upConverter
   , sampleOut
   ) where
 
 import Clash.Prelude
+import Data.Maybe (isJust, isNothing)
 
-data UpConverterState (p :: Nat) (n :: Nat) =
+import Clash.Cores.Ethernet.PacketStream
+
+import qualified Data.List as L
+
+data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
-    _buffer      :: Vec p (BitVector n),
-    _byteEnable  :: Vec p Bool,
-    _flushEarly  :: Bool,
-    _abortRaised :: Bool
+    _buf     :: Vec dataWidth (BitVector 8),
+    -- ^ the buffer we are filling
+    _idx     :: Index dataWidth,
+    -- ^ Where in the buffer we need to write the next element
+    _flush   :: Bool,
+    -- ^ If this is true the current state can presented as packetstream word
+    _aborted :: Bool,
+    -- ^ Current packet is aborted
+    _lastIdx :: Maybe (Index dataWidth)
+    -- ^ If true the current buffer contains the last byte of the current packet
   }
   deriving (Generic, NFDataX)
--- ^ Upconverter state, consisting of at most p (BitVector n)s and a vector indicating which bytes are valid                                            
+-- ^ Upconverter state, consisting of at most p (BitVector 8)s and a vector indicating which bytes are valid
+
+-- | Maybe put this in a utility module?
+toMaybe :: Bool -> a -> Maybe a
+toMaybe True x = Just x
+toMaybe False _ = Nothing
+
+toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
+toPacketStream UpConverterState{..} = toMaybe _flush (PacketStreamM2S _buf _lastIdx () _aborted)
 
 upConverter
-  :: forall (p :: Nat) (n :: Nat) (dom :: Domain).
+  :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
-  => 1 <= n
-  => 1 <= p
-  => "_wordSize" ::: KnownNat n
-  => "_upconvStreamSize" ::: KnownNat p
-  => "_dataIn" ::: Signal dom (Maybe (Bool, BitVector n))
-  -- ^ data stream, The bool indicates whether this is the last word of a packet
-  -> "_abort" ::: Signal dom Bool
-  -- ^ Error occured
-  -> "_consumerReady" ::: Signal dom Bool
-  -- ^ The consumer is ready to receive a word
-  -> ( "_dataOut"      ::: Signal dom (Maybe (Vec p (BitVector n)))
-     , "_byteEnable"   ::: Signal dom (Maybe (Vec p Bool))
-     , "_abort"         ::: Signal dom Bool
-     , "_receiveReady" ::: Signal dom Bool
-  )
--- _dataOut:     Upconverted stream. Is Nothing unless _consumer_ready && one upconverted word is ready
--- _byteEnable:  If Nothing, all bytes in upconverted stream are enabled by default, otherwise signifies which bytes are enabled.
--- _abort:        Error occurred
--- _receiveReady: The upconverter is ready to receive a word
+  => 1 <= dataWidth
+  =>  KnownNat dataWidth
+  => Signal dom (Maybe (PacketStreamM2S 1 ()))
+  -- ^ Input packet stream from the source
+  -> Signal dom PacketStreamS2M
+  -- ^ Input backpressure from the sink
+  -> ( Signal dom PacketStreamS2M
+     , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+     )
+  -- ^ Output backpressure to the source
+  --   Output packet stream to the sink
+upConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
+  where
+    s0 = UpConverterState (repeat undefined) 0 False False Nothing
+    go
+      :: UpConverterState dataWidth
+      -> (Maybe (PacketStreamM2S 1 ()), PacketStreamS2M)
+      -> ( UpConverterState dataWidth
+         , (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ()))
+         )
+    go st@(UpConverterState {..}) (Nothing, PacketStreamS2M inReady)
+      = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
+        where
+          -- If we can accept data we can always set _flush to false
+          -- since we only change state if we can transmit and receive data
+          nextStRaw = st
+                        { _flush = False
+                        , _aborted = isNothing _lastIdx && _aborted
+                        , _lastIdx = Nothing
+                        }
+          outReady = not _flush || inReady
+          nextSt = if outReady then nextStRaw else st
+    go st@(UpConverterState {..}) (Just (PacketStreamM2S{..}), PacketStreamS2M inReady)
+      = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
+        where
+          inLast = isJust _last
+          -- We smear an abort over the entire rest of the packet
+          -- So the next abort is set
+          --  - If fragment we are potentially flushing was not the last and we were allready aborting
+          --  - Or if the incoming fragment is aborted
+          nextAbort = (isNothing _lastIdx && _aborted) || _abort
+          -- If we are not flushing we can accept data to be stored in _buf
+          -- But when we are flushing we can only accept if the current
+          -- output fragment is accepted by the sink
+          outReady = not _flush || inReady
+          bufFull = _idx == maxBound
+          nextBuf = replace _idx (head _data) _buf
 
-upConverter dataIn0 abort0 consumerReady0 = mealyB go s_0 (dataIn0, abort0, consumerReady0)
-    where
-      go
-        :: UpConverterState p n
-        -> (Maybe (Bool, BitVector n), Bool, Bool)
-        -> (UpConverterState p n, (Maybe(Vec p (BitVector n)), Maybe(Vec p Bool), Bool, Bool))
+          nextFlush = inLast || bufFull
+          nextIdx = if nextFlush then 0 else _idx + 1
 
-      go st@(UpConverterState buffer byteEnable flushEarly abortRaised) (dataIn1, abort1, consReady1) =
-        case dataIn1 of
-          Nothing -> (st, (Nothing, Nothing, abortRaised, True))
-          Just (lastByte, word) ->
-            let isFull  = last @(p-1) byteEnable
-                flush = isFull || flushEarly
+          nextStRaw = UpConverterState
+                        { _buf =  nextBuf
+                        , _idx = nextIdx
+                        , _flush = nextFlush
+                        , _aborted = nextAbort
+                        , _lastIdx = toMaybe inLast _idx
+                        }
+          nextSt = if outReady then nextStRaw else st
 
-                flushEarlyNext = lastByte
-
-                bufferNext = buffer <<+ word
-                byteEnableNext = if flush then repeat False <<+ True else byteEnable <<+ False -- reset byte-enable vector after flushing
-
-                canWrite = (not isFull) || consReady1 -- If we are not full, or full but consumer can consume the stream, we can receive new data next cycle
-                
-                abortRaisedNext = (abortRaised || abort1) && (not flush) -- reset abort of state after flushing
-
-                outStream = if flush then Just buffer else Nothing -- outstream only if flush
-                
-            in (UpConverterState 
-                  bufferNext 
-                  byteEnableNext 
-                  flushEarlyNext 
-                  abortRaisedNext, 
-                  (outStream, if isFull then Nothing else Just byteEnable, abortRaised, canWrite))
-
-      s_0 = UpConverterState (repeat 0) (repeat False) False False
-
-payloadInp :: [Maybe (Bool, BitVector 1)]
+payloadInp :: [Maybe (PacketStreamM2S 1 ())]
 payloadInp = [
-    Just (False,0b0 :: BitVector 1)
-  , Just (False,0b0 :: BitVector 1)
-  , Just (False,0b0 :: BitVector 1)
-  , Just (False,0b0 :: BitVector 1)
-  
-  , Just (False,0b0 :: BitVector 1)
-  , Just (False,0b0 :: BitVector 1)
-  , Just (True,0b0 :: BitVector 1)
-  , Just (True,0b0 :: BitVector 1)]
-abortInp :: [Bool]
-abortInp = [False, False, True, False, False, True, False, False]
+  Nothing
+  , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x02 :> Nil) (Nothing) () False)
+  , Just (PacketStreamM2S (0x03 :> Nil) Nothing () False)
+  , Nothing
+  , Just (PacketStreamM2S (0x04 :> Nil) (Nothing) () False)
+  , Just (PacketStreamM2S (0x14 :> Nil) (Just 0) () False)
+  , Just (PacketStreamM2S (0x15 :> Nil) (Just 0) () False)
+  , Just (PacketStreamM2S (0x16 :> Nil) (Just 0) () False)
+  , Nothing
+  , Just (PacketStreamM2S (0x05 :> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x06 :> Nil) Nothing () False)
+  , Nothing
+  , Just (PacketStreamM2S (0x07 :> Nil) (Just 0) () True)
+  ] L.++ (L.repeat Nothing)
 
-sinkReadyInp :: [Bool]
-sinkReadyInp = [False, True, True, True, False, False, False, True]
+sinkReadyInp :: [PacketStreamS2M]
+sinkReadyInp = fmap PacketStreamS2M ([False, True, True, True, True, True, True] L.++ (L.repeat True))
 
 clk :: Clock System
 clk = systemClockGen
@@ -98,11 +128,9 @@ rst = systemResetGen
 en :: Enable dom
 en = enableGen
 
-payloadOut :: "_dataOut" ::: Signal System (Maybe (Vec 4 (BitVector 1)))
-byteEnOut :: "_byteEnable" ::: Signal System (Maybe (Vec 4 Bool))
-abortOut :: "_abort" ::: Signal System Bool
-sinkReadyOut :: "_receiveReady" ::: Signal System Bool
-(payloadOut, byteEnOut, abortOut, sinkReadyOut) = exposeClockResetEnable (upConverter @4) clk rst en (fromList payloadInp) (fromList abortInp) (fromList sinkReadyInp)
+payloadOut :: Signal System (Maybe (PacketStreamM2S 4 ()))
+sinkReadyOut :: Signal System PacketStreamS2M
+upConverterClk = exposeClockResetEnable (upConverter @4) clk rst en
+(sinkReadyOut, payloadOut) = upConverterClk (fromList payloadInp) (fromList sinkReadyInp)
 
-sampleOut :: [(Maybe (Vec 4 (BitVector 1)), Maybe(Vec 4 Bool), Bool, Bool)]
-sampleOut = sampleN 60 $ bundle (payloadOut, byteEnOut, abortOut, sinkReadyOut)
+sampleOut = sampleN 20 $ bundle (payloadOut, sinkReadyOut)
