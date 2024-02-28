@@ -32,6 +32,9 @@ deriving instance
   => Eq (PacketStreamM2S dataWidth metaType)
 
 deriving instance
+  ( KnownNat n) => Hashable (Index n)
+
+deriving instance
   ( KnownNat dataWidth, Hashable metaType)
   => Hashable (PacketStreamM2S dataWidth metaType)
 -- Simplified AXI4-Stream (master to slave).
@@ -41,10 +44,12 @@ deriving instance
 data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
   = PacketStreamM2S {
   _data :: Vec dataWidth (Unsigned 8),
-  _byte_enable :: Maybe (Vec dataWidth Bool),
-  -- ^ If Nothing, the entire byte is enabled by default, otherwise signifies which bytes are enabled
+  -- ^ The data to be transmitted
+  _last :: Maybe (Index dataWidth),
+  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
   _meta :: metaType,
-  -- ^ the type of the metaData if necessary
+  -- ^ the metaData of a packet, _meta must be constant during a packet.
+
   _abort :: Bool
   -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
 } deriving (Generic, ShowX, Show, NFData, Bundle)
@@ -86,7 +91,6 @@ instance (KnownDomain dom) =>
   type SimulateBwdType (PacketStream dom dataWidth metaType) = [PacketStreamS2M]
   type SimulateChannels (PacketStream dom dataWidth metaType) = 1
 
-  
   simToSigFwd _ = fromList_lazy
   simToSigBwd _ = fromList_lazy
   sigToSimFwd _ s = sample_lazy s
@@ -110,11 +114,9 @@ instance (KnownDomain dom) =>
   sampleC conf ckt
     = withClockResetEnable clockGen resetGen enableGen
     $ sample Proxy conf ckt
-   
 
 instance
-  ( 
-    KnownNat dataWidth
+  ( KnownNat dataWidth
   , NFDataX metaType
   , NFData metaType
   , ShowX metaType
