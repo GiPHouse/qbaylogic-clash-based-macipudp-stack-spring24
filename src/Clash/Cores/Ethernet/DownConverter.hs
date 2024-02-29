@@ -12,7 +12,7 @@ import qualified Data.List as L
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
-    _dc_buf :: Vec dataWidth (BitVector 8),
+    _dc_buf  :: Vec dataWidth (BitVector 8),
     -- ^Buffer
     _size :: Index (dataWidth + 1),
     -- ^Number of valid bytes in _dc_buf
@@ -23,43 +23,10 @@ data DownConverterState (dataWidth :: Nat) =
   }
   deriving (Generic, NFDataX)
 
--- | Computes new state from incoming data
-fromPacketStreamM2S
-  :: forall (dataWidth :: Nat) .
-  KnownNat dataWidth
-  => PacketStreamM2S dataWidth ()
-  -> DownConverterState dataWidth
-fromPacketStreamM2S (PacketStreamM2S vs lastIdx _ aborted) =
-  DownConverterState
-    { _dc_buf = vs
-    , _size = case lastIdx of
-                Just n -> resize n + 1 -- lastIdx points to the last valid byte, so the buffer size is one more
-                Nothing -> natToNum @dataWidth
-    , _lastVec = isJust lastIdx
-    , _dc_aborted = aborted}
-
--- | Computes output of down converter
-toMaybePacketStreamM2S
-  :: forall (dataWidth :: Nat) .
-  1 <= dataWidth
-  => KnownNat dataWidth
-  => DownConverterState dataWidth
-  -> Maybe (PacketStreamM2S 1 ())
-toMaybePacketStreamM2S DownConverterState {..}
-  | _size == 0 = Nothing
-  | otherwise = Just PacketStreamM2S
-                       { _data = leToPlusKN @1 @dataWidth head _dc_buf :> Nil
-                       , _last = if _size == 1 && _lastVec then Just 0 else Nothing
-                       , _meta = ()
-                       , _abort = _dc_aborted
-                       }
-
 downConverter
-  :: forall (dataWidth :: Nat) (dom :: Domain).
+  :: forall (dom :: Domain).
   HiddenClockResetEnable dom
-  => 1 <= dataWidth
-  => KnownNat dataWidth
-  => Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+  => Signal dom (Maybe (PacketStreamM2S 4 ()))
   -- ^ Input packet stream from the source
   -> Signal dom PacketStreamS2M
   -- ^ Input backpressure from the sink
@@ -71,21 +38,21 @@ downConverter
 downConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
   where
     s0 = DownConverterState
-      { _dc_buf = errorX "downConverter: undefined initial value"
+      { _dc_buf = undefined
       , _size = 0
       , _lastVec = False
       , _dc_aborted = False
       }
     go
-      :: DownConverterState dataWidth
-      -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
-      -> (DownConverterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
+      :: DownConverterState 4
+      -> (Maybe (PacketStreamM2S 4 ()), PacketStreamS2M)
+      -> (DownConverterState 4, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
     go st@(DownConverterState {..}) (fwdIn, PacketStreamS2M inReady) = (st', (bwdOut, fwdOut))
       where
         -- Compute next buffer and its size. If a byte was just acknowledged,
         -- a byte is removed. Otherwise, it is left unchanged.
         (_buf', _size') = if inReady && _size > 0
-          then (_dc_buf <<+ errorX "downConverter: undefined value out of bounds", _size - 1)
+          then (fst $ shiftOutFrom0 d1 _dc_buf, _size - 1)
           else (_dc_buf, _size)
         -- Decide whether to acknowledge incoming data. If, possibly after our
         -- own output was acknowledged, our buffer has become empty, we read
@@ -96,6 +63,24 @@ downConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
           _                      -> (False, st { _dc_buf = _buf', _size = _size' })
         bwdOut = PacketStreamS2M outReady
         fwdOut = toMaybePacketStreamM2S st'
+    -- Computes new state from incoming data
+    fromPacketStreamM2S :: PacketStreamM2S 4 () -> DownConverterState 4
+    fromPacketStreamM2S (PacketStreamM2S vs lastIdx _ aborted) =
+      DownConverterState
+        { _dc_buf = vs
+        , _size = maybe 4 ((+ 1) . resize) lastIdx -- lastIdx points to the last valid byte, so the buffer size is one more
+        , _lastVec = isJust lastIdx
+        , _dc_aborted = aborted}
+    -- Computes output of go
+    toMaybePacketStreamM2S :: DownConverterState 4 -> Maybe (PacketStreamM2S 1 ())
+    toMaybePacketStreamM2S DownConverterState {..}
+      | _size == 0 = Nothing
+      | otherwise = Just PacketStreamM2S
+                           { _data = head _dc_buf :> Nil
+                           , _last = if _size == 1 && _lastVec then Just 0 else Nothing
+                           , _meta = ()
+                           , _abort = _dc_aborted
+                           }
 
 payloadInp :: [Maybe (PacketStreamM2S 4 ())]
 payloadInp = [
