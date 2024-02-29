@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-module Clash.Cores.Ethernet.Converters
+module Clash.Cores.Ethernet.UpConverter
   ( upConverter
   , sampleOut
   ) where
