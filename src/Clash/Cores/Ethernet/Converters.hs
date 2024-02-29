@@ -1,27 +1,25 @@
 {-# LANGUAGE RecordWildCards #-}
-module Clash.Cores.Ethernet.UpConverter
+module Clash.Cores.Ethernet.Converters
   ( upConverter
   , sampleOut
   ) where
 
 import Clash.Prelude
-import Data.Maybe (isJust, isNothing, fromMaybe)
+import Data.Maybe (isJust, isNothing)
 
 import Clash.Cores.Ethernet.PacketStream
 
 import qualified Data.List as L
-import GHC.IO.Handle (noNewlineTranslation)
-import Distribution.Simple (laterVersion)
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
-    _uc_buf     :: Vec dataWidth (BitVector 8),
+    _buf     :: Vec dataWidth (BitVector 8),
     -- ^ the buffer we are filling
     _idx     :: Index dataWidth,
     -- ^ Where in the buffer we need to write the next element
     _flush   :: Bool,
     -- ^ If this is true the current state can presented as packetstream word
-    _uc_aborted :: Bool,
+    _aborted :: Bool,
     -- ^ Current packet is aborted
     _lastIdx :: Maybe (Index dataWidth)
     -- ^ If true the current buffer contains the last byte of the current packet
@@ -35,13 +33,13 @@ toMaybe True x = Just x
 toMaybe False _ = Nothing
 
 toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
-toPacketStream UpConverterState{..} = toMaybe _flush (PacketStreamM2S _uc_buf _lastIdx () _uc_aborted)
+toPacketStream UpConverterState{..} = toMaybe _flush (PacketStreamM2S _buf _lastIdx () _aborted)
 
 upConverter
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
   => 1 <= dataWidth
-  => KnownNat dataWidth
+  =>  KnownNat dataWidth
   => Signal dom (Maybe (PacketStreamM2S 1 ()))
   -- ^ Input packet stream from the source
   -> Signal dom PacketStreamS2M
@@ -67,7 +65,7 @@ upConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
           -- since we only change state if we can transmit and receive data
           nextStRaw = st
                         { _flush = False
-                        , _uc_aborted = isNothing _lastIdx && _uc_aborted
+                        , _aborted = isNothing _lastIdx && _aborted
                         , _lastIdx = Nothing
                         }
           outReady = not _flush || inReady
@@ -80,22 +78,22 @@ upConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
           -- So the next abort is set
           --  - If fragment we are potentially flushing was not the last and we were allready aborting
           --  - Or if the incoming fragment is aborted
-          nextAbort = (isNothing _lastIdx && _uc_aborted) || _abort
-          -- If we are not flushing we can accept data to be stored in _uc_buf
+          nextAbort = (isNothing _lastIdx && _aborted) || _abort
+          -- If we are not flushing we can accept data to be stored in _buf
           -- But when we are flushing we can only accept if the current
           -- output fragment is accepted by the sink
           outReady = not _flush || inReady
           bufFull = _idx == maxBound
-          nextBuf = replace _idx (head _data) _uc_buf
+          nextBuf = replace _idx (head _data) _buf
 
           nextFlush = inLast || bufFull
           nextIdx = if nextFlush then 0 else _idx + 1
 
           nextStRaw = UpConverterState
-                        { _uc_buf =  nextBuf
+                        { _buf =  nextBuf
                         , _idx = nextIdx
                         , _flush = nextFlush
-                        , _uc_aborted = nextAbort
+                        , _aborted = nextAbort
                         , _lastIdx = toMaybe inLast _idx
                         }
           nextSt = if outReady then nextStRaw else st
