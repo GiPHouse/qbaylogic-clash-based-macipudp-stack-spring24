@@ -60,3 +60,9 @@ prog: ${bitstream}
 
 flash: ${bitstream}
 	sudo "PATH=$$PATH" env ecpprog -p -a ${bitstream}
+
+int: 
+	cabal run -- clashi
+
+hoogle:
+	hoogle server --local --port 8080 
