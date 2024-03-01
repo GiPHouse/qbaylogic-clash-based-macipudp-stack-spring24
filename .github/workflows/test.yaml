@@ -21,6 +21,7 @@ jobs:
         run: nix-build
       - name: check stylish-haskell 
         run: nix-shell --run "make check_format"
+      - name: clean linting process
         run: nix-shell --run "make clean_tests"
 
   build_and_synthesize:
