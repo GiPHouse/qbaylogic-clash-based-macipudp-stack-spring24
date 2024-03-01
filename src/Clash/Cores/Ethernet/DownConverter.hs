@@ -51,7 +51,7 @@ toMaybePacketStreamM2S
   => KnownNat dataWidth
   => DownConverterState dataWidth
   -> Maybe (PacketStreamM2S 1 ())
-toMaybePacketStreamM2S DownConverterState {..} = toMaybe (_dcSize == 0) out
+toMaybePacketStreamM2S DownConverterState {..} = toMaybe (_dcSize > 0) out
   where
     out = PacketStreamM2S
       { _data = leToPlusKN @1 @dataWidth head _dcBuf :> Nil
