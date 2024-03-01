@@ -144,8 +144,8 @@ skinparam legendFontSize 20
 **** Implement preamble check + strip\n\n 24 hours
 **** Implement PacketStream receiver\n\n 16 hours
 *** We want the core to support XSGMII\n\n 80 hours<<would>>
-**** Implement XSGMII Phy\n\n unrefined
-**** Implement XSGMII auto-negotation\n\n unrefined
+**** Implement XSGMII Phy\n\n unrefined<<unrefined>>
+**** Implement XSGMII auto-negotation\n\n unrefined<<unrefined>>
 *** We want the core to handle the ethernet data link layer\n\n 96 hours<<must>>
 **** Implement frame check sequence insert\n\n 24 hours
 **** Implement MAC packetizer\n\n 24 hours
