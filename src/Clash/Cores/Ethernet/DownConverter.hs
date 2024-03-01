@@ -13,13 +13,13 @@ import qualified Data.List as L
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
     _dcBuf :: Vec dataWidth (BitVector 8),
-    -- ^Buffer
+    -- ^ Buffer
     _dcSize :: Index (dataWidth + 1),
-    -- ^Number of valid bytes in _dcBuf
+    -- ^ Number of valid bytes in _dcBuf
     _dcLastVec :: Bool,
-    -- ^True if last byte of _dcBuf was marked as last byte by incoming stream
+    -- ^ True if last byte of _dcBuf was marked as last byte by incoming stream
     _dcAborted :: Bool
-    -- ^If True, outgoing bytes should be marked as aborted until _dcBuf is replaced
+    -- ^ If True, outgoing bytes should be marked as aborted until _dcBuf is replaced
   }
   deriving (Generic, NFDataX)
 
@@ -36,7 +36,8 @@ fromPacketStreamM2S (PacketStreamM2S vs lastIdx _ aborted) =
                 Just n -> resize n + 1 -- lastIdx points to the last valid byte, so the buffer size is one more
                 Nothing -> natToNum @dataWidth
     , _dcLastVec = isJust lastIdx
-    , _dcAborted = aborted}
+    , _dcAborted = aborted
+    }
 
 -- | Computes output of down converter
 toMaybePacketStreamM2S
