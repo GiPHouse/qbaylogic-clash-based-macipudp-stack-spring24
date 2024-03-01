@@ -6,6 +6,7 @@ module Test.Cores.Ethernet.PacketStream where
 
 -- base
 import Prelude
+import Data.Proxy
 
 -- clash-prelude
 import qualified Clash.Prelude as C
@@ -25,6 +26,7 @@ import Test.Tasty.TH (testGroupGenerator)
 -- clash-protocols
 import Protocols
 import Protocols.Hedgehog
+import qualified Protocols.DfConv as DfConv
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream
@@ -34,21 +36,21 @@ genVec gen = sequence (C.repeat gen)
 
 -- | Test the packet stream instance
 --   TODO: Use the fifo given by `DfConv`
-prop_packetstream_sometest_id :: Property
-prop_packetstream_sometest_id =
+prop_packetstream_fifo_id :: Property
+prop_packetstream_fifo_id =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
     (Gen.list (Range.linear 0 100) genPackets)
-    (C.exposeClockResetEnable $ error "The model of the circuit: Implement a function here that transform the inputs to the circuit to outputs")
+    (C.exposeClockResetEnable id)
     (C.exposeClockResetEnable @C.System ckt)
-    (\_a _b -> error "Property to test for. Function is given the data produced by the model as a first argument, and the sampled data as a second argument.")
+    (\a b -> a === b)
  where
   ckt :: (C.HiddenClockResetEnable dom) =>
     Circuit
       (PacketStream dom 1 Int)
       (PacketStream dom 1 Int)
-  ckt = error "Insert the circuit to test here"
+  ckt = DfConv.fifo Proxy Proxy (C.SNat @10)
 
   -- This is used to generate
   genPackets =
