@@ -2,6 +2,7 @@
 
 module Clash.Cores.Ethernet.DownConverter
   ( downConverter
+  , downConverterC
   , sampleOut
   ) where
 
@@ -9,6 +10,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.List qualified as L
 import Data.Maybe ( isJust )
+import Protocols ( Circuit, fromSignals )
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
@@ -61,16 +63,18 @@ toMaybePacketStreamM2S DownConverterState {..} = toMaybe (_dcSize > 0) out
 downConverter
   :: forall (dom :: Domain).
   HiddenClockResetEnable dom
-  => Signal dom (Maybe (PacketStreamM2S 4 ()))
-  -- ^ Input packet stream from the source
-  -> Signal dom PacketStreamS2M
-  -- ^ Input backpressure from the sink
+  => 1 <= dataWidth
+  => KnownNat dataWidth
+  => ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+     , Signal dom PacketStreamS2M
+     )
+  -- ^ Input packet stream from the source and backpressure from the sink
   -> ( Signal dom PacketStreamS2M
      , Signal dom (Maybe (PacketStreamM2S 1 ()))
      )
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
-downConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
+downConverter = mealyB go s0
   where
     s0 = DownConverterState
       { _dcBuf = errorX "downConverter: undefined initial value"
@@ -98,6 +102,14 @@ downConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
           _                         -> st { _dcBuf = _buf', _dcSize = _size' }
         bwdOut = PacketStreamS2M outReady
         fwdOut = toMaybePacketStreamM2S st
+
+downConverterC
+  :: forall (dataWidth :: Nat) (dom :: Domain).
+  HiddenClockResetEnable dom
+  => 1 <= dataWidth
+  => KnownNat dataWidth
+  => Circuit (PacketStream dom dataWidth ()) (PacketStream dom 1 ())
+downConverterC = fromSignals downConverter
 
 payloadInp :: [Maybe (PacketStreamM2S 4 ())]
 payloadInp = [
@@ -140,6 +152,6 @@ payloadOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
 sinkReadyOut :: Signal System PacketStreamS2M
 downConverterClk = exposeClockResetEnable downConverter clk rst en
 
-(sinkReadyOut, payloadOut) = downConverterClk (fromList payloadInp) (fromList sinkReadyInp)
+(sinkReadyOut, payloadOut) = downConverterClk (fromList payloadInp, fromList sinkReadyInp)
 
 sampleOut = sampleN 26 $ bundle (payloadOut, sinkReadyOut)
