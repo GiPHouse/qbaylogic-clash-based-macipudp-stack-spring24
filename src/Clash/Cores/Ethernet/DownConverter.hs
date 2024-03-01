@@ -1,14 +1,14 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# language RecordWildCards #-}
 
 module Clash.Cores.Ethernet.DownConverter
   ( downConverter
   , sampleOut
   ) where
 
-import Clash.Prelude
-import Data.Maybe ( isJust )
 import Clash.Cores.Ethernet.PacketStream
-import qualified Data.List as L
+import Clash.Prelude
+import Data.List qualified as L
+import Data.Maybe ( isJust )
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
@@ -37,9 +37,7 @@ fromPacketStreamM2S
 fromPacketStreamM2S (PacketStreamM2S vs lastIdx _ aborted) =
   DownConverterState
     { _dcBuf = vs
-    , _dcSize = case lastIdx of
-                Just n -> resize n + 1 -- lastIdx points to the last valid byte, so the buffer size is one more
-                Nothing -> natToNum @dataWidth
+    , _dcSize = maybe (natToNum @dataWidth) (succ . resize) lastIdx -- lastIdx points to the last valid byte, so the buffer size is one more
     , _dcLastVec = isJust lastIdx
     , _dcAborted = aborted
     }
