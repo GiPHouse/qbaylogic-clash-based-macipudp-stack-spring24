@@ -11,6 +11,17 @@ jobs:
       - name: Whitespace file endings
         run: |
           .ci/test_whitespace.sh
+      - name: install nix
+        uses: cachix/install-nix-action@v22
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: cache nix
+        uses: DeterminateSystems/magic-nix-cache-action@v2
+      - name: build the nix environment
+        run: nix-build
+      - name: check stylish-haskell 
+        run: nix-shell --run "make check_format"
+        run: nix-shell --run "make clean_tests"
 
   build_and_synthesize:
     runs-on: ubuntu-latest
