@@ -1,4 +1,4 @@
-{-# LANGUAGE NumericUnderscores #-}
+{-# language NumericUnderscores #-}
 
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
