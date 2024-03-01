@@ -1,6 +1,7 @@
 {-# language RecordWildCards #-}
 module Clash.Cores.Ethernet.UpConverter
   ( upConverter
+  , upConverterC
   , sampleOut
   ) where
 
@@ -10,6 +11,7 @@ import Data.Maybe ( isJust, isNothing )
 import Clash.Cores.Ethernet.PacketStream
 
 import Data.List qualified as L
+import Protocols ( Circuit, fromSignals )
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
@@ -97,6 +99,14 @@ upConverter = mealyB go s0
                         , _ucLastIdx = toMaybe inLast _ucIdx
                         }
           nextSt = if outReady then nextStRaw else st
+
+upConverterC
+  :: forall (dataWidth :: Nat) (dom :: Domain).
+  HiddenClockResetEnable dom
+  => 1 <= dataWidth
+  => KnownNat dataWidth
+  => Circuit (PacketStream dom 1 ()) (PacketStream dom dataWidth ())
+upConverterC = fromSignals upConverter
 
 payloadInp :: [Maybe (PacketStreamM2S 1 ())]
 payloadInp = [
