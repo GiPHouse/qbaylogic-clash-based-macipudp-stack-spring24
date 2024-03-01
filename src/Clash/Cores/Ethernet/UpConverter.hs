@@ -1,15 +1,15 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# language RecordWildCards #-}
 module Clash.Cores.Ethernet.UpConverter
   ( upConverter
   , sampleOut
   ) where
 
 import Clash.Prelude
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe ( isJust, isNothing )
 
 import Clash.Cores.Ethernet.PacketStream
 
-import qualified Data.List as L
+import Data.List qualified as L
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
@@ -40,16 +40,16 @@ upConverter
   HiddenClockResetEnable dom
   => 1 <= dataWidth
   =>  KnownNat dataWidth
-  => Signal dom (Maybe (PacketStreamM2S 1 ()))
+  => ( Signal dom (Maybe (PacketStreamM2S 1 ()))
+     , Signal dom PacketStreamS2M)
   -- ^ Input packet stream from the source
-  -> Signal dom PacketStreamS2M
-  -- ^ Input backpressure from the sink
+  --   Input backpressure from the sink
   -> ( Signal dom PacketStreamS2M
      , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
      )
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
-upConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
+upConverter = mealyB go s0
   where
     s0 = UpConverterState (repeat undefined) 0 False False Nothing
     go
@@ -131,6 +131,6 @@ en = enableGen
 payloadOut :: Signal System (Maybe (PacketStreamM2S 4 ()))
 sinkReadyOut :: Signal System PacketStreamS2M
 upConverterClk = exposeClockResetEnable (upConverter @4) clk rst en
-(sinkReadyOut, payloadOut) = upConverterClk (fromList payloadInp) (fromList sinkReadyInp)
+(sinkReadyOut, payloadOut) = upConverterClk (fromList payloadInp, fromList sinkReadyInp)
 
 sampleOut = sampleN 20 $ bundle (payloadOut, sinkReadyOut)
