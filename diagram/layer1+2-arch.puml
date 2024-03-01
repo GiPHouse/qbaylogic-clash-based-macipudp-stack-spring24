@@ -1,0 +1,61 @@
+@startuml
+
+skinparam rectangle<<PhyTxDomain>> {
+	roundCorner 25
+	backgroundColor Aquamarine
+}
+
+skinparam rectangle<<PhyRxDomain>> {
+	roundCorner 25
+	backgroundColor LightCyan
+}
+
+skinparam rectangle<<PhyRxDomain-To-SystemDomain>> {
+	roundCorner 25
+	backgroundColor Fuchsia
+}
+
+skinparam rectangle<<SystemDomain-To-PhyTxDomain>> {
+	roundCorner 25
+	backgroundColor Fuchsia
+}
+
+skinparam rectangle<<SystemDomain>> {
+	roundCorner 25
+	backgroundColor Gold
+}
+
+
+rectangle "Phy Receiver" as PhyRx <<PhyRxDomain>>
+rectangle "UpConverter" as UpConv <<PhyRxDomain>>
+rectangle "AsyncFIFO CDC" as CDCRx <<PhyRxDomain-To-SystemDomain>>
+rectangle "Preamble check + strip" as PreRx <<SystemDomain>>
+rectangle "Frame check sequence\nvalidation" as FCSRx <<SystemDomain>>
+rectangle "MAC depacketizer" as PacketRx <<SystemDomain>>
+rectangle "MAC sink" as Sink <<SystemDomain>>
+
+PhyRx -down-> UpConv : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+UpConv -down-> CDCRx : last_be :: Maybe (Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+CDCRx -down-> PreRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+PreRx -down-> FCSRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+FCSRx -down-> PacketRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+PacketRx -down-> Sink : mac_header :: MacHeader\nlast_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+
+rectangle "MAC source" as Source <<SystemDomain>>
+rectangle "MAC Packetizer" as PacketTx <<SystemDomain>>
+rectangle "Frame check sequence\ninserter" as FCSTx <<SystemDomain>>
+rectangle "Preamble inserter" as PreTx <<SystemDomain>>
+rectangle "AsyncFIFO CDC" as CDCTx <<SystemDomain-To-PhyTxDomain>>
+rectangle "DownConverter" as DownConv <<PhyTxDomain>>
+rectangle "Interpacket gap inserter" as IPG <<PhyTxDomain>>
+rectangle "Phy Transmitter" as PhyTx <<PhyTxDomain>>
+
+Source -up-> PacketTx : mac_header :: MacHeader\nlast_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+PacketTx -up-> FCSTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+FCSTx -up-> PreTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+PreTx -up-> CDCTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+CDCTx -up-> DownConv : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+DownConv -up-> IPG : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+IPG -up-> PhyTx : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+
+@enduml
