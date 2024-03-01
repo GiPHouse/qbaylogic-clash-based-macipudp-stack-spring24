@@ -13,19 +13,19 @@ import qualified Data.List as L
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
-    _buf     :: Vec dataWidth (BitVector 8),
-    -- ^ the buffer we are filling
-    _idx     :: Index dataWidth,
+    _ucBuf     :: Vec dataWidth (BitVector 8),
+    -- ^ The buffer we are filling
+    _ucIdx     :: Index dataWidth,
     -- ^ Where in the buffer we need to write the next element
-    _flush   :: Bool,
+    _ucFlush   :: Bool,
     -- ^ If this is true the current state can presented as packetstream word
-    _aborted :: Bool,
+    _ucAborted :: Bool,
     -- ^ Current packet is aborted
-    _lastIdx :: Maybe (Index dataWidth)
+    _ucLastIdx :: Maybe (Index dataWidth)
     -- ^ If true the current buffer contains the last byte of the current packet
   }
   deriving (Generic, NFDataX)
--- ^ Upconverter state, consisting of at most p (BitVector 8)s and a vector indicating which bytes are valid
+-- ^ Upconverter state, consisting of at most p (BitVector 8)'s and a vector indicating which bytes are valid
 
 -- | Maybe put this in a utility module?
 toMaybe :: Bool -> a -> Maybe a
@@ -33,7 +33,7 @@ toMaybe True x = Just x
 toMaybe False _ = Nothing
 
 toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
-toPacketStream UpConverterState{..} = toMaybe _flush (PacketStreamM2S _buf _lastIdx () _aborted)
+toPacketStream UpConverterState{..} = toMaybe _ucFlush (PacketStreamM2S _ucBuf _ucLastIdx () _ucAborted)
 
 upConverter
   :: forall (dataWidth :: Nat) (dom :: Domain).
@@ -61,40 +61,40 @@ upConverter fwdInS bwdInS = mealyB go s0 (fwdInS, bwdInS)
     go st@(UpConverterState {..}) (Nothing, PacketStreamS2M inReady)
       = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
         where
-          -- If we can accept data we can always set _flush to false
+          -- If we can accept data we can always set _ucFlush to false,
           -- since we only change state if we can transmit and receive data
           nextStRaw = st
-                        { _flush = False
-                        , _aborted = isNothing _lastIdx && _aborted
-                        , _lastIdx = Nothing
+                        { _ucFlush = False
+                        , _ucAborted = isNothing _ucLastIdx && _ucAborted
+                        , _ucLastIdx = Nothing
                         }
-          outReady = not _flush || inReady
+          outReady = not _ucFlush || inReady
           nextSt = if outReady then nextStRaw else st
     go st@(UpConverterState {..}) (Just (PacketStreamM2S{..}), PacketStreamS2M inReady)
       = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
         where
           inLast = isJust _last
           -- We smear an abort over the entire rest of the packet
-          -- So the next abort is set
-          --  - If fragment we are potentially flushing was not the last and we were allready aborting
-          --  - Or if the incoming fragment is aborted
-          nextAbort = (isNothing _lastIdx && _aborted) || _abort
-          -- If we are not flushing we can accept data to be stored in _buf
-          -- But when we are flushing we can only accept if the current
+          -- so the next abort is set:
+          --  - If fragment we are potentially flushing was not the last and we were already aborting;
+          --  - or if the incoming fragment is aborted
+          nextAbort = (isNothing _ucLastIdx && _ucAborted) || _abort
+          -- If we are not flushing we can accept data to be stored in _ucBuf,
+          -- but when we are flushing we can only accept if the current
           -- output fragment is accepted by the sink
-          outReady = not _flush || inReady
-          bufFull = _idx == maxBound
-          nextBuf = replace _idx (head _data) _buf
+          outReady = not _ucFlush || inReady
+          bufFull = _ucIdx == maxBound
+          nextBuf = replace _ucIdx (head _data) _ucBuf
 
           nextFlush = inLast || bufFull
-          nextIdx = if nextFlush then 0 else _idx + 1
+          nextIdx = if nextFlush then 0 else _ucIdx + 1
 
           nextStRaw = UpConverterState
-                        { _buf =  nextBuf
-                        , _idx = nextIdx
-                        , _flush = nextFlush
-                        , _aborted = nextAbort
-                        , _lastIdx = toMaybe inLast _idx
+                        { _ucBuf =  nextBuf
+                        , _ucIdx = nextIdx
+                        , _ucFlush = nextFlush
+                        , _ucAborted = nextAbort
+                        , _ucLastIdx = toMaybe inLast _ucIdx
                         }
           nextSt = if outReady then nextStRaw else st
 
