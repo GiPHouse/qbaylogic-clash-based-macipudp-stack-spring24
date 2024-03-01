@@ -23,6 +23,11 @@ data DownConverterState (dataWidth :: Nat) =
   }
   deriving (Generic, NFDataX)
 
+-- | Maybe put this in a utility module?
+toMaybe :: Bool -> a -> Maybe a
+toMaybe True x = Just x
+toMaybe False _ = Nothing
+
 -- | Computes new state from incoming data
 fromPacketStreamM2S
   :: forall (dataWidth :: Nat) .
@@ -46,14 +51,14 @@ toMaybePacketStreamM2S
   => KnownNat dataWidth
   => DownConverterState dataWidth
   -> Maybe (PacketStreamM2S 1 ())
-toMaybePacketStreamM2S DownConverterState {..}
-  | _dcSize == 0 = Nothing
-  | otherwise = Just PacketStreamM2S
-                       { _data = leToPlusKN @1 @dataWidth head _dcBuf :> Nil
-                       , _last = if _dcSize == 1 && _dcLastVec then Just 0 else Nothing
-                       , _meta = ()
-                       , _abort = _dcAborted
-                       }
+toMaybePacketStreamM2S DownConverterState {..} = toMaybe (_dcSize == 0) out
+  where
+    out = PacketStreamM2S
+      { _data = leToPlusKN @1 @dataWidth head _dcBuf :> Nil
+      , _last = toMaybe (_dcSize == 1 && _dcLastVec) 0
+      , _meta = ()
+      , _abort = _dcAborted
+      }
 
 downConverter
   :: forall (dom :: Domain).
