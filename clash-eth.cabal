@@ -91,6 +91,7 @@ library
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketStream
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
