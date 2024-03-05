@@ -127,6 +127,7 @@ skinparam legendFontSize 20
 ** Project setup, CI and other small tasks not directly related to an epic\n\n64 hours
 *** Setup CI\n\n4 hours<<done_s1>>
 *** Expand CI\n\n4 hours<<done_s1>>
+*** Create initial python test suite\n\n4 hours<<in_s2>>
 *** Handle client feedback from sprint 1\n\n8 hours<<in_s2>>
 *** Handle client feedback from sprint 2\n\n8 hours<<in_s3>>
 *** Handle client feedback from sprint 3\n\n8 hours<<in_s4>>
@@ -148,9 +149,9 @@ skinparam legendFontSize 20
 *** We want the core to handle the ethernet physical layer\n\n 88 hours<<must>>
 **** Implement interpacket gap inserter\n\n 16 hours<<in_s2>>
 **** Implement preamble inserter\n\n 16 hours<<in_s2>>
-**** Implement PacketStream transmitter\n\n 16 hours<<in_s2>>
+**** Implement PacketStream RGMII transmitter\n\n 16 hours<<in_s2>>
 **** Implement preamble check + strip\n\n 24 hours<<in_s2>>
-**** Implement PacketStream receiver\n\n 16 hours<<in_s2>>
+**** Implement PacketStream RGMII receiver\n\n 16 hours<<in_s2>>
 *** We want the core to support XSGMII\n\n 80 hours<<would>>
 **** Implement XSGMII Phy\n\n unrefined<<unrefined>>
 **** Implement XSGMII auto-negotation\n\n unrefined<<unrefined>>
