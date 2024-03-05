@@ -71,6 +71,10 @@ leafNode {
   BackgroundColor ForestGreen
 }
 
+.unassigned {
+  BackgroundColor White
+}
+
 .must {
   LineColor FireBrick
 }
@@ -102,6 +106,7 @@ skinparam legendFontSize 20
  <b>Legend</b>
  |= color |= where |= Type |
  |<back:Gold>              </back>| background of node | Epic/User story |
+ |<back:White>              </back>| background of issue | Not assigned to a sprint |
  |<back:GhostWhite>              </back>| background of issue | In sprint 1 |
  |<back:LightCyan>              </back>| background of issue | In sprint 2 |
  |<back:LightBlue>              </back>| background of issue | In sprint 3 |
@@ -119,9 +124,12 @@ skinparam legendFontSize 20
 
 
 *_ QBayLogic Clash based mac/ip/udp stack
-** Project setup, CI and other small tasks not directly related to an epic\n\n40 hours
+** Project setup, CI and other small tasks not directly related to an epic\n\n64 hours
 *** Setup CI\n\n4 hours<<done_s1>>
 *** Expand CI\n\n4 hours<<done_s1>>
+*** Handle client feedback from sprint 1\n\n8 hours<<in_s2>>
+*** Handle client feedback from sprint 2\n\n8 hours<<in_s3>>
+*** Handle client feedback from sprint 3\n\n8 hours<<in_s4>>
 *** TODO: other tasks\n\n32 hours<<unrefined>>
 ** Physical & data link layer
 *** We want to be able to hook into ethernet packetstream using UART\n\n 152 hours<<must>>
@@ -136,21 +144,21 @@ skinparam legendFontSize 20
 *** We want to be able to use FPGA internal clock with ethernet\n\n 72 hours<<must>>
 **** Implement PacketStream up converter\n\n 32 hours<<done_s1>>
 **** Implement PacketStream down converter\n\n 32 hours<<done_s1>>
-**** Implement Df Async FIFO\n\n 8 hours<<in_s2>><<in_s2>>
+**** Implement Df Async FIFO\n\n 8 hours<<in_s2>>
 *** We want the core to handle the ethernet physical layer\n\n 88 hours<<must>>
-**** Implement interpacket gap inserter\n\n 16 hours
-**** Implement preamble inserter\n\n 16 hours
-**** Implement PacketStream transmitter\n\n 16 hours
-**** Implement preamble check + strip\n\n 24 hours
-**** Implement PacketStream receiver\n\n 16 hours
+**** Implement interpacket gap inserter\n\n 16 hours<<in_s2>>
+**** Implement preamble inserter\n\n 16 hours<<in_s2>>
+**** Implement PacketStream transmitter\n\n 16 hours<<in_s2>>
+**** Implement preamble check + strip\n\n 24 hours<<in_s2>>
+**** Implement PacketStream receiver\n\n 16 hours<<in_s2>>
 *** We want the core to support XSGMII\n\n 80 hours<<would>>
 **** Implement XSGMII Phy\n\n unrefined<<unrefined>>
 **** Implement XSGMII auto-negotation\n\n unrefined<<unrefined>>
 *** We want the core to handle the ethernet data link layer\n\n 96 hours<<must>>
-**** Implement frame check sequence insert\n\n 24 hours
-**** Implement MAC packetizer\n\n 24 hours
-**** Implement frame check sequence validation\n\n 24 hours
-**** Implement MAC depacketizer\n\n 24 hours
+**** Implement frame check sequence insert\n\n 24 hours<<unassigned>>
+**** Implement MAC packetizer\n\n 24 hours<<unassigned>>
+**** Implement frame check sequence validation\n\n 24 hours<<unassigned>>
+**** Implement MAC depacketizer\n\n 24 hours<<unassigned>>
 ** Networking layer
 *** We want to able to route MAC stream to multiple components\n\n 32 hours<<should>>
 **** Implement PacketStream dispatcher\n\n unrefined<<unrefined>>
