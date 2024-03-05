@@ -34,14 +34,15 @@ rectangle "Frame check sequence\nvalidation" as FCSRx <<SystemDomain>>
 rectangle "MAC depacketizer" as PacketRx <<SystemDomain>>
 rectangle "MAC sink" as Sink <<SystemDomain>>
 
-PhyRx -down-> UpConv : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
-UpConv -down-> CDCRx : last_be :: Maybe (Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-CDCRx -down-> PreRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-PreRx -down-> FCSRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-FCSRx -down-> PacketRx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-PacketRx -down-> Sink : mac_header :: MacHeader\nlast_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
+PhyRx -down-> UpConv : PacketStream 1 ()
+UpConv -down-> CDCRx : PacketStream 1 ()
+CDCRx -down-> PreRx : PacketStream 4 ()
+PreRx -down-> FCSRx : PacketStream 4 ()
+FCSRx -down-> PacketRx : PacketStream 4 ()
+PacketRx -down-> Sink : PacketStream 4 MacHeader
 
 rectangle "MAC source" as Source <<SystemDomain>>
+rectangle "Padding insert" as PaddingTx <<SystemDomain>>
 rectangle "MAC Packetizer" as PacketTx <<SystemDomain>>
 rectangle "Frame check sequence\ninserter" as FCSTx <<SystemDomain>>
 rectangle "Preamble inserter" as PreTx <<SystemDomain>>
@@ -50,12 +51,13 @@ rectangle "DownConverter" as DownConv <<PhyTxDomain>>
 rectangle "Interpacket gap inserter" as IPG <<PhyTxDomain>>
 rectangle "Phy Transmitter" as PhyTx <<PhyTxDomain>>
 
-Source -up-> PacketTx : mac_header :: MacHeader\nlast_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-PacketTx -up-> FCSTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-FCSTx -up-> PreTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-PreTx -up-> CDCTx : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-CDCTx -up-> DownConv : last_be :: Maybe(Vec n Bool)\nabort :: Bool\npayload :: Vec n (BitVector 8)
-DownConv -up-> IPG : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
-IPG -up-> PhyTx : last_be :: Maybe (Vec 1 Bool) \nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+Source -up-> PacketTx : PacketStream 4 MacHeader
+PacketTx -up-> PaddingTx : PacketStream 4 ()
+PaddingTx -up-> FCSTx : PacketStream 4 ()
+FCSTx -up-> PreTx : PacketStream 4 ()
+PreTx -up-> CDCTx : PacketStream 4 ()
+CDCTx -up-> DownConv : PacketStream 4 ()
+DownConv -up-> IPG : PacketStream 1 ()
+IPG -up-> PhyTx : PacketStream 1 ()
 
 @enduml
