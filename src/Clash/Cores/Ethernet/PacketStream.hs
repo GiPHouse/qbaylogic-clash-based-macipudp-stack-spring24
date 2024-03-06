@@ -56,17 +56,16 @@ data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 deriving instance
 
 -- |
--- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True  
+-- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True
 -- True
--- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x35):> (0x43):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True  
+-- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x35):> (0x43):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True
 -- False
--- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True  
+-- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True
 -- True
--- >>> PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True  
+-- >>> PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 0 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True
 -- False
--- >>> PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Nothing) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Nothing) () True  
+-- >>> PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Nothing) () True == PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Nothing) () True
 -- True
-
 instance ( KnownNat dataWidth, Eq metaType) => Eq (PacketStreamM2S dataWidth metaType) where
   st1 == st2 =
     _meta  st1 == _meta  st2 &&
@@ -80,10 +79,15 @@ instance ( KnownNat dataWidth, Eq metaType) => Eq (PacketStreamM2S dataWidth met
                                   -> Vec dataWidth (BitVector 8)
                                   -> Vec dataWidth (BitVector 8)
                                   -> Bool
-                                eqFrom n vec1 vec2 
+                                eqFrom n vec1 vec2
                                   | n == (maxBound @(Index dataWidth)) = vec1 == vec2
                                   | otherwise                          = eqFrom (succ n) (0 +>> vec1) (0 +>> vec2)
       _                     -> False
+
+-- Orphan hashable instances
+deriving instance (KnownNat n) => Hashable (BitVector n)
+deriving instance (KnownNat n) => Hashable (Index n)
+>>>>>>> 85ad121 (reformat with make format)
 instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
   hashWithSalt s v = hashWithSalt s (toList v)
 
