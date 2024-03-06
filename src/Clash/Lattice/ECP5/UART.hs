@@ -1,5 +1,5 @@
 {-# language FlexibleContexts #-}
-{-# language RecordWildCards #-}
+{-# language NamedFieldPuns #-}
 
 module Clash.Lattice.ECP5.UART
   ( markLastFlag
@@ -56,47 +56,35 @@ uartRx'
   -- ^ The received words
 uartRx' b s = convert $ uartRx b s
 
-data MarkLastState = Idle | ReadSize (BitVector 8) | ReadData (BitVector 16)
+data MarkLastState = ReadSize1 | ReadSize2 (BitVector 8) | ReadData (BitVector 16)
   deriving (Generic, NFDataX)
 
--- | Turns a stream of raw bytes into a stream of packets according to the following "protocol".
--- Packets consist of two bytes interpreted as a 16-bit integer n, followed by n + 1 bytes x_0, ..., x_n.
--- x_0, ..., x_n are sent to the output signal and for the byte x_n, _last is set.
+-- | Turns a stream of raw bytes into a stream of packets according to the following "protocol":
+-- Packets consist of two bytes interpreted as a 16-bit integer n, followed by n + 1 bytes x_0, ..., x_n,
+-- i.e. n is the index of the last byte of this packet.
+-- _data, _meta and _abort of x_0, ..., x_n are copied to the output signal. _last is Just 0 only for x_n.
+-- For the size bytes, _last, _meta and _abort are ignored.
 -- n is read in little-endian byte order.
+--
 -- >>> Clash.Signal.simulate (markLastFlag @Clash.Prelude.System) ([Just (PacketStreamM2S @1 @() (2:>Nil) Nothing () False), Just (PacketStreamM2S @1 @() (1:>Nil) Nothing () False)] Data.List.++ (Data.List.repeat (Just (PacketStreamM2S @1 @() (0xAA:>Nil) Nothing () False)))) !! 260
 -- Just (PacketStreamM2S {_data = 0b1010_1010 :> Nil, _last = Just 0, _meta = (), _abort = False})
 markLastFlag
   :: HiddenClockResetEnable dom
   => KnownDomain dom
-  => Fwd (PacketStream dom 1 ())
+  => Fwd (PacketStream dom 1 metaType)
   -- ^ Packet stream of raw bytes
-  -> Fwd (PacketStream dom 1 ())
-  -- ^ Packet stream with size bytes removed and _last flag added
-markLastFlag = mealy go s0 where
-    s0 :: MarkLastState
-    s0 = Idle
-    go :: MarkLastState -> Maybe (PacketStreamM2S 1 ()) -> (MarkLastState, Maybe (PacketStreamM2S 1 ()))
+  -> Fwd (PacketStream dom 1 metaType)
+  -- ^ Output stream
+markLastFlag = mealy go ReadSize1 where
+    go :: MarkLastState -> Maybe (PacketStreamM2S 1 metaType) -> (MarkLastState, Maybe (PacketStreamM2S 1 metaType))
     go s Nothing = (s, Nothing)
-    go Idle (Just (PacketStreamM2S {..})) = (ReadSize (head _data), Nothing)
-    go (ReadSize size) (Just (PacketStreamM2S {..})) = (ReadData (head _data ++# size), Nothing)
-    go (ReadData size) (Just (PacketStreamM2S {..})) =
-      if size == 0
-        then ( Idle
-             , Just PacketStreamM2S
-                 { _data = _data
-                 , _last = Just 0
-                 , _meta = ()
-                 , _abort = False
-                 }
-             )
-        else ( ReadData (size - 1)
-             , Just PacketStreamM2S
-                 { _data = _data
-                 , _last = Nothing
-                 , _meta = ()
-                 , _abort = False
-                 }
-             )
+    go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
+    go (ReadSize2 size) (Just (PacketStreamM2S {_data})) = (ReadData (head _data ++# size), Nothing)
+    go (ReadData size) (Just packetStream) = (s', Just packetStream {_last = _last'})
+      where
+        (s', _last') = if size == 0
+                         then (ReadSize1, Just 0)
+                         else (ReadData (size - 1), Nothing)
 
 unsafeUartPacketSource
   :: HiddenClockResetEnable dom
