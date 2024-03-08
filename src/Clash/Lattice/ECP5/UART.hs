@@ -1,7 +1,7 @@
 {-# language FlexibleContexts #-}
 
 module Clash.Lattice.ECP5.UART
-    (uartTxC) where
+    (uartTxC, uartTxNoBaudGenC) where
 
 import Data.Maybe
 
@@ -29,3 +29,16 @@ uartTxC baud = fromSignals ckt
     ckt (fwd, _) =  (PacketStreamS2M <$> ack, CSignal txBit)
       where
         (txBit, ack) = uartTx baud (convertToTx fwd)
+
+uartTxNoBaudGenC
+  ::
+  HiddenClockResetEnable dom
+  => BaudGenerator dom
+  -- ^ The UART baud
+  -> Circuit (PacketStream dom 1 ()) (CSignal dom Bit)
+  -- ^ This component receives a PacketStream and converts it to the UART transmitter input while relaying backpressure from the UART
+uartTxNoBaudGenC baudGen = fromSignals ckt
+  where
+    ckt (fwd, _) =  (PacketStreamS2M <$> ack, CSignal txBit)
+      where
+        (txBit, ack) = uartTxNoBaudGen baudGen (convertToTx fwd)
