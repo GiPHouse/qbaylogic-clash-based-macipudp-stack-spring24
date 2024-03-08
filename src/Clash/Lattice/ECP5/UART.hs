@@ -4,10 +4,10 @@
 module Clash.Lattice.ECP5.UART
   ( uartTxC
   , uartTxNoBaudGenC
-  , unsafeUartRxC
-  , unsafeUartRxNoBaudGenC
-  , unsafeUartRxC'
-  , unsafeUartRxNoBaudGenC'
+  , uartRxC
+  , uartRxNoBaudGenC
+  , uartRxC'
+  , uartRxNoBaudGenC'
   , toPacketsC
   ) where
 
@@ -61,12 +61,17 @@ data ToPacketsState
 -- For the size bytes, _last, _meta and _abort are ignored.
 -- n is read in little-endian byte order.
 toPacketsC
-  :: HiddenClockResetEnable dom
+  :: forall (dom :: Domain) (metaType :: Type)
+   . HiddenClockResetEnable dom
   => KnownDomain dom
-  => Circuit (PacketStream dom 1 ()) (PacketStream dom 1 ())
+  => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+
 toPacketsC = fromSignals ckt
   where
-    ckt (fwdInS, bwdInS) = (bwdInS, mealy go ReadSize1 fwdInS)
+    ckt
+      :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
+      -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+    ckt (CSignal fwdInS, bwdInS) = (bwdInS, CSignal (mealy go ReadSize1 fwdInS))
     go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
     go s Nothing = (s, Nothing)
     go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
@@ -78,45 +83,47 @@ toPacketsC = fromSignals ckt
                          else (ReadData (size - 1), Nothing)
 
 -- | UART receiver circuit
-unsafeUartRxC
+uartRxC
   :: HiddenClockResetEnable dom
   => ValidBaud dom baud
   => SNat baud
-  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
-unsafeUartRxC = unsafeUartRxNoBaudGenC . baudGenerator
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
+
+uartRxC = uartRxNoBaudGenC . baudGenerator
 
 -- | UART receiver circuit
 --
 -- This version requires the baud generator to be passed in. Create one
 -- using `Clash.Cores.UART.baudGenerator`.
-unsafeUartRxNoBaudGenC
+uartRxNoBaudGenC
   :: forall (dom :: Domain)
    . HiddenClockResetEnable dom
   => BaudGenerator dom
-  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
 
-unsafeUartRxNoBaudGenC baudGen = fromSignals ckt
+uartRxNoBaudGenC baudGen = fromSignals ckt
   where
-    ckt :: (Fwd (CSignal dom Bit), Bwd (PacketStream dom 1 ())) -> (Bwd (CSignal dom Bit), Fwd (PacketStream dom 1 ()))
-    ckt (CSignal rxBit, _) = (def, convert $ uartRxNoBaudGen baudGen rxBit)
+    ckt :: (CSignal dom Bit, CSignal dom ()) -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
+    ckt (CSignal rxBit, _) = (def, CSignal $ convert $ uartRxNoBaudGen baudGen rxBit)
 
-    convert :: Signal dom (Maybe (BitVector 8)) -> Fwd (PacketStream dom 1 ())
+    convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
     convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
 
 -- | UART receiver circuit interpreting packets. See also `toPacketsC`.
-unsafeUartRxC'
+uartRxC'
   :: HiddenClockResetEnable dom
   => ValidBaud dom baud
   => SNat baud
-  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
-unsafeUartRxC' baud =  unsafeUartRxC baud |> toPacketsC
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
+
+uartRxC' baud =  uartRxC baud |> toPacketsC
 
 -- | UART receiver circuit interpreting packets. See also `toPacketsC`.
 --
 -- This version requires the baud generator to be passed in. Create one
 -- using `Clash.Cores.UART.baudGenerator`.
-unsafeUartRxNoBaudGenC'
+uartRxNoBaudGenC'
   :: HiddenClockResetEnable dom
   => BaudGenerator dom
-  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
-unsafeUartRxNoBaudGenC' baudGen = unsafeUartRxNoBaudGenC baudGen |> toPacketsC
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
+uartRxNoBaudGenC' baudGen = uartRxNoBaudGenC baudGen |> toPacketsC
