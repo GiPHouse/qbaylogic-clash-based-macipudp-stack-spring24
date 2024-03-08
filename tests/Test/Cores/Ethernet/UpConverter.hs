@@ -40,9 +40,8 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 -- | Test the upconverter stream instance
---   TODO: Use the fifo given by `DfConv`
-prop_packetstream_sometest_id :: Property
-prop_packetstream_sometest_id =
+prop_upconverter :: Property
+prop_upconverter =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
