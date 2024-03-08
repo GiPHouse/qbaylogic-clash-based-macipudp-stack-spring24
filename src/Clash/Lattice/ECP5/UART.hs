@@ -14,9 +14,9 @@ module Clash.Lattice.ECP5.UART
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.UART
 import Clash.Prelude
+import Data.Maybe
 import Protocols
 import Protocols.Internal
-import Data.Maybe
 
 convertToTx :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
 convertToTx = fmap $ fmap (head . _data)
@@ -65,7 +65,6 @@ toPacketsC
    . HiddenClockResetEnable dom
   => KnownDomain dom
   => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
-
 toPacketsC = fromSignals ckt
   where
     ckt
@@ -76,11 +75,8 @@ toPacketsC = fromSignals ckt
     go s Nothing = (s, Nothing)
     go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
     go (ReadSize2 size) (Just (PacketStreamM2S {_data})) = (ReadData (head _data ++# size), Nothing)
-    go (ReadData size) (Just packetStream) = (s', Just packetStream {_last = _last'})
-      where
-        (s', _last') = if size == 0
-                         then (ReadSize1, Just 0)
-                         else (ReadData (size - 1), Nothing)
+    go (ReadData 0) (Just packetStream) = (ReadSize1, Just packetStream {_last = Just 0})
+    go (ReadData size) (Just packetStream) = (ReadData (size - 1), Just packetStream {_last = Nothing})
 
 -- | UART receiver circuit
 uartRxC
@@ -88,7 +84,6 @@ uartRxC
   => ValidBaud dom baud
   => SNat baud
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
-
 uartRxC = uartRxNoBaudGenC . baudGenerator
 
 -- | UART receiver circuit
@@ -100,7 +95,6 @@ uartRxNoBaudGenC
    . HiddenClockResetEnable dom
   => BaudGenerator dom
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
-
 uartRxNoBaudGenC baudGen = fromSignals ckt
   where
     ckt :: (CSignal dom Bit, CSignal dom ()) -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
@@ -115,7 +109,6 @@ uartRxC'
   => ValidBaud dom baud
   => SNat baud
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
-
 uartRxC' baud =  uartRxC baud |> toPacketsC
 
 -- | UART receiver circuit interpreting packets. See also `toPacketsC`.
