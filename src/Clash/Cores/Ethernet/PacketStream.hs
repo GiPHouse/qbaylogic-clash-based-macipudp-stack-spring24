@@ -53,13 +53,6 @@ deriving instance
   ( KnownNat dataWidth, NFDataX metaType)
   => NFDataX (PacketStreamM2S dataWidth metaType)
 
--- | Equality for PacketStreamM2S does not look at the data bits which are invalid
---
--- >>> foo = PacketStreamM2S (0 :> 1 :> 2 :> 3 :> Nil) (Just 0) () False
--- >>> bar = PacketStreamM2S (0 :> 10 :> 20 :> 30 :> Nil) (Just 0) () False
--- >>> foo == bar
--- True
-
 deriving instance
   ( KnownNat dataWidth, Eq metaType)
   => Eq (PacketStreamM2S dataWidth metaType)
