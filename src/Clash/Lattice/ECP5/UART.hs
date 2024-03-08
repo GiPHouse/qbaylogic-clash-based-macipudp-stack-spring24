@@ -2,11 +2,13 @@
 {-# language NamedFieldPuns #-}
 
 module Clash.Lattice.ECP5.UART
-  ( markLastFlag
-  , unsafeUartPacketSource
-  , uartRx'
-  , uartTxC
+  ( uartTxC
   , uartTxNoBaudGenC
+  , unsafeUartRxC
+  , unsafeUartRxNoBaudGenC
+  , unsafeUartRxC'
+  , unsafeUartRxNoBaudGenC'
+  , toPacketsC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -42,21 +44,14 @@ uartTxNoBaudGenC baudGen = fromSignals ckt
       where
         (txBit, ack) = uartTxNoBaudGen baudGen (convertToTx fwd)
 
-convert :: Signal dom (Maybe (BitVector 8)) -> Fwd (PacketStream dom 1 ())
-convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
-
-uartRx'
-  :: HiddenClockResetEnable dom
-  => ValidBaud dom baud
-  => SNat baud
-  -- ^ The UART baud
-  -> Signal dom Bit
-  -- ^ The UART receive line
-  -> Fwd (PacketStream dom 1 ())
-  -- ^ The received words
-uartRx' b s = convert $ uartRx b s
-
-data MarkLastState = ReadSize1 | ReadSize2 (BitVector 8) | ReadData (BitVector 16)
+-- | State for `toPacketsC`
+data ToPacketsState
+  = ReadSize1 
+  -- ^ Reading first size byte
+  | ReadSize2 (BitVector 8) 
+  -- ^ Reading second size byte
+  | ReadData (BitVector 16)
+  -- ^ Reading data
   deriving (Generic, NFDataX)
 
 -- | Turns a stream of raw bytes into a stream of packets according to the following "protocol":
@@ -65,18 +60,14 @@ data MarkLastState = ReadSize1 | ReadSize2 (BitVector 8) | ReadData (BitVector 1
 -- _data, _meta and _abort of x_0, ..., x_n are copied to the output signal. _last is Just 0 only for x_n.
 -- For the size bytes, _last, _meta and _abort are ignored.
 -- n is read in little-endian byte order.
---
--- >>> Clash.Signal.simulate (markLastFlag @Clash.Prelude.System) ([Just (PacketStreamM2S @1 @() (2:>Nil) Nothing () False), Just (PacketStreamM2S @1 @() (1:>Nil) Nothing () False)] Data.List.++ (Data.List.repeat (Just (PacketStreamM2S @1 @() (0xAA:>Nil) Nothing () False)))) !! 260
--- Just (PacketStreamM2S {_data = 0b1010_1010 :> Nil, _last = Just 0, _meta = (), _abort = False})
-markLastFlag
+toPacketsC
   :: HiddenClockResetEnable dom
   => KnownDomain dom
-  => Fwd (PacketStream dom 1 metaType)
-  -- ^ Packet stream of raw bytes
-  -> Fwd (PacketStream dom 1 metaType)
-  -- ^ Output stream
-markLastFlag = mealy go ReadSize1 where
-    go :: MarkLastState -> Maybe (PacketStreamM2S 1 metaType) -> (MarkLastState, Maybe (PacketStreamM2S 1 metaType))
+  => Circuit (PacketStream dom 1 ()) (PacketStream dom 1 ())
+toPacketsC = fromSignals ckt 
+  where
+    ckt (fwdInS, bwdInS) = (bwdInS, mealy go ReadSize1 fwdInS)
+    go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
     go s Nothing = (s, Nothing)
     go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
     go (ReadSize2 size) (Just (PacketStreamM2S {_data})) = (ReadData (head _data ++# size), Nothing)
@@ -86,13 +77,46 @@ markLastFlag = mealy go ReadSize1 where
                          then (ReadSize1, Just 0)
                          else (ReadData (size - 1), Nothing)
 
-unsafeUartPacketSource
+-- | UART receiver circuit
+unsafeUartRxC
   :: HiddenClockResetEnable dom
   => ValidBaud dom baud
   => SNat baud
-  -- ^ The UART baud
-  -> Signal dom Bit
-  -- ^ The UART receive line
-  -> Fwd (PacketStream dom 1 ())
-  -- ^ The received words with marked last packet
-unsafeUartPacketSource b s = markLastFlag $ uartRx' b s
+  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
+unsafeUartRxC = unsafeUartRxNoBaudGenC . baudGenerator
+
+-- | UART receiver circuit
+--
+-- This version requires the baud generator to be passed in. Create one
+-- using `Clash.Cores.UART.baudGenerator`.
+unsafeUartRxNoBaudGenC
+  :: forall (dom :: Domain)
+   . HiddenClockResetEnable dom
+  => BaudGenerator dom
+  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
+
+unsafeUartRxNoBaudGenC baudGen = fromSignals ckt
+  where
+    ckt :: (Fwd (CSignal dom Bit), Bwd (PacketStream dom 1 ())) -> (Bwd (CSignal dom Bit), Fwd (PacketStream dom 1 ()))
+    ckt (CSignal rxBit, _) = (def, convert $ uartRxNoBaudGen baudGen rxBit)
+
+    convert :: Signal dom (Maybe (BitVector 8)) -> Fwd (PacketStream dom 1 ())
+    convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
+  
+-- | UART receiver circuit interpreting packets. See also `toPacketsC`.
+unsafeUartRxC'
+  :: HiddenClockResetEnable dom
+  => ValidBaud dom baud
+  => SNat baud
+  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
+unsafeUartRxC' baud =  unsafeUartRxC baud |> toPacketsC
+
+-- | UART receiver circuit interpreting packets. See also `toPacketsC`.
+--
+-- This version requires the baud generator to be passed in. Create one
+-- using `Clash.Cores.UART.baudGenerator`.
+unsafeUartRxNoBaudGenC'
+  :: HiddenClockResetEnable dom
+  => BaudGenerator dom
+  -> Circuit (CSignal dom Bit) (PacketStream dom 1 ())
+unsafeUartRxNoBaudGenC' baudGen = unsafeUartRxNoBaudGenC baudGen |> toPacketsC
