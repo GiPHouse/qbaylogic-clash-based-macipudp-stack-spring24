@@ -79,6 +79,12 @@ common common-options
     ghc-typelits-extra,
     ghc-typelits-knownnat
 
+custom-setup
+  setup-depends:
+    base          >= 4.11 && <5,
+    Cabal         >= 2.4,
+    cabal-doctest >= 1.0.1 && <1.1
+
 library
   import: common-options
   hs-source-dirs: src
@@ -104,7 +110,8 @@ test-suite doctests
   build-depends:
     base,
     clash-eth,
-    doctest-parallel >= 0.2 && < 0.4,
+    doctest >= 0.17 && <= 0.19,
+    process,
 
 test-suite test-library
   import: common-options
