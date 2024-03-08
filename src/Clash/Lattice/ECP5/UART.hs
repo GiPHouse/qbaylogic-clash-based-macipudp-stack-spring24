@@ -46,9 +46,9 @@ uartTxNoBaudGenC baudGen = fromSignals ckt
 
 -- | State for `toPacketsC`
 data ToPacketsState
-  = ReadSize1 
+  = ReadSize1
   -- ^ Reading first size byte
-  | ReadSize2 (BitVector 8) 
+  | ReadSize2 (BitVector 8)
   -- ^ Reading second size byte
   | ReadData (BitVector 16)
   -- ^ Reading data
@@ -64,7 +64,7 @@ toPacketsC
   :: HiddenClockResetEnable dom
   => KnownDomain dom
   => Circuit (PacketStream dom 1 ()) (PacketStream dom 1 ())
-toPacketsC = fromSignals ckt 
+toPacketsC = fromSignals ckt
   where
     ckt (fwdInS, bwdInS) = (bwdInS, mealy go ReadSize1 fwdInS)
     go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
@@ -102,7 +102,7 @@ unsafeUartRxNoBaudGenC baudGen = fromSignals ckt
 
     convert :: Signal dom (Maybe (BitVector 8)) -> Fwd (PacketStream dom 1 ())
     convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
-  
+
 -- | UART receiver circuit interpreting packets. See also `toPacketsC`.
 unsafeUartRxC'
   :: HiddenClockResetEnable dom
