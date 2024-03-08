@@ -1,13 +1,13 @@
-{-#language FlexibleContexts #-}
+{-# language FlexibleContexts #-}
 
 module Clash.Lattice.ECP5.UART
     (uartTxC) where
 
 import Data.Maybe
 
-import Clash.Prelude
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.UART
+import Clash.Prelude
 import Protocols
 import Protocols.Internal
 
