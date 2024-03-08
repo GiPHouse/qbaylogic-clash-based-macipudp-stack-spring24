@@ -61,7 +61,6 @@ packetBuffer SNat (inM2S, inS2M) =  outM2S
             Just (PacketStreamM2S { _last = Just _ }) -> True
             _ -> False
 
-
 -- Fix the type signature of packetBufferC to match the expected type of fromSignals
 packetBufferC
     :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
