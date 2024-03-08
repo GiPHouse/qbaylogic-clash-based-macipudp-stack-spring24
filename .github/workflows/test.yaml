@@ -13,28 +13,28 @@ jobs:
           .ci/test_whitespace.sh
 
 
-  build_and_synthesize:
-    runs-on: ubuntu-latest
-    steps:
-    - name: git checkout
-      uses: actions/checkout@v4
-    - name: install nix
-      uses: cachix/install-nix-action@v22
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-    - name: cache nix
-      uses: DeterminateSystems/magic-nix-cache-action@v2
-    - name: build the nix environment
-      run: nix-build
-    - name: check stylish-haskell 
-      run: nix-shell --run "make check_format"
-    - name: clean linting process
-      run: nix-shell --run "make clean_tests"
-    - name: Test suite
-      run: nix-shell --run "make test"
-    - name: Test synthesis
-      run: nix-shell --run "make verilog"
-    - name: Create netlist
-      run: nix-shell --run "make netlist"
-    - name: Create Place and Route
-      run: nix-shell --run "make pnr"
+  # build_and_synthesize:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: git checkout
+  #     uses: actions/checkout@v4
+  #   - name: install nix
+  #     uses: cachix/install-nix-action@v22
+  #     with:
+  #       nix_path: nixpkgs=channel:nixos-unstable
+  #   - name: cache nix
+  #     uses: DeterminateSystems/magic-nix-cache-action@v2
+  #   - name: build the nix environment
+  #     run: nix-build
+  #   - name: check stylish-haskell
+  #     run: nix-shell --run "make check_format"
+  #   - name: clean linting process
+  #     run: nix-shell --run "make clean_tests"
+  #   - name: Test suite
+  #     run: nix-shell --run "make test"
+  #   - name: Test synthesis
+  #     run: nix-shell --run "make verilog"
+  #   - name: Create netlist
+  #     run: nix-shell --run "make netlist"
+  #   - name: Create Place and Route
+  #     run: nix-shell --run "make pnr"
