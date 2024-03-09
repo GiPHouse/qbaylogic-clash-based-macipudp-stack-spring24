@@ -45,9 +45,9 @@ prop_upconverter =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (Gen.list (Range.linear 0 100) genPackets)
-    (C.exposeClockResetEnable $ model)
-    (C.exposeClockResetEnable @C.System (ckt @4))
+    (Gen.list (Range.linear 0 100) genPackets)    -- Input packets
+    (C.exposeClockResetEnable $ model)            -- Desired behaviour of UpConverter
+    (C.exposeClockResetEnable @C.System (ckt @4)) -- Implementation of UpConverter
     (\a b -> a === b)
   where
     ckt :: forall (dataWidth :: C.Nat) (dom :: C.Domain).
@@ -60,31 +60,24 @@ prop_upconverter =
     model inpStream = PacketStreamM2S <$> outData <*> outLast <*> outMeta <*> outAbort where
 
       chunks = go [] [] 0 inpStream where
-        go out _   _  []         = out
-        go out acc sz (pkt:pkts) = case sz of
-          4 -> go (out ++ [acc]) [] sz pkts
-          _ -> case _last pkt of
-            Nothing -> go out (acc ++ [pkt] ) (sz + 1) pkts
-            Just _  -> go (out ++ [acc ++ [pkt]]) [] 0 pkts
+        go out _   _  []         = out                        -- No more PacketStream to handle, give output
+        go out acc size (pkt:pkts) = case size of             -- We have some PacketStreams to handle
+          3 -> go (out ++ [acc ++ [pkt]]) [] 0 pkts                 -- Accumulator is full, move them to output
+          _ -> case _last pkt of                              -- Accumulator is not full
+            Nothing -> go out (acc ++ [pkt] ) (size + 1) pkts -- PacketStream is not the last, so add it to accumulator
+            Just _  -> go (out ++ [acc ++ [pkt]]) [] 0 pkts   -- Last PacketStream of packet, move to output
 
-
-      outMeta = replicate (length chunks)()
-      outAbort= fmap (or. fmap _abort) chunks
-      endsAbdruptly = fmap (M.isJust . _last . L.last) chunks
-      outLast = fmap (\(ealy, ch) -> if ealy then Just (fromIntegral $ length ch ) else Nothing ) (zip endsAbdruptly chunks)
+      outMeta = replicate (length chunks) ()
+      outAbort = fmap (or. fmap _abort) chunks
+      endsAbruptly = fmap (M.isJust . _last . L.last) chunks
+      outLast = fmap (\(ealy, ch) -> if ealy then Just (fromIntegral $ length ch ) else Nothing ) (zip endsAbruptly chunks)
 
       padWithZeroes list = take 4 $ list ++ repeat 0
       chunkToVec v [] = v
       chunkToVec v (x:xs) = chunkToVec (v C.<<+ x) xs
+      outData = map (chunkToVec (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes . map (C.head . _data)) chunks
 
-      listOfDataOfTheChunks = fmap (fmap  _data) chunks
-      listOfVecsOfTheChunks = fmap (fmap head) listOfDataOfTheChunks
-
-      outData = fmap (chunkToVec ( 0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes . fmap _data) chunks
-
-
-
-
+    -- This generates the packets
     genPackets =
       PacketStreamM2S <$>
       (genVec Gen.enumBounded) <*>
