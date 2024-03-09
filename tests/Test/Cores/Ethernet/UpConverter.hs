@@ -32,7 +32,7 @@ import Test.Tasty.TH (testGroupGenerator)
 import Protocols
 import Protocols.Hedgehog
 
--- Me
+-- ethernet modules
 import Clash.Cores.Ethernet.UpConverter
 import Clash.Cores.Ethernet.PacketStream
 
@@ -46,9 +46,9 @@ prop_upconverter =
     @C.System
     defExpectOptions
     (Gen.list (Range.linear 0 100) genPackets)    -- Input packets
-    (C.exposeClockResetEnable $ model)            -- Desired behaviour of UpConverter
+    (C.exposeClockResetEnable model)              -- Desired behaviour of UpConverter
     (C.exposeClockResetEnable @C.System (ckt @4)) -- Implementation of UpConverter
-    (\a b -> a === b)
+    (===)                                         -- Property to test
   where
     ckt :: forall (dataWidth :: C.Nat) (dom :: C.Domain).
       C.HiddenClockResetEnable dom
@@ -60,18 +60,27 @@ prop_upconverter =
     model inpStream = PacketStreamM2S <$> outData <*> outLast <*> outMeta <*> outAbort where
 
       chunks = go [] [] 0 inpStream where
-        go out _   _  []         = out                        -- No more PacketStream to handle, give output
+        go :: [[PacketStreamM2S 1 ()]] -- Global accumulator, will be given as output
+           -> [PacketStreamM2S 1 ()]   -- Accumulator
+           -> Integer                  -- Size of accumulator (redundant?)
+           -> [PacketStreamM2S 1 ()]   -- Input stream
+           -> [[PacketStreamM2S 1 ()]]
+        go out _   _    []         = out                      -- No more PacketStream to handle, give output
         go out acc size (pkt:pkts) = case size of             -- We have some PacketStreams to handle
-          3 -> go (out ++ [acc ++ [pkt]]) [] 0 pkts                 -- Accumulator is full, move them to output
+          3 -> go (out ++ [acc ++ [pkt]]) [] 0 pkts           -- Accumulator is full, move them to output
           _ -> case _last pkt of                              -- Accumulator is not full
             Nothing -> go out (acc ++ [pkt] ) (size + 1) pkts -- PacketStream is not the last, so add it to accumulator
             Just _  -> go (out ++ [acc ++ [pkt]]) [] 0 pkts   -- Last PacketStream of packet, move to output
 
+      -- We don't need any metadeta
       outMeta = replicate (length chunks) ()
+      -- If abort is set for one PacketStream of the chunk, it should be set over the whole chunk
       outAbort = fmap (or. fmap _abort) chunks
+      -- The _last of each chunk is the _last of the last byte of the chunk
       endsAbruptly = fmap (M.isJust . _last . L.last) chunks
-      outLast = fmap (\(ealy, ch) -> if ealy then Just (fromIntegral $ length ch ) else Nothing ) (zip endsAbruptly chunks)
-
+      outLast = fmap (\(hasLast, chunk) ->
+        if hasLast then Just (fromIntegral $ length chunk) else Nothing ) (zip endsAbruptly chunks)
+      -- Fill each chunk up to 4, then group each individual Vec 1 into a Vec 4
       padWithZeroes list = take 4 $ list ++ repeat 0
       chunkToVec v [] = v
       chunkToVec v (x:xs) = chunkToVec (v C.<<+ x) xs
@@ -80,13 +89,13 @@ prop_upconverter =
     -- This generates the packets
     genPackets =
       PacketStreamM2S <$>
-      (genVec Gen.enumBounded) <*>
-      (Gen.maybe Gen.enumBounded) <*>
+      genVec Gen.enumBounded <*>
+      Gen.maybe Gen.enumBounded <*>
       Gen.enumBounded <*>
       Gen.enumBounded
 
 tests :: TestTree
 tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1000))
+  $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)
