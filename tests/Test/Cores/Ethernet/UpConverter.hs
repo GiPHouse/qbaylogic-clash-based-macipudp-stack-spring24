@@ -84,8 +84,11 @@ prop_upconverter =
       padWithZeroes list = take 4 $ list ++ repeat 0
       chunkToVec v [] = v
       chunkToVec v (x:xs) = chunkToVec (v C.<<+ x) xs
-      outData = map (chunkToVec (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes . map (C.head . _data)) chunks
 
+      listOfDataOfTheChunks = fmap (fmap  _data) chunks
+      listOfVecsOfTheChunks = fmap (fmap C.head) listOfDataOfTheChunks
+
+      outData = fmap (chunkToVec ( 0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes) listOfVecsOfTheChunks
     -- This generates the packets
     genPackets =
       PacketStreamM2S <$>
