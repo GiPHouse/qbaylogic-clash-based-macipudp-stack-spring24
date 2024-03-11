@@ -1,8 +1,4 @@
 {-# language FlexibleContexts #-}
-<<<<<<< HEAD
-=======
-{-# language RecordWildCards #-}
->>>>>>> 56873f6 (Co-authored-by: Jasper Laumen <JLaumen@users.noreply.github.com>)
 {-# OPTIONS_GHC -fno-warn-orphans #-} -- Orphhan Hashable instances
 
 module Clash.Cores.Ethernet.PacketStream
@@ -54,6 +50,8 @@ newtype PacketStreamS2M = PacketStreamS2M {
 data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 
 deriving instance
+  ( KnownNat dataWidth, NFDataX metaType)
+  => NFDataX (PacketStreamM2S dataWidth metaType)
 
 -- |
 -- >>> PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True == PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x24):>Nil :: Vec 3 (BitVector 8)) (Just 1 :: Maybe (Index 3)) () True
@@ -87,7 +85,6 @@ instance ( KnownNat dataWidth, Eq metaType) => Eq (PacketStreamM2S dataWidth met
 -- Orphan hashable instances
 deriving instance (KnownNat n) => Hashable (BitVector n)
 deriving instance (KnownNat n) => Hashable (Index n)
->>>>>>> 85ad121 (reformat with make format)
 instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
   hashWithSalt s v = hashWithSalt s (toList v)
 

@@ -92,7 +92,6 @@ library
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketStream
-    Clash.Cores.Ethernet.DownConverter
     Clash.Cores.Ethernet.UpConverter
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
@@ -127,6 +126,7 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Ethernet.PacketStream
+    Test.Cores.Ethernet.UpConverter
   build-depends:
     clash-eth,
     QuickCheck,
