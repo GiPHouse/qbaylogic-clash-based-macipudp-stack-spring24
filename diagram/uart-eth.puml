@@ -12,9 +12,9 @@ rectangle "Packet Buffer" as PacketBuf <<PhyRxDomain>>
 rectangle "UART transmitter" as UARTTx <<PhyRxDomain>>
 rectangle "UART reciever" as UARTRx <<PhyRxDomain>>
 
-PhyRx -down-> StreamFIFO : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
-StreamFIFO -down-> UARTTx : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload :: Vec 1 (BitVector 8)
+PhyRx -down-> StreamFIFO : PacketStream 1 ()
+StreamFIFO -down-> UARTTx : PacketStream 1 ()
 
-UARTRx -up-> PacketBuf : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
-PacketBuf -up-> PhyTx : last_be :: Maybe (Vec 1 Bool)\nabort :: Bool\npayload ::  Vec 1 (BitVector 8)
+UARTRx -up-> PacketBuf :PacketStream 1 ()
+PacketBuf -up-> PhyTx : PacketStream 1 ()
 @enduml

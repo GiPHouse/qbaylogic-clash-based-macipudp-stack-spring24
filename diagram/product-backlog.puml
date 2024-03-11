@@ -1,0 +1,188 @@
+@startwbs
+
+<style>
+rootNode {
+    LineStyle 8.0;3.0
+    LineColor red
+    BackgroundColor white
+    LineThickness 1.0
+    RoundCorner 0
+    Shadowing 0.0
+    FontSize 20
+    BackgroundColor white
+    MaximumWidth 500
+}
+
+node {
+    Padding 12
+    Margin 3
+    HorizontalAlignment center
+    LineColor blue
+    LineThickness 3.0
+    BackgroundColor gold
+    RoundCorner 40
+    MaximumWidth 300
+    FontSize 15
+}
+
+leafNode {
+    LineColor slateblue
+    BackgroundColor skyblue
+    RoundCorner 20
+    Padding 10
+    margin 5
+    MaximumWidth 300
+    FontSize 12
+}
+
+.unrefined {
+  BackgroundColor pink
+}
+
+.in_s1 {
+  BackgroundColor GhostWhite
+}
+
+.in_s2 {
+  BackgroundColor LightCyan
+}
+
+.in_s3 {
+  BackgroundColor LightBlue
+}
+
+.in_s4 {
+  BackgroundColor DodgerBlue
+}
+
+.done_s1 {
+  BackgroundColor GreenYellow
+}
+
+.done_s2 {
+  BackgroundColor Chartreuse
+}
+
+.done_s3 {
+  BackgroundColor LightGreen
+}
+
+.done_s4 {
+  BackgroundColor ForestGreen
+}
+
+.unassigned {
+  BackgroundColor White
+}
+
+.must {
+  LineColor FireBrick
+}
+
+.could {
+  LineColor IndianRed
+}
+
+.should {
+  LineColor HotPink
+}
+
+.would {
+  LineColor LightPink
+}
+
+</style>
+
+' set legend to have a white background
+skinparam legendBackgroundColor #FFFFFF
+' remove box around legend
+skinparam legendBorderColor #FFFFFF
+' remove the lines between the legend items
+skinparam legendEntrySeparator #FFFFFF
+skinparam legendFontSize 20
+
+
+ legend top left
+ <b>Legend</b>
+ |= color |= where |= Type |
+ |<back:Gold>              </back>| background of node | Epic/User story |
+ |<back:White>              </back>| background of issue | Not assigned to a sprint |
+ |<back:GhostWhite>              </back>| background of issue | In sprint 1 |
+ |<back:LightCyan>              </back>| background of issue | In sprint 2 |
+ |<back:LightBlue>              </back>| background of issue | In sprint 3 |
+ |<back:DodgerBlue>              </back>| background of issue | In sprint 4 |
+ |<back:GreenYellow>              </back>| background of issue | Done in sprint 1 |
+ |<back:Chartreuse>              </back>| background of issue | Done in sprint 2 |
+ |<back:LightSeaGreen>              </back>| background of issue | Done in sprint 3 |
+ |<back:ForestGreen>              </back>| background of issue | Done in sprint 4 |
+ |<back:pink>              </back>| background of issue | Unrefined |
+ |<back:FireBrick>              </back>| Outline of user story | Must priority |
+ |<back:IndianRed>              </back>| Outline of user story | Could priority |
+ |<back:HotPink>              </back>| Outline of user story | Should priority |
+ |<back:LightPink>              </back>| Outline of user story | Would priority |
+ endlegend
+
+
+*_ QBayLogic Clash based mac/ip/udp stack
+** Project setup, CI and other small tasks not directly related to an epic\n\n64 hours
+*** Setup CI\n\n4 hours<<done_s1>>
+*** Expand CI\n\n4 hours<<done_s1>>
+*** Create initial python test suite\n\n4 hours<<in_s2>>
+*** Handle client feedback from sprint 1\n\n8 hours<<in_s2>>
+*** Handle client feedback from sprint 2\n\n8 hours<<in_s3>>
+*** Handle client feedback from sprint 3\n\n8 hours<<in_s4>>
+*** TODO: other tasks\n\n32 hours<<unrefined>>
+** Physical & data link layer
+*** We want to be able to hook into ethernet packetstream using UART\n\n 152 hours<<must>>
+**** Define a Packet Stream Protocol\n\n32 hours<<done_s1>>
+**** Implement UART packet buffer\n\n24 hours<<in_s2>>
+**** Wrap existing Clash.Cores.UART transmit in PacketStream protocol\n\n 16 hours<<in_s2>>
+**** Wrap existing Clash.Cores.UART receive in PacketStream protocol\n\n 16 hours<<in_s2>>
+**** Connect UART packet buffer to UART receive to create PacketStream\n\n 16 hours<<in_s2>>
+**** Connect FIFO to UART transmit to consume PacketStream\n\n 16 hours<<in_s2>>
+**** Connect UART PacketStream source to RGMII transmitter\n\n 16 hours<<in_s2>>
+**** Connect UART PacketStream sink to RGMII receiver\n\n 16 hours<<in_s2>>
+*** We want to be able to use FPGA internal clock with ethernet\n\n 72 hours<<must>>
+**** Implement PacketStream up converter\n\n 32 hours<<done_s1>>
+**** Implement PacketStream down converter\n\n 32 hours<<done_s1>>
+**** Implement Df Async FIFO\n\n 8 hours<<in_s2>>
+*** We want the core to handle the ethernet physical layer\n\n 88 hours<<must>>
+**** Implement interpacket gap inserter\n\n 16 hours<<in_s2>>
+**** Implement preamble inserter\n\n 16 hours<<in_s2>>
+**** Implement PacketStream RGMII transmitter\n\n 16 hours<<in_s2>>
+**** Implement preamble check + strip\n\n 24 hours<<in_s2>>
+**** Implement PacketStream RGMII receiver\n\n 16 hours<<in_s2>>
+*** We want the core to support XSGMII\n\n 80 hours<<would>>
+**** Implement XSGMII Phy\n\n unrefined<<unrefined>>
+**** Implement XSGMII auto-negotation\n\n unrefined<<unrefined>>
+*** We want the core to handle the ethernet data link layer\n\n 96 hours<<must>>
+**** Implement frame check sequence insert\n\n 24 hours<<unassigned>>
+**** Implement MAC packetizer\n\n 24 hours<<unassigned>>
+**** Implement frame check sequence validation\n\n 24 hours<<unassigned>>
+**** Implement MAC depacketizer\n\n 24 hours<<unassigned>>
+** Networking layer
+*** We want to able to route MAC stream to multiple components\n\n 32 hours<<should>>
+**** Implement PacketStream dispatcher\n\n unrefined<<unrefined>>
+**** Implement PacketStream arbiter\n\n unrefined<<unrefined>>
+*** We want the core to handle the address resolution protocol\n\n 164 hours<<should>>
+**** Implement ARP depacketizer\n\n unrefined<<unrefined>>
+**** Implement ARP packetizer\n\n unrefined<<unrefined>>
+**** Implement one-entry ARP table\n\n unrefined<<unrefined>>
+**** Implement multi-entry ARP table\n\n unrefined<<unrefined>>
+**** Send out ARP request on missing ARP table entry\n\n unrefined<<unrefined>>
+**** Define internal ARP Protocol\n\n unrefined<<unrefined>>
+**** Implement top-level ARP circuit which uses internal ARP protocol\n\n unrefined<<unrefined>>
+**** Add gateway support to ARP circuit\n\n unrefined<<unrefined>>
+*** We want the core to handle the internet protocol\n\n 48 hours<<could>>
+**** Implement IP packetizer\n\n unrefined<<unrefined>>
+**** Connect IP packetizer to ARP circuit\n\n unrefined<<unrefined>>
+**** Implement IP depacketizer\n\n unrefined<<unrefined>>
+*** We want the core to respond to Internet Control Message Protocol messages\n\n 32 hours<<could>>
+**** Implement ICMP packetizer\n\n unrefined<<unrefined>>
+**** Implement ICMP depacketizer\n\n unrefined<<unrefined>>
+** Transport & application layer
+*** We want the core to respond to user datagram protocol\n\n unrefined<<would>>
+**** TODO<<unrefined>>
+*** We want the core to handle DHCP\n\n unrefined<<would>>
+**** TODO<<unrefined>>
+@endwbs
