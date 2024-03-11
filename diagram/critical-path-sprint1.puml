@@ -1,0 +1,37 @@
+@startuml
+3 : Wrap existing Clash.Cores.UART\ntransmit in PacketStream Protocol
+22 : Wrap existing Clash.Cores.UART\nreceive in PacketStream Protocol
+
+21 : Implement UART Packet buffer
+
+20 : Connect UART PacketStream sink\nto RGMII receiver
+19 : Connect UART PacketStream source\nto RGMII transmitter
+
+17 : Connect UART packet buffer to UART\nreceive to create PacketStream
+18 : Connect FIFO to UART transmit to\nconsume PacketStream
+
+1 : Create clash-protocols async FIFO
+4 : Create stream up converter
+14 : Create stream down converter
+29 : Implement PacketStream RGMII transmitter
+31 : Implement PacketStream RGMII receiver
+23 : Implement interpacket gap inserter
+36 : Create initial hardware python test suite
+
+[*] --> 23
+[*] --> 31
+[*] --> 29
+[*] --> 4
+[*] --> 14
+[*] --> 1
+[*] --> 19
+[*] --> 20
+[*] --> 36
+
+17 --> 21
+17 --> 22
+19 --> 17
+
+18 --> 3
+20 --> 18
+@enduml
