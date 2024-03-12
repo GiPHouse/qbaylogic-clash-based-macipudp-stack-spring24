@@ -125,6 +125,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketStream
     Test.Cores.Ethernet.UpConverter
   build-depends:
