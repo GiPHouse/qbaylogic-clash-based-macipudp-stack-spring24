@@ -6,13 +6,13 @@ module Clash.Cores.Ethernet.UpConverter
   ) where
 
 import Clash.Prelude
+import Control.Monad ( (>>=) )
 import Data.Maybe ( isJust, isNothing )
-import Control.Monad ((>>=))
 
 import Clash.Cores.Ethernet.PacketStream
 
 import Data.List qualified as L
-import Protocols ( Circuit, fromSignals, (|>), Circuit(..))
+import Protocols ( Circuit(..), fromSignals, (|>) )
 
 forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
 forceResetSanity
