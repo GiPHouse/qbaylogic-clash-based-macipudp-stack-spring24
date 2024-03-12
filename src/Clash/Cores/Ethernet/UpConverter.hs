@@ -190,23 +190,6 @@ chunkToPacket l = PacketStreamM2S {
 
 }
 
--- chunkToVec :: [BitVector 8] -> Vec 4 (BitVector 8)
--- chunkTovec = go ( 0 :> 0 :> 0 :> 0 :> Nil) . padWithZeroes where
---   go v [] = v
---   go v (x:xs) = chunkToVec (v <<+ x) xs
---   padWithZeroes list = take 4 $ list ++ repeat 0
-
--- packetChunksToVecChunks :: [[PacketStreamM2S 1 ()]] -> [[BitVector 8]]
--- packetChunksToVecChunks fmap (fmap head)
-
-{-
-listOfDataOfTheChunks = fmap (fmap  _data) chunks
-listOfVecsOfTheChunks = fmap (fmap C.head) listOfDataOfTheChunks
-
-padWithZeroes 
-outData = fmap (chunkToVec ( 0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes) listOfVecsOfTheChunks
--}
-
 inp :: [PacketStreamM2S 1 ()]
 inp = [
   PacketStreamM2S {
