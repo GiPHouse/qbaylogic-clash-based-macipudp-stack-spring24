@@ -7,11 +7,20 @@ module Clash.Cores.Ethernet.UpConverter
 
 import Clash.Prelude
 import Data.Maybe ( isJust, isNothing )
+import Control.Monad ((>>=))
 
 import Clash.Cores.Ethernet.PacketStream
 
 import Data.List qualified as L
-import Protocols ( Circuit, fromSignals )
+import Protocols ( Circuit, fromSignals, (|>), Circuit(..))
+
+forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
+forceResetSanity
+  = Circuit (\(fwd, bwd) -> unbundle . fmap f . bundle $ (rstLow, fwd, bwd))
+ where
+  f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
+  f (False, fwd, bwd) = (bwd, fwd)
+  rstLow = unsafeToHighPolarity hasReset
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
@@ -53,7 +62,7 @@ upConverter
   --   Output packet stream to the sink
 upConverter = mealyB go s0
   where
-    s0 = UpConverterState (repeat undefined) 0 False False Nothing
+    s0 = UpConverterState (repeat 0) 0 False False Nothing
     go
       :: UpConverterState dataWidth
       -> (Maybe (PacketStreamM2S 1 ()), PacketStreamS2M)
@@ -106,7 +115,7 @@ upConverterC
   => 1 <= dataWidth
   => KnownNat dataWidth
   => Circuit (PacketStream dom 1 ()) (PacketStream dom dataWidth ())
-upConverterC = fromSignals upConverter
+upConverterC = forceResetSanity |> fromSignals upConverter
 
 payloadInp :: [Maybe (PacketStreamM2S 1 ())]
 payloadInp = [
@@ -144,3 +153,128 @@ upConverterClk = exposeClockResetEnable (upConverter @4) clk rst en
 (sinkReadyOut, payloadOut) = upConverterClk (fromList payloadInp, fromList sinkReadyInp)
 
 sampleOut = sampleN 20 $ bundle (payloadOut, sinkReadyOut)
+
+
+chunkBy :: (a -> Bool) -> [a] -> [[a]]
+chunkBy _ [] = []
+chunkBy predicate list = L.filter (not . null) $ chunkByHelper predicate list []
+
+-- Helper function to accumulate chunks
+chunkByHelper :: (a -> Bool) -> [a] -> [a] -> [[a]]
+chunkByHelper _ [] acc = [L.reverse acc]
+chunkByHelper predicate (x : xs) acc
+  | predicate x = L.reverse (x : acc) : chunkByHelper predicate xs []
+  | otherwise = chunkByHelper predicate xs (x : acc)
+
+smearAbort :: [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
+smearAbort [] = []
+smearAbort (x:xs) = L.reverse $ L.foldl' go [x] xs
+  where
+    go l@(a:as) (PacketStreamM2S dat last meta abort)
+      = (PacketStreamM2S dat last meta (_abort a || abort)):l
+
+chopBy :: Int -> [a] -> [[a]]
+chopBy chopsize list = L.filter (not . null) $ chopByHelper 0 list []
+  where
+    chopByHelper _ [] acc = [L.reverse acc]
+    chopByHelper counter l@(a:as) acc 
+      | counter == chopsize = (L.reverse acc):chopByHelper 0 l []
+      | otherwise           = chopByHelper (counter + 1) as (a:acc)
+
+chunkToPacket :: [PacketStreamM2S 1 ()] -> PacketStreamM2S 4 ()
+chunkToPacket l = PacketStreamM2S {
+    _last = if isJust $ _last $ L.last l then Just (fromIntegral $ L.length l - 1) else Nothing
+  , _abort = or $ fmap _abort l
+  , _meta = ()
+  , _data = L.foldr (+>>) (repeat 0 :: Vec 4 (BitVector 8)) $ fmap (head . _data) l
+
+}
+
+-- chunkToVec :: [BitVector 8] -> Vec 4 (BitVector 8)
+-- chunkTovec = go ( 0 :> 0 :> 0 :> 0 :> Nil) . padWithZeroes where
+--   go v [] = v
+--   go v (x:xs) = chunkToVec (v <<+ x) xs
+--   padWithZeroes list = take 4 $ list ++ repeat 0
+
+-- packetChunksToVecChunks :: [[PacketStreamM2S 1 ()]] -> [[BitVector 8]]
+-- packetChunksToVecChunks fmap (fmap head)
+
+{-
+listOfDataOfTheChunks = fmap (fmap  _data) chunks
+listOfVecsOfTheChunks = fmap (fmap C.head) listOfDataOfTheChunks
+
+padWithZeroes 
+outData = fmap (chunkToVec ( 0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) . padWithZeroes) listOfVecsOfTheChunks
+-}
+
+inp :: [PacketStreamM2S 1 ()]
+inp = [
+  PacketStreamM2S {
+    _abort = False
+    ,_last  = Just (fromIntegral 0)
+    ,_meta  = ()
+    ,_data  = singleton 1
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 1
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just (fromIntegral 0)
+    ,_meta  = ()
+    ,_data  = singleton 2
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 3
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 4
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 5
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 6
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just (fromIntegral 0)
+    ,_meta  = ()
+    ,_data  = singleton 7
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = singleton 8
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just (fromIntegral 0)
+    ,_meta  = ()
+    ,_data  = singleton 9
+  }]
+
+res = chunkBy id [False, False, True, False, True, True, True, False, False]
+
+model :: [PacketStreamM2S 1 ()] -> [PacketStreamM2S 4 ()]
+model fragments = out
+  where
+    wholePackets = (fmap smearAbort $ chunkBy (isJust . _last) fragments)
+    chunks = wholePackets >>= (chopBy 4)
+    out    =  chunkToPacket chunks
