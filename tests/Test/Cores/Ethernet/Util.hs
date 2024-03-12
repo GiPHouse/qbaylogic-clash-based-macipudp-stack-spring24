@@ -48,5 +48,4 @@ chunkToPacket l = PacketStreamM2S {
   , _abort = or $ fmap _abort l
   , _meta = ()
   , _data = L.foldr (C.+>>) (C.repeat 0) $ fmap (C.head . _data) l
-
 }

@@ -2,25 +2,16 @@
 module Clash.Cores.Ethernet.UpConverter
   ( upConverter
   , upConverterC
-  , sampleOut
   ) where
 
 import Clash.Prelude
-import Control.Monad ( (>>=) )
 import Data.Maybe ( isJust, isNothing )
 
 import Clash.Cores.Ethernet.PacketStream
 
-import Data.List qualified as L
 import Protocols ( Circuit(..), fromSignals, (|>) )
 
-forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
-forceResetSanity
-  = Circuit (\(fwd, bwd) -> unbundle . fmap f . bundle $ (rstLow, fwd, bwd))
- where
-  f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
-  f (False, fwd, bwd) = (bwd, fwd)
-  rstLow = unsafeToHighPolarity hasReset
+
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
@@ -116,41 +107,3 @@ upConverterC
   => KnownNat dataWidth
   => Circuit (PacketStream dom 1 ()) (PacketStream dom dataWidth ())
 upConverterC = forceResetSanity |> fromSignals upConverter
-
-payloadInp :: [Maybe (PacketStreamM2S 1 ())]
-payloadInp = [
-  Nothing
-  , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x02 :> Nil) (Nothing) () False)
-  , Just (PacketStreamM2S (0x03 :> Nil) Nothing () False)
-  , Nothing
-  , Just (PacketStreamM2S (0x04 :> Nil) (Nothing) () False)
-  , Just (PacketStreamM2S (0x14 :> Nil) (Just 0) () False)
-  , Just (PacketStreamM2S (0x15 :> Nil) (Just 0) () False)
-  , Just (PacketStreamM2S (0x16 :> Nil) (Just 0) () False)
-  , Nothing
-  , Just (PacketStreamM2S (0x05 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x06 :> Nil) Nothing () False)
-  , Nothing
-  , Just (PacketStreamM2S (0x07 :> Nil) (Just 0) () True)
-  ] L.++ (L.repeat Nothing)
-
-sinkReadyInp :: [PacketStreamS2M]
-sinkReadyInp = fmap PacketStreamS2M ([False, True, True, True, True, True, True] L.++ (L.repeat True))
-
-clk :: Clock System
-clk = systemClockGen
-
-rst :: Reset System
-rst = systemResetGen
-
-en :: Enable dom
-en = enableGen
-
-payloadOut :: Signal System (Maybe (PacketStreamM2S 4 ()))
-sinkReadyOut :: Signal System PacketStreamS2M
-upConverterClk = exposeClockResetEnable (upConverter @4) clk rst en
-(sinkReadyOut, payloadOut) = upConverterClk (fromList payloadInp, fromList sinkReadyInp)
-
-sampleOut = sampleN 20 $ bundle (payloadOut, sinkReadyOut)
-
