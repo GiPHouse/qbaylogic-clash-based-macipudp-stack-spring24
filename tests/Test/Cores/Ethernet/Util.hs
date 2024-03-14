@@ -49,3 +49,8 @@ chunkToPacket l = PacketStreamM2S {
   , _meta = ()
   , _data = L.foldr (C.+>>) (C.repeat 0) $ fmap (C.head . _data) l
 }
+
+singletonToPackets :: forall n. C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
+singletonToPackets packet = singletonToPacketsHelper (C.natToInteger @n) packet []
+  where
+    singletonToPacketsHelper n packet out = undefined
