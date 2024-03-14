@@ -61,7 +61,7 @@ toMaybePacketStreamM2S DownConverterState {..} = toMaybe (_dcSize > 0) out
       }
 
 downConverter
-  :: forall (dom :: Domain).
+  :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
   => 1 <= dataWidth
   => KnownNat dataWidth
@@ -83,9 +83,9 @@ downConverter = mealyB go s0
       , _dcAborted = False
       }
     go
-      :: DownConverterState 4
-      -> (Maybe (PacketStreamM2S 4 ()), PacketStreamS2M)
-      -> (DownConverterState 4, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
+      :: DownConverterState dataWidth
+      -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
+      -> (DownConverterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
     go st@(DownConverterState {..}) (fwdIn, PacketStreamS2M inReady) = (st', (bwdOut, fwdOut))
       where
         -- Compute next buffer and its size. If a byte was just acknowledged,
