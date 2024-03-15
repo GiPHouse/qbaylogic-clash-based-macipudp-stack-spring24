@@ -60,7 +60,6 @@ packetBuffer SNat (inM2S, inS2M) =  outM2S
         isLast word = case word of
             Just (PacketStreamM2S { _last = Just _ }) -> True
             _ -> False
-<<<<<<< HEAD
 
 -- Fix the type signature of packetBufferC to match the expected type of fromSignals
 packetBufferC
@@ -79,5 +78,3 @@ packetBufferC sizeBits = fromSignals wrap
                 )
             -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
         wrap (CSignal inFWD, outBWD)  = (CSignal (pure ()), packetBuffer sizeBits (inFWD, outBWD))
-=======
->>>>>>> 8e15a34 (make format)
