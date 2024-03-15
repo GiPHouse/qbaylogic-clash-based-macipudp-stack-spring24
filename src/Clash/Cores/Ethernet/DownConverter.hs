@@ -9,7 +9,7 @@ module Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.List qualified as L
-import Data.Maybe ( isJust )
+import Data.Maybe ( isJust, isNothing )
 import Protocols ( Circuit, fromSignals )
 
 data DownConverterState (dataWidth :: Nat) =
@@ -90,8 +90,8 @@ downConverter = mealyB go s0
       where
         -- Compute next buffer and its size. If a byte was just acknowledged,
         -- a byte is removed. Otherwise, it is left unchanged.
-        (_buf', _size') = if inReady && _dcSize > 0
-          then (_dcBuf <<+ errorX "downConverter: undefined value out of bounds", _dcSize - 1)
+        (_buf', _size') = if True && _dcSize > 0
+          then (_dcBuf <<+ 0, _dcSize - 1)
           else (_dcBuf, _dcSize)
         -- If our next buffer will be empty, we are ready to receive new data,
         -- and if there is valid data already, put it in a fresh state.
@@ -137,7 +137,7 @@ payloadInp = [
   ] L.++ L.repeat Nothing
 
 sinkReadyInp :: [PacketStreamS2M]
-sinkReadyInp = fmap PacketStreamS2M ([False, False, False, True, True, True, True] L.++ (L.repeat True))
+sinkReadyInp = fmap PacketStreamS2M ((L.repeat True))
 
 clk :: Clock System
 clk = systemClockGen
@@ -152,6 +152,102 @@ payloadOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
 sinkReadyOut :: Signal System PacketStreamS2M
 downConverterClk = exposeClockResetEnable downConverter clk rst en
 
-(sinkReadyOut, payloadOut) = downConverterClk (fromList payloadInp, fromList sinkReadyInp)
+(sinkReadyOut, payloadOut) = downConverterClk (fromList (fmap Just inp'), fromList sinkReadyInp)
 
 sampleOut = sampleN 26 $ bundle (payloadOut, sinkReadyOut)
+
+
+inp' :: [PacketStreamM2S 4 ()]
+inp' = [
+  PacketStreamM2S {
+    _abort = False
+    ,_last  = Just 2
+    ,_meta  = ()
+    ,_data  = 1 :> 2 :> 3 :> 4 :> Nil
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = 5 :> 6 :> 7 :> 8 :> Nil
+  }]
+
+inp :: [PacketStreamM2S 4 ()]
+inp = [
+  PacketStreamM2S {
+    _abort = False
+    ,_last  = Just 2
+    ,_meta  = ()
+    ,_data  = pure 1
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 1
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just 3
+    ,_meta  = ()
+    ,_data  = pure 2
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 3
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 4
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 5
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 6
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just 0
+    ,_meta  = ()
+    ,_data  = pure 7
+  }
+  , PacketStreamM2S {
+    _abort = False
+    ,_last  = Nothing
+    ,_meta  = ()
+    ,_data  = pure 8
+  }
+  , PacketStreamM2S {
+    _abort = True
+    ,_last  = Just 0
+    ,_meta  = ()
+    ,_data  = pure 9
+  }]
+
+
+chopPacket :: forall n. 1 <= n => KnownNat n => PacketStreamM2S n () -> [PacketStreamM2S 1 ()]
+chopPacket PacketStreamM2S {..} = packets where
+  lasts = case _last of
+    Nothing  -> L.repeat Nothing
+    Just in' -> L.replicate (fromIntegral in') Nothing L.++ [Just (0 :: Index 1) ]
+
+  datas = case _last of
+    Nothing -> toList _data
+    Just in' -> L.take (fromIntegral in' + 1) $ toList _data
+
+  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> L.zip lasts datas
+
+model :: forall n. 1 <= n => KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
+model fragments = fragments >>= chopPacket 
+
