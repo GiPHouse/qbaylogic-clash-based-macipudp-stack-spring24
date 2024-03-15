@@ -1,5 +1,5 @@
 module Clash.Cores.Ethernet.RGMIIAdapter
-  (unsafeRgmiiRxAdapter) where
+  (unsafeRGMIIRxAdapter, RGMIIOutputStream) where
 
 import Data.Maybe
 
@@ -7,22 +7,22 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Protocols.Internal
 
-newtype RgmiiRxAdapterState = RgmiiRxAdapterState { _last_byte :: Maybe (BitVector 8) }
+newtype RGMIIRxAdapterState = RGMIIRxAdapterState { _last_byte :: Maybe (BitVector 8) }
   deriving (Generic, NFDataX)
 
-data RgmiiOutputStream (dom :: Domain)
+data RGMIIOutputStream (dom :: Domain)
 
-instance Protocol (RgmiiOutputStream dom) where
-  type Fwd (RgmiiOutputStream dom) = Signal dom (Bool, Maybe (BitVector 8))
-  type Bwd (RgmiiOutputStream dom) = Signal dom ()
+instance Protocol (RGMIIOutputStream dom) where
+  type Fwd (RGMIIOutputStream dom) = Signal dom (Bool, Maybe (BitVector 8))
+  type Bwd (RGMIIOutputStream dom) = Signal dom ()
 
 
-stateFunc :: RgmiiRxAdapterState
+stateFunc :: RGMIIRxAdapterState
              -> ((Bool, Maybe (BitVector 8)), PacketStreamS2M)
-             -> (RgmiiRxAdapterState, ((), Maybe (PacketStreamM2S 1 ())))
+             -> (RGMIIRxAdapterState, ((), Maybe (PacketStreamM2S 1 ())))
 stateFunc s ((rxErr, inp), PacketStreamS2M bwd) = (nextState, ((), out))
   where
-    nextState = RgmiiRxAdapterState { _last_byte = inp }
+    nextState = RGMIIRxAdapterState { _last_byte = inp }
     out = if not bwd then Nothing else case _last_byte s of -- drop packets when receiving backpressure
       Nothing -> Nothing
       Just x -> Just PacketStreamM2S {
@@ -32,10 +32,10 @@ stateFunc s ((rxErr, inp), PacketStreamS2M bwd) = (nextState, ((), out))
         _abort = rxErr
       }
 
-unsafeRgmiiRxAdapter :: KnownDomain dom
+unsafeRGMIIRxAdapter :: KnownDomain dom
   => HiddenClockResetEnable dom
-  => Circuit (RgmiiOutputStream dom) (PacketStream dom 1 ())
-unsafeRgmiiRxAdapter = fromSignals ckt
+  => Circuit (RGMIIOutputStream dom) (PacketStream dom 1 ())
+unsafeRGMIIRxAdapter = fromSignals ckt
     where
         ckt = mealyB stateFunc s0 where
-          s0 = RgmiiRxAdapterState { _last_byte = Nothing }
+          s0 = RGMIIRxAdapterState { _last_byte = Nothing }
