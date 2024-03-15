@@ -39,7 +39,7 @@ genVec gen = sequence (C.repeat gen)
 
 -- | Tests that data can be sent through UART, except for _abort and _last and _meta signals. Ignores backpressure.
 prop_uart_tx_rx_id :: Property
-prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.exposeClockResetEnable model) ckt
+prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.exposeClockResetEnable id) ckt
   where
     ckt = C.exposeClockResetEnable (
       uartTxC @C.System (C.SNat @6250000) 
@@ -48,18 +48,15 @@ prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.e
       |> DfConv.fifo (Proxy :: Proxy (PacketStream C.System 1 ())) (Proxy :: Proxy (PacketStream C.System 1 ())) (C.SNat @50)
       )
 
-    model :: C.HiddenClockResetEnable dom => ExpectType (PacketStream dom 1 ()) -> ExpectType (PacketStream dom 1 ())
-    model = fmap (\x -> x {_abort=False, _last=Nothing})
-
     gen :: Gen (ExpectType (PacketStream dom 1 ()))
     gen = Gen.list (Range.linear 0 50) genPackets
 
     genPackets =
       PacketStreamM2S <$>
       genVec Gen.enumBounded <*>
-      Gen.maybe Gen.enumBounded <*>
+      pure Nothing <*>
       Gen.enumBounded <*>
-      Gen.enumBounded
+      pure False
 
 -- Model for `toPacketsC`.
 toPackets :: [PacketStreamM2S 1 a] -> [PacketStreamM2S 1 a]
