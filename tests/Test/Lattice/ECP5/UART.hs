@@ -27,7 +27,6 @@ import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols
-import Protocols.Internal
 import Protocols.Hedgehog
 
 -- Me
@@ -37,9 +36,6 @@ import qualified Protocols.DfConv as DfConv
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
-
-unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S 1 ()))) (PacketStream dom 1 ())
-unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
 
 -- | Tests that data can be sent through UART, except for _abort and _last and _meta signals. Ignores backpressure.
 prop_uart_tx_rx_id :: Property

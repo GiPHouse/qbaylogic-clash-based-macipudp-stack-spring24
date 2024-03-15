@@ -5,6 +5,7 @@ module Clash.Cores.Ethernet.PacketStream
   ( PacketStreamM2S(..)
   , PacketStreamS2M(..)
   , PacketStream
+  , unsafeToPacketStream
   ) where
 
 import Clash.Prelude hiding ( sample )
@@ -134,3 +135,7 @@ instance
   expectN Proxy options nExpected sampled
     = expectN (Proxy @(Df.Df dom _)) options nExpected
     $ Df.maybeToData <$> sampled
+
+-- | Converts a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
+unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
+unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
