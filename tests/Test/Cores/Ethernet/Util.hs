@@ -52,31 +52,15 @@ chunkToPacket l = PacketStreamM2S {
   , _data = L.foldr (C.+>>) (C.repeat 0) $ fmap (C.head . _data) l
 }
 
-copyAndShift :: forall n. C.KnownNat n => Integer -> PacketStreamM2S n () -> [(Integer, PacketStreamM2S n ())]
-copyAndShift 1 PacketStreamM2S {..} = [(C.natToInteger @n - 1, PacketStreamM2S {_last = _last, _abort = _abort, _meta = _meta, _data = _data})]
-copyAndShift i PacketStreamM2S {..} = (C.natToInteger @n - i, PacketStreamM2S {_last = _last, _abort = _abort, _meta = _meta, _data = _data})
-  : copyAndShift (i - 1) (PacketStreamM2S {_last = _last, _abort = _abort, _meta = _meta, _data = _data C.<<+ 0})
+chopPacket :: forall n. 1 C.<= n => C.KnownNat n => PacketStreamM2S n () -> [PacketStreamM2S 1 ()]
+chopPacket PacketStreamM2S {..} = packets where
+  lasts = case _last of
+    Nothing  -> repeat Nothing
+    Just in' -> replicate (fromIntegral in') Nothing ++ [Just (0 :: C.Index 1) ]
 
-takeFirst :: forall n. 1 C.<= n => C.KnownNat n => (Integer, PacketStreamM2S n ()) -> PacketStreamM2S 1 ()
-takeFirst (i, PacketStreamM2S {..}) = PacketStreamM2S {_last = last', _abort = _abort, _meta = _meta, _data = data'}
-  where
-    last' = case _last of
-      M.Nothing -> M.Nothing
-      M.Just j -> if i == fromIntegral j then M.Just 0 else M.Nothing
-    data' = C.leToPlusKN @1 @n C.take C.d1 _data
+  datas = case _last of
+    Nothing -> C.toList _data
+    Just in' -> take (fromIntegral in' + 1) $ C.toList _data
 
-singletonToPackets :: forall n. 1 C.<= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-singletonToPackets [packet] = map takeFirst (copyAndShift (C.natToInteger @n) packet)
-singletonToPackets _ = C.errorX "Invalid argument for singeltonToPackets"
+  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> zip lasts datas
 
--- singletonToPackets :: forall n. 1 C.<= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
--- singletonToPackets [PacketStreamM2S {..}]
---   | (C.natToInteger @n) <= 1 = []
---   | otherwise = case _last of
---     M.Just 0 -> [PacketStreamM2S {_last = M.Just 0, _abort = _abort, _meta = (), _data = C.take C.d1 _data}]
---     M.Just i -> (PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.take C.d1 _data}) :
---       singletonToPackets [PacketStreamM2S {_last = M.Just (i-1), _abort = _abort, _meta = (), _data = C.tail _data}]
---     M.Nothing -> (PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.take C.d1 _data}) :
---       singletonToPackets [PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.init _data}]
-
--- singletonToPackets _ = C.errorX "Called singletonToPackets on empty list"
