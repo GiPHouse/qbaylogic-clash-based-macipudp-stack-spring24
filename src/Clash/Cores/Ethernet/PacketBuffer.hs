@@ -2,11 +2,15 @@
 
 module Clash.Cores.Ethernet.PacketBuffer
     ( packetBuffer
+    , packetBufferC
     ) where
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.Maybe
+
+import Protocols ( Circuit(..), fromSignals, (|>) )
+import Protocols.Internal ( CSignal(..))
 
 packetBuffer
     :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
@@ -19,9 +23,9 @@ packetBuffer
     -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType)),
             Signal dom PacketStreamS2M
         )
-    -> (Signal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
+    -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
 
-packetBuffer SNat (inM2S, inS2M) =  (pure (), outM2S)
+packetBuffer SNat (inM2S, inS2M) =  outM2S
     where
         --The backing ram
         outM2S = mux emptyBuffer
@@ -56,3 +60,22 @@ packetBuffer SNat (inM2S, inS2M) =  (pure (), outM2S)
         isLast word = case word of
             Just (PacketStreamM2S { _last = Just _ }) -> True
             _ -> False
+
+
+-- Fix the type signature of packetBufferC to match the expected type of fromSignals
+packetBufferC
+    :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+    HiddenClockResetEnable dom
+        => KnownNat dataWidth
+        => KnownNat sizeBits
+        => NFDataX metaType
+        => 1 <= sizeBits
+        => SNat sizeBits
+        -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
+packetBufferC sizeBits = fromSignals wrap
+    where 
+        wrap:: ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType)),
+                    Signal dom PacketStreamS2M
+                )
+            -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
+        wrap (CSignal inFWD, outBWD)  = (CSignal (pure ()), packetBuffer sizeBits (inFWD, outBWD))
