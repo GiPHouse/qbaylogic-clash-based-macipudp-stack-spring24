@@ -43,16 +43,7 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 model :: forall n. 1 <= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-model fragments = out
-  where
-    wholePackets = fragments
-    chunks = map L.singleton wholePackets
-    out    = concatMap singletonToPackets chunks
-
-fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
-fullPackets [] = []
-fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
-                        in  init fragments ++ [lastFragment]
+model fragments = fragments >>= chopPacket 
 
 -- | Test the downconverter stream instance
 downconverterTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -60,7 +51,7 @@ downconverterTest C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets)) -- Input packets
+    (Gen.list (Range.linear 0 100) genPackets) -- Input packets
     (C.exposeClockResetEnable model)                              -- Desired behaviour of DownConverter
     (C.exposeClockResetEnable @C.System (ckt @n))                      -- Implementation of DownConverter
     (===)                                                         -- Property to test
