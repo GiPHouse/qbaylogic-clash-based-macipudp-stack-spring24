@@ -24,10 +24,14 @@ packetBuffer
 packetBuffer SNat (inM2S, inS2M) =  (pure (), outM2S)
     where
         --The backing ram
-        outM2S = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
+        outM2S = mux emptyBuffer
+            (pure Nothing)
+            (blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand)
 
          -- write command
-        writeCommand = mux writeEnable (Just <$> bundle (wordAddr, inM2S)) (pure Nothing)
+        writeCommand = mux writeEnable
+            (Just <$> bundle (wordAddr, inM2S))
+            (pure Nothing)
 
         --The read and write pointers
         wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
@@ -37,8 +41,10 @@ packetBuffer SNat (inM2S, inS2M) =  (pure (), outM2S)
         readAddr = register 0 readAddr'
 
         -- Only write if there is space
-        writeEnable = writeRequest .&&. fmap not full .&&. fmap not dropping
-        readEnable = (_ready <$> inS2M) .&&. fmap not emptyBuffer
+        writeEnable = writeRequest .&&. (not <$> full) .&&. (not <$> dropping)
+        -- renove notEmptyBuffer and add this to outM2S
+        readEnable = (_ready <$> inS2M) .&&. notEmpty
+        notEmpty = not <$> emptyBuffer
 
         --The status signals
         emptyBuffer  = register 0 packetAddr .==. readAddr
