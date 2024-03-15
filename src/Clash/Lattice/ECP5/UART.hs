@@ -14,9 +14,9 @@ module Clash.Lattice.ECP5.UART
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.UART
 import Clash.Prelude
-import Data.Maybe
 import Protocols
 import Protocols.Internal
+import Data.List qualified as L
 
 convertToTx :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
 convertToTx = fmap $ fmap (head . _data)
@@ -63,6 +63,7 @@ data ToPacketsState
 toPacketsC
   :: forall (dom :: Domain) (metaType :: Type)
    . HiddenClockResetEnable dom
+--  :: HiddenClockResetEnable dom
   => KnownDomain dom
   => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
 toPacketsC = fromSignals ckt
@@ -70,7 +71,7 @@ toPacketsC = fromSignals ckt
     ckt
       :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
       -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
-    ckt (CSignal fwdInS, bwdInS) = (bwdInS, CSignal (mealy go ReadSize1 fwdInS))
+    ckt (CSignal fwdInS, _) = (CSignal $ pure (), CSignal (mealy go ReadSize1 fwdInS))
     go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
     go s Nothing = (s, Nothing)
     go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)

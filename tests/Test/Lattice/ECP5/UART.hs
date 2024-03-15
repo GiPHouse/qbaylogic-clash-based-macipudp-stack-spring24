@@ -85,7 +85,7 @@ prop_topackets = property $ do
     Gen.enumBounded <*>
     Gen.enumBounded))
   let ckt = C.exposeClockResetEnable @C.System toPacketsC C.clockGen C.resetGen C.enableGen
-  let throughCkt = catMaybes $ take 10_000 $ simulateCS ckt (packets L.++ L.repeat Nothing)
+  let throughCkt = catMaybes $ take 10_000 $ drop 1 $ simulateCS ckt (Nothing : packets L.++ L.repeat Nothing)
   let throughModel = concat (toPackets $ catMaybes packets)
   throughModel === throughCkt
 
