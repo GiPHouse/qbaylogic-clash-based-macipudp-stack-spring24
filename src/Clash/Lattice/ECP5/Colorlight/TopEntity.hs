@@ -9,8 +9,6 @@ import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 
-import Clash.Cores.UART
-
 data SDRAMOut domain = SDRAMOut
   {
     sdram_clock :: "clk" :::Clock domain,

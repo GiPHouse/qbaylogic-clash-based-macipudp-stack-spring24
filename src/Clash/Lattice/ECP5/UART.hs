@@ -16,7 +16,6 @@ import Clash.Cores.UART
 import Clash.Prelude
 import Protocols
 import Protocols.Internal
-import Data.List qualified as L
 
 convertToTx :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
 convertToTx = fmap $ fmap (head . _data)
