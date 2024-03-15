@@ -62,7 +62,6 @@ data ToPacketsState
 toPacketsC
   :: forall (dom :: Domain) (metaType :: Type)
    . HiddenClockResetEnable dom
---  :: HiddenClockResetEnable dom
   => KnownDomain dom
   => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
 toPacketsC = fromSignals ckt
