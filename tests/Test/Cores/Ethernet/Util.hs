@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Test.Cores.Ethernet.Util where
 
 -- prelude
@@ -51,6 +53,14 @@ chunkToPacket l = PacketStreamM2S {
 }
 
 singletonToPackets :: forall n. C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-singletonToPackets packet = singletonToPacketsHelper (C.natToInteger @n) packet []
-  where
-    singletonToPacketsHelper n packet out = undefined
+singletonToPackets [PacketStreamM2S {..}]
+  | (C.natToInteger @n) <= 0 = []
+  | otherwise = case _last of
+    M.Just 0 -> [PacketStreamM2S {_last = M.Just 0, _abort = _abort, _meta = (), _data = C.take C.d1 _data}]
+    M.Just i -> (PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.take C.d1 _data}) :
+      singletonToPackets [PacketStreamM2S {_last = M.Just (i - 1), _abort = _abort, _meta = (), _data = C.init _data}]
+    M.Nothing -> (PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.take C.d1 _data}) :
+      singletonToPackets [PacketStreamM2S {_last = M.Nothing, _abort = _abort, _meta = (), _data = C.init _data}]
+  
+singletonToPackets _ = C.errorX "Called singletonToPackets on empty list"
+
