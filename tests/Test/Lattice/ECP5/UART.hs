@@ -7,6 +7,8 @@ module Test.Lattice.ECP5.UART where
 -- base
 import Prelude
 import Data.Proxy
+import qualified Data.List as L
+import Data.Maybe
 
 -- clash-prelude
 import qualified Clash.Prelude as C
@@ -62,6 +64,30 @@ prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.e
       Gen.maybe Gen.enumBounded <*>
       Gen.enumBounded <*>
       Gen.enumBounded
+
+toPackets :: [PacketStreamM2S 1 ()] -> [[PacketStreamM2S 1 ()]]
+toPackets (l0 : (l1 : xs)) = packet : toPackets rest where
+  len = C.head (_data l1) C.++# C.head (_data l0)
+  (packetRaw, rest) = L.splitAt (1 + fromIntegral len) xs
+  packet = setLast packetRaw
+  setLast :: [PacketStreamM2S 1 ()] -> [PacketStreamM2S 1 ()]
+  setLast [] = []
+  setLast [z] = [z {_last = Just 0}]
+  setLast (z : zs) = z {_last = Nothing} : setLast zs
+toPackets _ = []
+
+-- | Tests that `toPacketsC` removes size bytes and sets _last correctly on 10000 random inputs.
+prop_topackets :: Property
+prop_topackets = property $ do
+  packets <- forAll (Gen.list (Range.linear 0 10_000) $ Gen.maybe (PacketStreamM2S <$>
+    genVec Gen.enumBounded <*>
+    Gen.maybe Gen.enumBounded <*>
+    Gen.enumBounded <*>
+    Gen.enumBounded))
+  let ckt = C.exposeClockResetEnable @C.System toPacketsC C.clockGen C.resetGen C.enableGen
+  let throughCkt = catMaybes $ take 10_000 $ simulateCS ckt (packets L.++ L.repeat Nothing)
+  let throughModel = concat (toPackets $ catMaybes packets)
+  throughModel === throughCkt
 
 tests :: TestTree
 tests =
