@@ -127,6 +127,7 @@ test-suite test-library
     clash-eth,
     QuickCheck,
     hedgehog,
+    clash-cores,
     hashable,
     unordered-containers,
     tasty >= 1.2 && < 1.5,
