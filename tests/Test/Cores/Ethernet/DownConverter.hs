@@ -42,11 +42,11 @@ import Clash.Cores.Ethernet.PacketStream
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-model :: forall n. C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
+model :: forall n. 1 <= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
 model fragments = out
   where
-    wholePackets = smearAbort <$> chunkByPacket fragments
-    chunks = wholePackets >>= map L.singleton
+    wholePackets = fragments
+    chunks = map L.singleton wholePackets
     out    = concatMap singletonToPackets chunks
 
 fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
