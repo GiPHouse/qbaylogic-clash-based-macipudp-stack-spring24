@@ -34,5 +34,5 @@ asyncFifoC depth wClk wRst wEn rClk rRst rEn = fromSignals ckt where
     -- ^ If the FIFO is empty, we output Nothing. Else, we output the oldest element.
     bwdOut = PacketStreamS2M . not <$> full
     -- ^ Assert backpressure when the FIFO is full.
-    readReq = _ready <$> bwdIn
+    readReq = (&&) <$> (_ready <$> bwdIn) <*> (not <$> empty)
     -- ^ Next component is ready to read if it doesn't assert backpressure.
