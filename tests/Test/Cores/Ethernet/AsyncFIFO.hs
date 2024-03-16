@@ -89,7 +89,7 @@ generateAsyncFifoIdProp wClk wRst wEn rClk rRst rEn =
       ckt :: (KnownDomain wDom, KnownDomain rDom) => Circuit
               (PacketStream wDom 1 Int)
               (PacketStream rDom 1 Int)
-      ckt = asyncFifoC (C.SNat @64) wClk wRst wEn rClk rRst rEn
+      ckt = asyncFifoC (C.SNat @8) wClk wRst wEn rClk rRst rEn
       -- This is used to generate
       genPackets =
           PacketStreamM2S <$>
