@@ -11,9 +11,9 @@ import Clash.Cores.Ethernet.PacketStream
 
 -- ^ Asynchronous FIFO circuit that can be used to safely cross clock domains.
 asyncFifoC :: forall (depth     :: Nat)
+                     (dataWidth :: Nat)
                      (wDom      :: Domain)
                      (rDom      :: Domain)
-                     (dataWidth :: Nat)
                      (metaType  :: Type) .
   ( KnownDomain wDom, KnownDomain rDom
   , KnownNat depth, 2 <= depth
@@ -34,5 +34,6 @@ asyncFifoC depth wClk wRst wEn rClk rRst rEn = fromSignals ckt where
     -- ^ If the FIFO is empty, we output Nothing. Else, we output the oldest element.
     bwdOut = PacketStreamS2M . not <$> full
     -- ^ Assert backpressure when the FIFO is full.
-    readReq = (&&) <$> (_ready <$> bwdIn) <*> (not <$> empty)
-    -- ^ Next component is ready to read if it doesn't assert backpressure.
+    --readReq = (&&) <$> (_ready <$> bwdIn) <*> (not <$> empty)
+    readReq = not <$> empty .&&. _ready <$> bwdIn
+    -- ^ Next component is ready to read if it doesn't assert backpressure and the fifo is not empty.
