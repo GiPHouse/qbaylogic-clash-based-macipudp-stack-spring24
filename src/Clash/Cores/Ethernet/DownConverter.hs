@@ -9,8 +9,8 @@ module Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.List qualified as L
-import Data.Maybe ( isJust, isNothing )
-import Protocols ( Circuit, fromSignals )
+import Data.Maybe ( isJust )
+import Protocols ( Circuit, fromSignals, (|>) )
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
@@ -86,22 +86,36 @@ downConverter = mealyB go s0
       :: DownConverterState dataWidth
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
       -> (DownConverterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
-    go st@(DownConverterState {..}) (fwdIn, PacketStreamS2M inReady) = (st', (bwdOut, fwdOut))
+    go st@(DownConverterState {..}) (Nothing, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
       where
-        -- Compute next buffer and its size. If a byte was just acknowledged,
-        -- a byte is removed. Otherwise, it is left unchanged.
-        (_buf', _size') = if True && _dcSize > 0
-          then (_dcBuf <<+ 0, _dcSize - 1)
-          else (_dcBuf, _dcSize)
-        -- If our next buffer will be empty, we are ready to receive new data,
-        -- and if there is valid data already, put it in a fresh state.
-        -- Otherwise, keep the current state with the new buffer and size.
-        outReady = _size' == 0
-        st' = case (outReady, fwdIn) of
-          (True, Just packetStream) -> fromPacketStreamM2S packetStream
-          _                         -> st { _dcBuf = _buf', _dcSize = _size' }
-        bwdOut = PacketStreamS2M outReady
-        fwdOut = toMaybePacketStreamM2S st
+        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady 
+                   then (_dcSize - 1, _dcBuf <<+ 0)
+                   else (_dcSize, _dcBuf)
+     
+        outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
+        st' = st 
+                { _dcBuf = _dcBuf'
+                , _dcSize = _dcSize'
+                }
+
+    go st@(DownConverterState {..}) (Just packetStream, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
+      where
+        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady 
+                   then (_dcSize - 1, _dcBuf <<+ 0)
+                   else (_dcSize, _dcBuf)
+     
+      -- If the next buffer contains no valid bytes,
+      -- and the final byte was acknowledged, we can 
+      -- acknowledge the newly received data.
+        outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
+
+        st'
+          | outReady = fromPacketStreamM2S packetStream
+          | otherwise = st 
+                          { _dcBuf = _dcBuf'
+                          , _dcSize = _dcSize'
+                          }
+
 
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
@@ -109,7 +123,7 @@ downConverterC
   => 1 <= dataWidth
   => KnownNat dataWidth
   => Circuit (PacketStream dom dataWidth ()) (PacketStream dom 1 ())
-downConverterC = fromSignals downConverter
+downConverterC = forceResetSanity |> fromSignals downConverter
 
 payloadInp :: [Maybe (PacketStreamM2S 4 ())]
 payloadInp = [
