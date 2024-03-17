@@ -127,11 +127,13 @@ test-suite test-library
   other-modules:
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketStream
+    Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.UpConverter
   build-depends:
     clash-eth,
     QuickCheck,
     hedgehog,
+    clash-cores,
     hashable,
     unordered-containers,
     tasty >= 1.2 && < 1.5,

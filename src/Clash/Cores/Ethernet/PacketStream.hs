@@ -5,6 +5,7 @@ module Clash.Cores.Ethernet.PacketStream
   ( PacketStreamM2S(..)
   , PacketStreamS2M(..)
   , PacketStream
+  , unsafeToPacketStream
   , forceResetSanity
   ) where
 
@@ -162,6 +163,11 @@ instance
     = expectN (Proxy @(Df.Df dom _)) options nExpected
     $ Df.maybeToData <$> sampled
 
+-- | Converts a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
+unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
+unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
+
+-- | Ensures a circuit does not send out ready on reset
 forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
 forceResetSanity
   = Circuit (\(fwd, bwd) -> unbundle . fmap f . bundle $ (rstLow, fwd, bwd))
@@ -169,3 +175,4 @@ forceResetSanity
   f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
   f (False, fwd, bwd) = (bwd, fwd)
   rstLow = unsafeToHighPolarity hasReset
+
