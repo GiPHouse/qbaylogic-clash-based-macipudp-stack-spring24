@@ -92,6 +92,7 @@ library
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketStream
+    Clash.Cores.Ethernet.UpConverter
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -100,7 +101,9 @@ library
     interpolate,
     clash-cores,
     deepseq,
-    hashable
+    hashable,
+    -- For debugging
+    pretty-show
 
 test-suite doctests
   type:             exitcode-stdio-1.0
@@ -122,8 +125,10 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketStream
     Test.Lattice.ECP5.UART
+    Test.Cores.Ethernet.UpConverter
   build-depends:
     clash-eth,
     QuickCheck,

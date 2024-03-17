@@ -6,6 +6,7 @@ module Clash.Cores.Ethernet.PacketStream
   , PacketStreamS2M(..)
   , PacketStream
   , unsafeToPacketStream
+  , forceResetSanity
   ) where
 
 import Clash.Prelude hiding ( sample )
@@ -54,9 +55,35 @@ deriving instance
   ( KnownNat dataWidth, NFDataX metaType)
   => NFDataX (PacketStreamM2S dataWidth metaType)
 
-deriving instance
-  ( KnownNat dataWidth, Eq metaType)
-  => Eq (PacketStreamM2S dataWidth metaType)
+-- |
+-- >>> fragment0 = PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil) (Just 1) () True
+-- >>> fragment1 = PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x24):>Nil) (Just 1) () True
+-- >>> fragment0 == fragment1
+-- True
+-- >>> fragment2 = PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil) (Just 1) () True
+-- >>> fragment3 = PacketStreamM2S @3 @() ((0x35):> (0x43):> (0x24):>Nil) (Just 1) () True
+-- >>> fragment2 == fragment3
+-- False
+-- >>> fragment4 = PacketStreamM2S @3 @() ((0x34):> (0x43):> (0x21):>Nil) (Just 0) () True
+-- >>> fragment5 = PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil) (Just 0) () True
+-- >>> fragment4 == fragment5
+-- True
+-- >>> fragment6 = PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil) (Just 0) () True
+-- >>> fragment7 = PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil) (Just 1) () True
+-- >>> fragment6 == fragment7
+-- False
+-- >>> fragment8 = PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil) (Nothing) () True
+-- >>> fragment9 = PacketStreamM2S @3 @() ((0x34):> (0x23):> (0x24):>Nil) (Nothing) () True
+-- >>> fragment8 == fragment9
+-- True
+instance ( KnownNat dataWidth, Eq metaType) => Eq (PacketStreamM2S dataWidth metaType) where
+  st1 == st2 = metaEq && abortEq && lastEq && dataEq
+    where
+      metaEq = _meta st1 == _meta st2
+      abortEq = _abort st1 == _abort st2
+      lastEq = _last st1 == _last st2
+      n = maybe 0 (\i -> 8 * (fromIntegral $ maxBound - i)) (_last st1)
+      dataEq = (shiftR (pack $ _data st1) n) == (shiftR (pack $ _data st2) n)
 
 -- Orphan hashable instances
 deriving instance (KnownNat n) => Hashable (BitVector n)
@@ -139,3 +166,13 @@ instance
 -- | Converts a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
 unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
 unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
+
+-- | Ensures a circuit does not send out ready on reset
+forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
+forceResetSanity
+  = Circuit (\(fwd, bwd) -> unbundle . fmap f . bundle $ (rstLow, fwd, bwd))
+ where
+  f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
+  f (False, fwd, bwd) = (bwd, fwd)
+  rstLow = unsafeToHighPolarity hasReset
+
