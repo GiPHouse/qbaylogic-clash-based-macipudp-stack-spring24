@@ -94,6 +94,7 @@ library
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
+    Clash.Cores.Ethernet.Util
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
