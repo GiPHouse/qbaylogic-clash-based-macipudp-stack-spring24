@@ -150,10 +150,16 @@ en = enableGen
 
 payloadOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
 sinkReadyOut :: Signal System PacketStreamS2M
+downConverterClk ::
+ (Signal System (Maybe (PacketStreamM2S 4 ()))
+ , Signal System PacketStreamS2M)
+  -> (Signal System PacketStreamS2M
+     , Signal System (Maybe (PacketStreamM2S 1 ())))
 downConverterClk = exposeClockResetEnable downConverter clk rst en
 
-(sinkReadyOut, payloadOut) = downConverterClk (fromList (fmap Just inp'), fromList sinkReadyInp)
+(sinkReadyOut, payloadOut) = downConverterClk (fromList $ [Nothing, Nothing, Nothing] L.++ fmap Just inp', fromList sinkReadyInp)
 
+sampleOut :: [(Maybe (PacketStreamM2S 1 ()), PacketStreamS2M)]
 sampleOut = sampleN 26 $ bundle (payloadOut, sinkReadyOut)
 
 
@@ -249,5 +255,5 @@ chopPacket PacketStreamM2S {..} = packets where
   packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> L.zip lasts datas
 
 model :: forall n. 1 <= n => KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-model fragments = fragments >>= chopPacket 
+model fragments = fragments >>= chopPacket
 
