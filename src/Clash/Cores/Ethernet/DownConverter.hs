@@ -3,14 +3,13 @@
 module Clash.Cores.Ethernet.DownConverter
   ( downConverter
   , downConverterC
-  , sampleOut
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
-import Data.List qualified as L
 import Data.Maybe ( isJust )
 import Protocols ( Circuit, fromSignals, (|>) )
+import Clash.Cores.Ethernet.Util ( toMaybe )
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
@@ -24,11 +23,6 @@ data DownConverterState (dataWidth :: Nat) =
     -- ^ If True, outgoing bytes should be marked as aborted until _dcBuf is replaced
   }
   deriving (Generic, NFDataX)
-
--- | Maybe put this in a utility module?
-toMaybe :: Bool -> a -> Maybe a
-toMaybe True x = Just x
-toMaybe False _ = Nothing
 
 -- | Computes new state from incoming data
 fromPacketStreamM2S
@@ -91,7 +85,13 @@ downConverter = mealyB go s0
         (_dcSize',_dcBuf') = if _dcSize > 0 && inReady 
                    then (_dcSize - 1, _dcBuf <<+ 0)
                    else (_dcSize, _dcBuf)
-     
+
+        -- If the next buffer contains no valid bytes,
+        -- and the final byte was acknowledged, we can 
+        -- acknowledge the newly received data.
+        -- The || is lazy, and we need this: if the output
+        -- of the downconverter is Nothing, we are not allowed to
+        -- evaluate inReady.
         outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
         st' = st 
                 { _dcBuf = _dcBuf'
@@ -104,9 +104,6 @@ downConverter = mealyB go s0
                    then (_dcSize - 1, _dcBuf <<+ 0)
                    else (_dcSize, _dcBuf)
      
-      -- If the next buffer contains no valid bytes,
-      -- and the final byte was acknowledged, we can 
-      -- acknowledge the newly received data.
         outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
 
         st'
@@ -124,150 +121,3 @@ downConverterC
   => KnownNat dataWidth
   => Circuit (PacketStream dom dataWidth ()) (PacketStream dom 1 ())
 downConverterC = forceResetSanity |> fromSignals downConverter
-
-payloadInp :: [Maybe (PacketStreamM2S 4 ())]
-payloadInp = [
-  Nothing
-  , Just (PacketStreamM2S (0x01 :> 0x02 :> 0x03 :> 0x04 :> Nil) Nothing () False)
-  , Nothing
-  , Nothing
-  , Nothing
-  , Nothing
-  , Nothing
-  , Nothing
-  , Just (PacketStreamM2S (0xC0 :> 0xFF :> 0xEE :> 0x00 :> Nil) (Just 2) () False)
-  , Nothing
-  , Nothing
-  , Just (PacketStreamM2S (0xDE :> 0xAD :> 0x00 :> 0x00 :> Nil) (Just 1) () True)
-  , Just (PacketStreamM2S (0xDE :> 0xAD :> 0x00 :> 0x00 :> Nil) (Just 1) () True)
-  , Nothing
-  , Nothing
-  , Just (PacketStreamM2S (0xAA :> 0xAA :> 0xAA :> 0xAA :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0xAA :> 0xAA :> 0xAA :> 0xAA :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x55 :> 0x55 :> 0x55 :> 0x55 :> Nil) (Just 3) () False)
-  , Just (PacketStreamM2S (0x55 :> 0x55 :> 0x55 :> 0x55 :> Nil) (Just 3) () False)
-  , Just (PacketStreamM2S (0x55 :> 0x55 :> 0x55 :> 0x55 :> Nil) (Just 3) () False)
-  , Just (PacketStreamM2S (0x55 :> 0x55 :> 0x55 :> 0x55 :> Nil) (Just 3) () False)
-  ] L.++ L.repeat Nothing
-
-sinkReadyInp :: [PacketStreamS2M]
-sinkReadyInp = fmap PacketStreamS2M ((L.repeat True))
-
-clk :: Clock System
-clk = systemClockGen
-
-rst :: Reset System
-rst = systemResetGen
-
-en :: Enable dom
-en = enableGen
-
-payloadOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
-sinkReadyOut :: Signal System PacketStreamS2M
-downConverterClk ::
- (Signal System (Maybe (PacketStreamM2S 4 ()))
- , Signal System PacketStreamS2M)
-  -> (Signal System PacketStreamS2M
-     , Signal System (Maybe (PacketStreamM2S 1 ())))
-downConverterClk = exposeClockResetEnable downConverter clk rst en
-
-(sinkReadyOut, payloadOut) = downConverterClk (fromList $ [Nothing, Nothing, Nothing] L.++ fmap Just inp', fromList sinkReadyInp)
-
-sampleOut :: [(Maybe (PacketStreamM2S 1 ()), PacketStreamS2M)]
-sampleOut = sampleN 26 $ bundle (payloadOut, sinkReadyOut)
-
-
-inp' :: [PacketStreamM2S 4 ()]
-inp' = [
-  PacketStreamM2S {
-    _abort = False
-    ,_last  = Just 2
-    ,_meta  = ()
-    ,_data  = 1 :> 2 :> 3 :> 4 :> Nil
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = 5 :> 6 :> 7 :> 8 :> Nil
-  }]
-
-inp :: [PacketStreamM2S 4 ()]
-inp = [
-  PacketStreamM2S {
-    _abort = False
-    ,_last  = Just 2
-    ,_meta  = ()
-    ,_data  = pure 1
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 1
-  }
-  , PacketStreamM2S {
-    _abort = True
-    ,_last  = Just 3
-    ,_meta  = ()
-    ,_data  = pure 2
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 3
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 4
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 5
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 6
-  }
-  , PacketStreamM2S {
-    _abort = True
-    ,_last  = Just 0
-    ,_meta  = ()
-    ,_data  = pure 7
-  }
-  , PacketStreamM2S {
-    _abort = False
-    ,_last  = Nothing
-    ,_meta  = ()
-    ,_data  = pure 8
-  }
-  , PacketStreamM2S {
-    _abort = True
-    ,_last  = Just 0
-    ,_meta  = ()
-    ,_data  = pure 9
-  }]
-
-
-chopPacket :: forall n. 1 <= n => KnownNat n => PacketStreamM2S n () -> [PacketStreamM2S 1 ()]
-chopPacket PacketStreamM2S {..} = packets where
-  lasts = case _last of
-    Nothing  -> L.repeat Nothing
-    Just in' -> L.replicate (fromIntegral in') Nothing L.++ [Just (0 :: Index 1) ]
-
-  datas = case _last of
-    Nothing -> toList _data
-    Just in' -> L.take (fromIntegral in' + 1) $ toList _data
-
-  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> L.zip lasts datas
-
-model :: forall n. 1 <= n => KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-model fragments = fragments >>= chopPacket
-
