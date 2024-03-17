@@ -6,10 +6,10 @@ module Clash.Cores.Ethernet.DownConverter
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Util ( toMaybe )
 import Clash.Prelude
 import Data.Maybe ( isJust )
 import Protocols ( Circuit, fromSignals, (|>) )
-import Clash.Cores.Ethernet.Util ( toMaybe )
 
 data DownConverterState (dataWidth :: Nat) =
   DownConverterState {
@@ -82,33 +82,33 @@ downConverter = mealyB go s0
       -> (DownConverterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
     go st@(DownConverterState {..}) (Nothing, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
       where
-        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady 
+        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady
                    then (_dcSize - 1, _dcBuf <<+ 0)
                    else (_dcSize, _dcBuf)
 
         -- If the next buffer contains no valid bytes,
-        -- and the final byte was acknowledged, we can 
+        -- and the final byte was acknowledged, we can
         -- acknowledge the newly received data.
         -- The || is lazy, and we need this: if the output
         -- of the downconverter is Nothing, we are not allowed to
         -- evaluate inReady.
         outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
-        st' = st 
+        st' = st
                 { _dcBuf = _dcBuf'
                 , _dcSize = _dcSize'
                 }
 
     go st@(DownConverterState {..}) (Just packetStream, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
       where
-        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady 
+        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady
                    then (_dcSize - 1, _dcBuf <<+ 0)
                    else (_dcSize, _dcBuf)
-     
+
         outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
 
         st'
           | outReady = fromPacketStreamM2S packetStream
-          | otherwise = st 
+          | otherwise = st
                           { _dcBuf = _dcBuf'
                           , _dcSize = _dcSize'
                           }

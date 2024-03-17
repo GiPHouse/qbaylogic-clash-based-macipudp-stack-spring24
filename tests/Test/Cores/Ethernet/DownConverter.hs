@@ -7,12 +7,6 @@ module Test.Cores.Ethernet.DownConverter where
 -- base
 import Prelude
 
--- list
-import qualified Data.List as L
-
--- maybe
-import qualified Data.Maybe as M
-
 -- clash-prelude
 import qualified Clash.Prelude as C
 import Clash.Prelude (type (<=))

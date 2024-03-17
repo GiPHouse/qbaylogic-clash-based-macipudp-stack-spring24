@@ -1,4 +1,4 @@
-module Clash.Cores.Ethernet.Util 
+module Clash.Cores.Ethernet.Util
     ( toMaybe
     ) where
 
