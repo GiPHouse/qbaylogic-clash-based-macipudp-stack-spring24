@@ -1,3 +1,5 @@
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Test.Cores.Ethernet.Util where
 
 -- prelude
@@ -49,3 +51,16 @@ chunkToPacket l = PacketStreamM2S {
   , _meta = ()
   , _data = L.foldr (C.+>>) (C.repeat 0) $ fmap (C.head . _data) l
 }
+
+chopPacket :: forall n. 1 C.<= n => C.KnownNat n => PacketStreamM2S n () -> [PacketStreamM2S 1 ()]
+chopPacket PacketStreamM2S {..} = packets where
+  lasts = case _last of
+    Nothing  -> repeat Nothing
+    Just in' -> replicate (fromIntegral in') Nothing ++ [Just (0 :: C.Index 1) ]
+
+  datas = case _last of
+    Nothing -> C.toList _data
+    Just in' -> take (fromIntegral in' + 1) $ C.toList _data
+
+  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> zip lasts datas
+

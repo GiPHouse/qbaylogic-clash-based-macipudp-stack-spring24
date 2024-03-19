@@ -93,6 +93,8 @@ library
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
+    Clash.Cores.Ethernet.DownConverter
+    Clash.Cores.Ethernet.Util
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -128,6 +130,7 @@ test-suite test-library
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketStream
     Test.Lattice.ECP5.UART
+    Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
   build-depends:
     clash-eth,
