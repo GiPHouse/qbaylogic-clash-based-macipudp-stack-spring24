@@ -45,10 +45,10 @@ downconverterTest C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (Gen.list (Range.linear 0 100) genPackets) -- Input packets
-    (C.exposeClockResetEnable model)                              -- Desired behaviour of DownConverter
-    (C.exposeClockResetEnable @C.System (ckt @n))                      -- Implementation of DownConverter
-    (===)                                                         -- Property to test
+    (Gen.list (Range.linear 0 100) genPackets)                  -- Input packets
+    (C.exposeClockResetEnable model)                            -- Desired behaviour of DownConverter
+    (C.exposeClockResetEnable @C.System (ckt @n))               -- Implementation of DownConverter
+    (===)                                                       -- Property to test
   where
     ckt :: forall (dataWidth :: C.Nat) (dom :: C.Domain).
       C.HiddenClockResetEnable dom
