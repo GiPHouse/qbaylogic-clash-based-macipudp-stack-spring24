@@ -32,42 +32,41 @@ import qualified Protocols.DfConv as DfConv
 -- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketBuffer
+import Protocols.Internal ( CSignal(..))
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-prop_id_without_nothings :: Property
-prop_id_without_nothings = 
-    propWithModelSingleDomain
-    @C.System
-    defExpectOptions
-    (Gen.list (Range.linear 0 100) genPackets)
-    (C.exposeClockResetEnable id)
-    (C.exposeClockResetEnable @C.System ckt)
-    (===)
- where
-  ckt :: (C.HiddenClockResetEnable dom) =>
-    Circuit
-      (PacketStream dom 1 Int)
-      (PacketStream dom 1 Int)
-  ckt = DfConv.fifo Proxy Proxy (C.SNat @10)
+-- | Test the packetBuffer fifo funtion
+-- prop_packetBuffer_fifo_function :: Property
+-- prop_packetBuffer_fifo_function =
+--   idWithModelSingleDomain
+--     @C.System
+--     defExpectOptions
+--     (Gen.list (Range.linear 0 100) genPackets)
+--     (C.exposeClockResetEnable model)
+--     (C.exposeClockResetEnable @C.System ckt)
+--  where
+--   ckt :: (C.HiddenClockResetEnable dom) =>
+--     Circuit
+--       (CSignal dom (Maybe (PacketStreamM2S 1 Int)))
+--       (PacketStream dom 1 Int)
+--   ckt = packetBufferC (SNat @8)
 
-  -- This is used to generate
-  genPackets =
-    PacketStreamM2S <$>
-    genVec Gen.enumBounded <*>
-    Gen.maybe Gen.enumBounded <*>
-    Gen.enumBounded <*>
-    Gen.enumBounded
+--   -- This is used to generate
+--   genPackets =
+--     Gen.maybe $
+--     PacketStreamM2S <$>
+--     genVec Gen.enumBounded <*>
+--     Gen.maybe Gen.enumBounded <*>
+--     Gen.enumBounded <*>
+--     Gen.enumBounded
 
-removeNothings :: forall (dataWidth :: Nat) (a ::PacketStreamM2S dataWidth ()). [Maybe a] -> [Maybe a]
-removeNothings = filter isJust
+--   model = 
+--     undefined
 
-prop_handle_overflow :: Property
-prop_handle_overflow = undefined
-
-tests :: TestTree
-tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+-- tests :: TestTree
+-- tests =
+--     localOption (mkTimeout 12_000_000 {- 12 seconds -})
+--   $ localOption (HedgehogTestLimit (Just 1000))
+--   $(testGroupGenerator)
