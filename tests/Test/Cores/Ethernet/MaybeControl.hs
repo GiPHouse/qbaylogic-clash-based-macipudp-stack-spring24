@@ -40,12 +40,6 @@ import Data.Maybe
 data StallMode = NoStall | Stall
   deriving (Show, Enum, Bounded)
 
--- | Like 'C.resetGenN', but works on 'Int' instead of 'C.SNat'. Not
--- synthesizable.
-resetGen :: C.KnownDomain dom => Int -> C.Reset dom
-resetGen n = C.unsafeFromHighPolarity
-  (C.fromList (replicate n True <> repeat False))
-
 -- | Test a protocol against a pure model implementation. Circuit under test will
 -- be arbitrarily stalled on the left hand and right hand side and tested for
 -- a number of properties:

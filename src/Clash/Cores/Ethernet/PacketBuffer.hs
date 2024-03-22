@@ -9,7 +9,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.Maybe
 
-import Protocols ( Circuit(..), fromSignals, (|>) )
+import Protocols ( Circuit(..), fromSignals )
 import Protocols.Internal ( CSignal(..))
 
 packetBuffer
