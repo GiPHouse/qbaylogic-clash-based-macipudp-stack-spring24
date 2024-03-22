@@ -95,6 +95,7 @@ library
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
+    Clash.Cores.Ethernet.RxStack
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
     Clash.Cores.Ethernet.AsyncFIFO
