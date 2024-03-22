@@ -167,6 +167,10 @@ instance
 unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
 unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
 
+-- | Converts a packetStream into a CSignal.
+fromPacketStream :: Circuit (PacketStream dom n a) (CSignal dom (Maybe (PacketStreamM2S n a)))
+fromPacketStream = Circuit (\(inFwd, _) -> (pure (PacketStreamS2M True), CSignal inFwd))
+
 -- | Ensures a circuit does not send out ready on reset
 forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
 forceResetSanity
@@ -175,4 +179,3 @@ forceResetSanity
   f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
   f (False, fwd, bwd) = (bwd, fwd)
   rstLow = unsafeToHighPolarity hasReset
-
