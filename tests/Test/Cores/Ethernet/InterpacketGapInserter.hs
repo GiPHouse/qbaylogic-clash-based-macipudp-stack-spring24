@@ -44,7 +44,7 @@ prop_interpacket_gap_inserter_id =
     defExpectOptions
     (Gen.list (Range.linear 0 100) genPackets)
     (exposeClockResetEnable id)
-    (exposeClockResetEnable @System interpacketGapInserterC)
+    (exposeClockResetEnable @System (interpacketGapInserterC d12))
     (===)
     where
       -- This is used to generate
@@ -98,7 +98,7 @@ en = enableGen
 fwdOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
 bwdOut :: Signal System PacketStreamS2M
 (bwdOut, fwdOut) = toSignals ckt (fromList fwdIn, fromList bwdIn)
-  where ckt = exposeClockResetEnable interpacketGapInserterC clk rst en
+  where ckt = exposeClockResetEnable (interpacketGapInserterC d12) clk rst en
 
 prop_12_cycles_no_data_after_last :: Property
 prop_12_cycles_no_data_after_last = property $
