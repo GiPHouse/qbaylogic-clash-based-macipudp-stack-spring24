@@ -133,6 +133,7 @@ test-suite test-library
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
+    Test.Cores.Ethernet.MaybeControl
   build-depends:
     clash-eth,
     QuickCheck,
@@ -142,7 +143,8 @@ test-suite test-library
     unordered-containers,
     tasty >= 1.2 && < 1.5,
     tasty-hedgehog,
-    tasty-th
+    tasty-th,
+    pretty-show
 
 -- Builds the executable 'clash', with clash-eth project in scope
 executable clash
