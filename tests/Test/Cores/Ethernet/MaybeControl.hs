@@ -8,7 +8,10 @@ your own tester, see 'Test'.
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControl) where
+module Test.Cores.Ethernet.MaybeControl (
+  propWithModelMaybeControl
+  , propWithModelMaybeControlSingleDomain
+) where
 
 
 import Clash.Cores.Ethernet.PacketStream
@@ -40,6 +43,12 @@ import Data.Maybe
 data StallMode = NoStall | Stall
   deriving (Show, Enum, Bounded)
 
+-- | Like 'C.resetGenN', but works on 'Int' instead of 'C.SNat'. Not
+-- synthesizable.
+resetGen :: C.KnownDomain dom => Int -> C.Reset dom
+resetGen n = C.unsafeFromHighPolarity
+  (C.fromList (replicate n True <> repeat False))
+
 -- | Test a protocol against a pure model implementation. Circuit under test will
 -- be arbitrarily stalled on the left hand and right hand side and tested for
 -- a number of properties:
@@ -52,7 +61,7 @@ data StallMode = NoStall | Stall
 -- Finally, the data will be tested against the property supplied in the last
 -- argument.
 propWithModelMaybeControl ::
-  forall (dataWidth :: C.Nat) (metaType :: C.Type) (dom :: C.Domain) .
+  forall (dom :: C.Domain) (dataWidth :: C.Nat) (metaType :: C.Type)  .
   (C.KnownDomain dom) =>
   (Test (PacketStream dom dataWidth metaType), HasCallStack) =>
   -- | Options, see 'ExpectOptions'
@@ -177,3 +186,30 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
     genStalls genInt n = \case
       NoStall -> (,[]) <$> genStallAck
       Stall -> (,) <$> genStallAck <*> Gen.list (Range.singleton n) genInt
+
+
+propWithModelMaybeControlSingleDomain ::
+  forall dom (dataWidth :: C.Nat ) (metaType :: C.Type) .
+  (Test (PacketStream dom dataWidth metaType), C.KnownDomain dom, HasCallStack) =>
+  -- | Options, see 'ExpectOptions'
+  ExpectOptions ->
+  -- | Test data generator
+  H.Gen [PacketStreamM2S dataWidth metaType] ->
+  -- | Model
+  (C.Clock dom -> C.Reset dom -> C.Enable dom -> [PacketStreamM2S dataWidth metaType] -> [Maybe (PacketStreamM2S dataWidth metaType)]) ->
+  -- | Implementation
+  (C.Clock dom -> C.Reset dom -> C.Enable dom -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)) ->
+  -- | Property to test for. Function is given the data produced by the model
+  -- as a first argument, and the sampled data as a second argument.
+    ([Maybe (PacketStreamM2S dataWidth metaType)]  -> [Maybe (PacketStreamM2S dataWidth metaType)]  -> H.PropertyT IO ()) ->
+  H.Property
+
+propWithModelMaybeControlSingleDomain eOpts genData model0 circuit0 =
+  propWithModelMaybeControl eOpts genData model1 circuit1
+ where
+  clk = C.clockGen
+  rst = resetGen (eoResetCycles eOpts)
+  ena = C.enableGen
+
+  model1 = model0 clk rst ena
+  circuit1 = circuit0 clk rst ena
