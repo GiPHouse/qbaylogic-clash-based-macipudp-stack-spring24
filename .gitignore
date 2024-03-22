@@ -27,3 +27,5 @@ verilog
 system-verilog
 
 netlist
+
+python_tests/env.py
