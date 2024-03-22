@@ -2,10 +2,9 @@ module Clash.Cores.Ethernet.RxStack
 ( rxStack
 ) where
 
-import Clash.Prelude
-    ( KnownNat, Nat, Domain, type (<=), HiddenClockResetEnable )
-import Protocols
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Prelude ( Domain, HiddenClockResetEnable, KnownNat, Nat, type (<=) )
+import Protocols
 
 -- For now this is just an Id circuit,
 -- Will be replaced with everything that has to be done
