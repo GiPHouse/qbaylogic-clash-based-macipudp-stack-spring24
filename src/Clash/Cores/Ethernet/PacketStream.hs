@@ -6,6 +6,7 @@ module Clash.Cores.Ethernet.PacketStream
   , PacketStreamS2M(..)
   , PacketStream
   , unsafeToPacketStream
+  , fromPacketStream
   , forceResetSanity
   ) where
 
