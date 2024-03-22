@@ -51,7 +51,7 @@ gapInserterT s (Nothing, inReady) = (nextState, (outReady, out))
     outReady = inReady
 
 -- | Inserts the interpacket gap between packets. More specifically,
--- this component asserts backpressure for `gapSize` clock cyles after receiving a frame with _last set.
+-- this component asserts backpressure for 12 clock cyles after receiving a frame with _last set.
 -- During these cycles, the output of this component is Nothing.
 interpacketGapInserterC :: forall (dom :: Domain) .
   HiddenClockResetEnable dom
