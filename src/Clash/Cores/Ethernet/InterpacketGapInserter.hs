@@ -12,43 +12,33 @@ import Clash.Cores.Ethernet.PacketStream
 
 
 data InterpacketGapInserterState
-  = Insert { cycles :: Unsigned 4 }
+  = Insert { cycles :: Index 12 }
   | Forward
   deriving (Show, Generic, NFDataX)
 
--- State transition function of the interpacket gap inserter, in mealy form.
+-- | State transition function of the interpacket gap inserter, in mealy form.
 gapInserterT ::
   InterpacketGapInserterState ->
   (Maybe (PacketStreamM2S 1 ()),
    PacketStreamS2M
   )
-  -- ^ Input packetstream from DownConverter
-  -- ^ Input backpressure from PHY tx
+  -- ^ Input packetstream from DownConverter and input backpressure from PHY tx
   ->
   (InterpacketGapInserterState,
     (PacketStreamS2M,
      Maybe (PacketStreamM2S 1 ())
     )
   )
-  -- ^ Output packetstream to PHY tx
-  -- ^ Output backpressure to DownConverter
+  -- ^ Output packetstream to PHY tx and output backpressure to DownConverter
 -- Assert backpressure for 12 clock cycles. During these cycles, the output is Nothing.
-gapInserterT Insert { cycles = c } (_, _) = (nextState, (outReady, out))
+gapInserterT Insert { cycles = c } (_, _) = (nextState, (PacketStreamS2M False, Nothing))
   where
-    nextState = if c < 12 then Insert { cycles = c + 1 } else Forward
-    out = Nothing
-    outReady = PacketStreamS2M False
+    nextState = if c == 11 then Forward else Insert { cycles = c + 1 }
 -- Forward incoming data. Once the last flag is set, we insert the interpacket gap.
-gapInserterT Forward (Just inp, inReady) = (nextState, (outReady, out))
+gapInserterT Forward (Just inp, inReady) = (nextState, (inReady, Just inp))
   where
-    nextState = if isJust (_last inp) then Insert { cycles = 1 } else Forward
-    out = Just inp
-    outReady = inReady
-gapInserterT s (Nothing, inReady) = (nextState, (outReady, out))
-  where
-    nextState = s
-    out = Nothing
-    outReady = inReady
+    nextState = if isJust (_last inp) then Insert { cycles = 0 } else Forward
+gapInserterT s (Nothing, inReady) = (s, (inReady, Nothing))
 
 -- | Inserts the interpacket gap between packets. More specifically,
 -- this component asserts backpressure for 12 clock cyles after receiving a frame with _last set.

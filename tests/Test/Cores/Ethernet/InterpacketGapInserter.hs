@@ -46,15 +46,14 @@ prop_interpacket_gap_inserter_id =
     (exposeClockResetEnable id)
     (exposeClockResetEnable @System interpacketGapInserterC)
     (===)
-  where
-
-  -- This is used to generate
-  genPackets =
-    PacketStreamM2S <$>
-    genVec Gen.enumBounded <*>
-    Gen.maybe Gen.enumBounded <*>
-    Gen.enumBounded <*>
-    Gen.enumBounded
+    where
+      -- This is used to generate
+      genPackets =
+        PacketStreamM2S <$>
+        genVec Gen.enumBounded <*>
+        Gen.maybe Gen.enumBounded <*>
+        Gen.enumBounded <*>
+        Gen.enumBounded
 
 fwdIn :: [Maybe (PacketStreamM2S 1 ())]
 fwdIn = [
