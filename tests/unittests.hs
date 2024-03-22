@@ -7,6 +7,7 @@ import qualified Test.Lattice.ECP5.UART
 import qualified Test.Cores.Ethernet.UpConverter
 import qualified Test.Cores.Ethernet.DownConverter
 
+import qualified Test.Cores.Ethernet.InterpacketGapInserter
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -14,4 +15,5 @@ main = defaultMain $ testGroup "."
   , Test.Lattice.ECP5.UART.tests
   , Test.Cores.Ethernet.UpConverter.tests
   , Test.Cores.Ethernet.DownConverter.tests
+  , Test.Cores.Ethernet.InterpacketGapInserter.tests
   ]
