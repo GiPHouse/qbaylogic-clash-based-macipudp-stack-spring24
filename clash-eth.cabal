@@ -124,6 +124,7 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Ethernet.PacketStream
+    Test.Cores.Ethernet.MaybeControl
   build-depends:
     clash-eth,
     QuickCheck,
@@ -132,7 +133,8 @@ test-suite test-library
     unordered-containers,
     tasty >= 1.2 && < 1.5,
     tasty-hedgehog,
-    tasty-th
+    tasty-th,
+    pretty-show
 
 -- Builds the executable 'clash', with clash-eth project in scope
 executable clash
