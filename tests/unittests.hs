@@ -6,7 +6,6 @@ import qualified Test.Cores.Ethernet.PacketStream
 import qualified Test.Lattice.ECP5.UART
 import qualified Test.Cores.Ethernet.UpConverter
 import qualified Test.Cores.Ethernet.DownConverter
-
 import qualified Test.Cores.Ethernet.InterpacketGapInserter
 
 main :: IO ()

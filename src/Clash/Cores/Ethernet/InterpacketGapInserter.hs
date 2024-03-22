@@ -12,7 +12,7 @@ import Clash.Cores.Ethernet.PacketStream
 
 
 data InterpacketGapInserterState
-  = Insert { cycles :: Unsigned 4}
+  = Insert { cycles :: Unsigned 4 }
   | Forward
   deriving (Show, Generic, NFDataX)
 
@@ -35,7 +35,7 @@ gapInserterT ::
 -- Assert backpressure for 12 clock cycles. During these cycles, the output is Nothing.
 gapInserterT Insert { cycles = c } (_, _) = (nextState, (outReady, out))
   where
-    nextState = if c < 12 then Insert { cycles = c+1 } else Forward
+    nextState = if c < 12 then Insert { cycles = c + 1 } else Forward
     out = Nothing
     outReady = PacketStreamS2M False
 -- Forward incoming data. Once the last flag is set, we insert the interpacket gap.
