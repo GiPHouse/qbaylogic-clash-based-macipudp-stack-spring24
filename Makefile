@@ -20,7 +20,7 @@ test:
 
 .PHONY: python_test
 python_test: prog
-	python -m unittest discover -s python_tests
+	sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python -m unittest discover -s python_tests
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 

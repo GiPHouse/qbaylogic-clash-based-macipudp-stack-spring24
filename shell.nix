@@ -16,6 +16,7 @@ in pkgs.haskellPackages.shellFor {
     pkgs.trellis
     pkgs.ecpprog
     pkgs.python3
+    pkgs.python311Packages.pyserial
     pkgs.plantuml
   ];
 
