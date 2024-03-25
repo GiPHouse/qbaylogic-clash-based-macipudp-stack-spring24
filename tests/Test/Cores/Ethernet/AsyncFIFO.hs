@@ -35,7 +35,7 @@ genVec gen = sequence (C.repeat gen)
 
 createDomain vSystem
   { vName="TestDom50"
-  , vPeriod=20000
+  , vPeriod=20_000
   , vActiveEdge=Rising
   , vResetKind=Asynchronous
   , vInitBehavior=Unknown
@@ -44,7 +44,7 @@ createDomain vSystem
 
 createDomain vSystem
   { vName="TestDom125"
-  , vPeriod=8000
+  , vPeriod=8_000
   , vActiveEdge=Rising
   , vResetKind=Asynchronous
   , vInitBehavior=Unknown
@@ -98,15 +98,18 @@ generateAsyncFifoIdProp wClk wRst wEn rClk rRst rEn =
           Gen.enumBounded <*>
           Gen.enumBounded
 
--- | Test the Async FIFO
+-- | The async FIFO circuit should forward all of its input data without loss and without producing extra data.
+--   This property tests whether this is true, when the clock of the writer and reader is equally fast (50 MHz).
 prop_asyncfifo_writer_speed_equal_to_reader_id :: Property
 prop_asyncfifo_writer_speed_equal_to_reader_id = generateAsyncFifoIdProp clk50 rst50 en50 clk50 rst50 en50
 
--- | Test the Async FIFO
+-- | The async FIFO circuit should forward all of its input data without loss and without producing extra data.
+--   This property tests whether this is true, when the clock of the writer (50 MHz) is slower than the clock of the reader (125 MHz).
 prop_asyncfifo_writer_speed_slower_than_reader_id :: Property
 prop_asyncfifo_writer_speed_slower_than_reader_id = generateAsyncFifoIdProp clk50 rst50 en50 clk125 rst125 en125
 
--- | Test the Async FIFO
+-- | The async FIFO circuit should forward all of its input data without loss and without producing extra data.
+--   This property tests whether this is true, when the clock of the writer (125 MHz) is faster than the clock of the reader (50 MHz).
 prop_asyncfifo_writer_speed_faster_than_reader_id :: Property
 prop_asyncfifo_writer_speed_faster_than_reader_id = generateAsyncFifoIdProp clk125 rst125 en125 clk50 rst50 en50
 
@@ -115,4 +118,3 @@ tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)
-  
