@@ -35,15 +35,15 @@ import Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControlSingleDomain)
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-prop_packetBuffer :: Property
-prop_packetBuffer = 
+prop_packetBuffer_id :: Property
+prop_packetBuffer_id = 
   propWithModelMaybeControlSingleDomain 
   @C.System
   defExpectOptions
   ((Prelude.++) <$> Gen.list (Range.linear 0 100) genLastPackets <*> Gen.list (Range.linear 1 1) genLastPackets)
   (C.exposeClockResetEnable model)              -- Desired behaviour of Circuit
   (C.exposeClockResetEnable ckt)
-  (\modelResult cktResult -> assert (noGaps cktResult Prelude.&& equal modelResult cktResult))
+  (property)
     where
       -- genPackets =
       --   PacketStreamM2S <$>
@@ -63,12 +63,14 @@ prop_packetBuffer =
         C.HiddenClockResetEnable dom
         => Circuit (PacketStream dom 4 ()) (PacketStream dom 4 ())
       
-      ckt = fromPacketStream |> packetBufferC d16
+      ckt = packetBufferC d16
 
       model :: [PacketStreamM2S 4 ()] -> [Maybe (PacketStreamM2S 4 ())]
       model xs = Just <$> xs
 
-      equal a b = catMaybes a == catMaybes b
+      property modelResult circuitResult = assert $ noGaps circuitResult Prelude.&& equal modelResult circuitResult
+        where
+          equal a b = catMaybes a == catMaybes b
 
       noGaps :: [Maybe (PacketStreamM2S 4())] -> Bool
       noGaps (Just (PacketStreamM2S { _last = Nothing }):Nothing:_) = False
