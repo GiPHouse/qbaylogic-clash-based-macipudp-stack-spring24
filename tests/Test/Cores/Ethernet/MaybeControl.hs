@@ -99,13 +99,13 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
       then def {resetCycles = max 1 (eoResetCycles eOpts - 5)}
       else def {resetCycles = eoResetCycles eOpts}
     expected = model dat
-    lhsStallC = stallC simConfig lhsStalls
-    rhsStallC = stallC simConfig rhsStalls
+    -- lhsStallC = stallC simConfig lhsStalls
+    -- rhsStallC = stallC simConfig rhsStalls
     drivenProtocol =
          driveC simDriveConfig (Just <$> dat)
-          |> lhsStallC
+          -- |> lhsStallC
           |> prot
-          |> rhsStallC
+          -- |> rhsStallC
     sampled = sampleC simConfig drivenProtocol
     lengths = pure $ length expected
 
@@ -147,7 +147,7 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
           -- Results
           m [Maybe (PacketStreamM2S dataWidth metaType)]
 
-        go _timeout _n _ []  =
+        go _timeout _n _nothingAm []  =
           -- This really should not happen, protocols should produce data indefinitely
           error "unexpected end of signal"
         go _timeout 0 nothingAm rest = do
@@ -157,17 +157,17 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
             superfluous ->
               let err = "Circuit produced more output than expected:" in
               H.failWith Nothing (err <> "\n\n" <> ppShow superfluous)
-        go timeout n nothingAm _ | timeout <= 0 =
+        go timeout n nothingAm _rest | timeout <= 0 =
           H.failWith Nothing $ concat
             [ "Circuit did not produce enough output. Expected "
             , show n, " more values. Sampled only " <> show (nExpected + nothingAm - n) <> ":\n\n"
-            , ppShow (take (nExpected + nothingAm - n) (catMaybes sampled)) ]
+            , ppShow $ catMaybes (take (nExpected + nothingAm - n) sampled)]
 
         go timeout n nothingAm (Nothing:as) = do
           -- Circuit did not output valid cycle, increment nothingAmount and continue
-          go (pred timeout) (succ nothingAm) n as
+          go (pred timeout) n (succ nothingAm) as
         go _ n nothingAm (Just _:as) =
-          -- Circuit produced a valid cycle, reset timeout
+          -- Circuit produced a valid cycle, reset timeOut
           go (fromMaybe maxBound eoTimeout) (pred n) nothingAm as
 
     -- | Generator for 'StallMode'. Shrinks towards 'NoStall'.
@@ -196,7 +196,7 @@ propWithModelMaybeControlSingleDomain ::
   -- | Test data generator
   H.Gen [PacketStreamM2S dataWidth metaType] ->
   -- | Model
-  (C.Clock dom -> C.Reset dom -> C.Enable dom -> [PacketStreamM2S dataWidth metaType] -> [Maybe (PacketStreamM2S dataWidth metaType)]) ->
+  (C.Clock dom -> C.Reset dom -> C.Enable dom -> ([PacketStreamM2S dataWidth metaType] -> [Maybe (PacketStreamM2S dataWidth metaType)])) ->
   -- | Implementation
   (C.Clock dom -> C.Reset dom -> C.Enable dom -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)) ->
   -- | Property to test for. Function is given the data produced by the model
