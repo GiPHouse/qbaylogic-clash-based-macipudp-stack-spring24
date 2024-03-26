@@ -10,7 +10,7 @@ import Clash.Prelude
 import Data.Maybe
 
 import Protocols ( Circuit(..), fromSignals )
-import Protocols.Internal ( CSignal(..))
+import Protocols.Internal ( CSignal(..) )
 
 packetBuffer
     :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
@@ -31,7 +31,7 @@ packetBuffer SNat (inM2S, inS2M) = outM2S
         outM2S = mux emptyBuffer
             (pure Nothing)
             (blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr writeCommand)
-        
+
          -- write command
         writeCommand = mux writeEnable
             (Just <$> bundle (wordAddr, inM2S))
@@ -72,7 +72,7 @@ packetBufferC
         -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
 
 packetBufferC sizeBits = fromSignals wrap
-    where 
+    where
         wrap:: ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType)),
                     Signal dom PacketStreamS2M
                 )

@@ -134,6 +134,7 @@ test-suite test-library
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
     Test.Cores.Ethernet.MaybeControl
+    Test.Cores.Ethernet.MaybeControlProperty
     Test.Cores.Ethernet.PacketBuffer
   build-depends:
     clash-eth,
