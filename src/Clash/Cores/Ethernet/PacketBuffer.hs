@@ -28,7 +28,7 @@ packetBuffer
 packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
     where
         --The backing ram
-        ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr writeCommand
+        ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
         
          -- write command
         writeCommand = func <$> writeEnable <*> leftFWD <*> wordAddr
@@ -41,7 +41,8 @@ packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> 
         wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
         wordAddr = register 0 $ mux writeEnable (wordAddr + 1) wordAddr
         packetAddr = register 0 $ mux (lastWord .&&. writeEnable) (wordAddr + 1) packetAddr
-        readAddr = register 0 $ mux readEnable (readAddr + 1) readAddr
+        readAddr' = mux readEnable (readAddr + 1) readAddr
+        readAddr = register 0 readAddr'
 
         -- Registers : status
         dropping = register False ((fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord)))
