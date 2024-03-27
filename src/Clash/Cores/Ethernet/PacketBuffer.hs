@@ -29,14 +29,14 @@ packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> 
     where
         --The backing ram
         ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
-        
+
          -- write command
         writeCommand = func <$> writeEnable <*> leftFWD <*> wordAddr
-            where 
+            where
             func False _          _     = Nothing
             func _     Nothing    _     = Nothing
             func _     (Just dat) wordAddr = Just (wordAddr, dat)
-        
+
         -- Registers : pointers
         wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
         wordAddr = register 0 $ mux writeEnable (wordAddr + 1) wordAddr
