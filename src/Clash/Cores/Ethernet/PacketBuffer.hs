@@ -25,36 +25,39 @@ packetBuffer
         )
     -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
 
-packetBuffer SNat (inM2S, inS2M) = outM2S
+packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
     where
         --The backing ram
-        outM2S = mux emptyBuffer
-            (pure Nothing)
-            (blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr writeCommand)
-
+        ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr writeCommand
+        
          -- write command
-        writeCommand = mux writeEnable
-            (Just <$> bundle (wordAddr, inM2S))
-            (pure Nothing)
-
-        -- Registers
+        writeCommand = func <$> writeEnable <*> leftFWD <*> wordAddr
+            where 
+            func False _          _     = Nothing
+            func _     Nothing    _     = Nothing
+            func _     (Just dat) wordAddr = Just (wordAddr, dat)
+        
+        -- Registers : pointers
         wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
         wordAddr = register 0 $ mux writeEnable (wordAddr + 1) wordAddr
         packetAddr = register 0 $ mux (lastWord .&&. writeEnable) (wordAddr + 1) packetAddr
         readAddr = register 0 $ mux readEnable (readAddr + 1) readAddr
+
+        -- Registers : status
         dropping = register False ((fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord)))
+        emptyBuffer  = (register 0 packetAddr) .==. readAddr
 
         -- Only write if there is space
         writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping)
-        -- renove notEmptyBuffer and add this to outM2S
-        readEnable = notEmpty .&&. (_ready <$> inS2M)
+        -- remove notEmptyBuffer and add this to rightFWD
+        readEnable = notEmpty .&&. (_ready <$> leftBWD)
         notEmpty = not <$> emptyBuffer
 
         --The status signals
-        emptyBuffer  = packetAddr .==. readAddr
         fullBuffer = (wordAddr + 1)  .==. readAddr
-        writeRequest = isJust <$> inM2S
-        lastWord = isLast <$> inM2S
+        writeRequest = isJust <$> leftFWD
+        lastWord = isLast <$> leftFWD
+
         isLast :: Maybe (PacketStreamM2S dataWidth metaType) -> Bool
         isLast word = case word of
             Just (PacketStreamM2S { _last = Just _ }) -> True
@@ -77,4 +80,4 @@ packetBufferC sizeBits = forceResetSanity |> fromPacketStream |> fromSignals wra
                     Signal dom PacketStreamS2M
                 )
             -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
-        wrap (CSignal inFWD, inBWD)  = (CSignal (pure ()), packetBuffer sizeBits (inFWD, inBWD))
+        wrap (CSignal leftFWD, rightBWD)  = (CSignal (pure ()), packetBuffer sizeBits (leftFWD, rightBWD))
