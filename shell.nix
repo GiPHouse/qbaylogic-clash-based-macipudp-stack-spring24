@@ -11,7 +11,9 @@ in pkgs.haskellPackages.shellFor {
     pkgs.haskellPackages.cabal-install
     pkgs.haskellPackages.stylish-haskell
     pkgs.haskellPackages.haskell-language-server
+    pkgs.gtkwave
     pkgs.yosys
+    pkgs.yosys-ecp5-infer-outreg
     pkgs.nextpnr
     pkgs.trellis
     pkgs.ecpprog
@@ -21,6 +23,7 @@ in pkgs.haskellPackages.shellFor {
   ];
 
   shellHook = ''
+    export YOSYS_ECP5_INFER_OUTREG_LIB=${pkgs.yosys-ecp5-infer-outreg}/share/yosys/plugins/lib/ecp5_infer_bram_outreg.so
     echo "Run a local hoogle server with \"hoogle server --local\""
     source env.sh
   '';
