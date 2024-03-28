@@ -15,6 +15,7 @@ import Data.Proxy ( Proxy(Proxy) )
 import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..) )
 import Clash.Cores.Ethernet.RGMII ( rgmiiReceiver, RGMIIRXChannel )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
+import Clash.Cores.Ethernet.Util (extractSignal)
 
 -- import uart
 import Clash.Cores.UART ( ValidBaud, baudGenerator )
@@ -28,9 +29,6 @@ import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.Internal ( CSignal(CSignal) )
 import Protocols.DfConv ( fifo )
 
-
-extractSignal :: CSignal dom a -> Signal dom a
-extractSignal (CSignal x) = x
 
 uartEthRxStack
   :: forall baud dom domEth0 domDDREth0. 
