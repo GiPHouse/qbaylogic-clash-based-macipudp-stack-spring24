@@ -13,9 +13,9 @@ import Data.Proxy ( Proxy(Proxy) )
 
 -- import ethernet
 import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..) )
-import Clash.Cores.Ethernet.RGMII ( rgmiiReceiver, RGMIIRXChannel )
+import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel, rgmiiReceiver )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
-import Clash.Cores.Ethernet.Util (extractSignal)
+import Clash.Cores.Ethernet.Util ( extractSignal )
 
 -- import uart
 import Clash.Cores.UART ( ValidBaud, baudGenerator )
@@ -26,12 +26,12 @@ import Clash.Lattice.ECP5.UART ( uartTxNoBaudGenC )
 
 -- import protocols
 import Protocols ( Circuit, toSignals, (|>) )
-import Protocols.Internal ( CSignal(CSignal) )
 import Protocols.DfConv ( fifo )
+import Protocols.Internal ( CSignal(CSignal) )
 
 
 uartEthRxStack
-  :: forall baud dom domEth0 domDDREth0. 
+  :: forall baud dom domEth0 domDDREth0.
   ( KnownDomain domDDREth0
   , HiddenClockResetEnable domEth0
   , ValidBaud dom baud

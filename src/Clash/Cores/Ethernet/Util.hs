@@ -4,7 +4,7 @@ module Clash.Cores.Ethernet.Util
     ) where
 
 import Clash.Prelude
-import Protocols.Internal (CSignal(CSignal))
+import Protocols.Internal ( CSignal(CSignal) )
 
 -- | Wrap a value in a Just if True
 toMaybe :: Bool -> a -> Maybe a
