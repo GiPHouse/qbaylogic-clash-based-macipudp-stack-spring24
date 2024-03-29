@@ -27,13 +27,13 @@ packetBuffer
      )
   -- ^ Output CSignal s
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
-packetBuffer SNat (leftFWD, rechtBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
+packetBuffer SNat (fwdIn, bwdIn) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
 
       -- write command
-    writeCommand = func <$> writeEnable <*> leftFWD <*> wordAddr
+    writeCommand = func <$> writeEnable <*> fwdIn <*> wordAddr
       where
         func False _          _     = Nothing
         func _     Nothing    _     = Nothing
@@ -54,13 +54,13 @@ packetBuffer SNat (leftFWD, rechtBWD) = mux emptyBuffer (pure Nothing) (Just <$>
     -- Only write if there is space
     writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping)
     -- Read when the word has been received
-    readEnable = notEmpty .&&. (_ready <$> rechtBWD)
+    readEnable = notEmpty .&&. (_ready <$> bwdIn)
     notEmpty = not <$> emptyBuffer
 
     --The status signals
     fullBuffer = (wordAddr + 1)  .==. readAddr
-    writeRequest = isJust <$> leftFWD
-    lastWord = isLast <$> leftFWD
+    writeRequest = isJust <$> fwdIn
+    lastWord = isLast <$> fwdIn
 
     isLast :: Maybe (PacketStreamM2S dataWidth metaType) -> Bool
     isLast word = case word of
@@ -86,4 +86,4 @@ packetBufferC sizeBits = forceResetSanity |> fromPacketStream |> fromSignals wra
                 Signal dom PacketStreamS2M
             )
         -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
-    wrap (CSignal leftFWD, rightBWD)  = (CSignal (pure ()), packetBuffer sizeBits (leftFWD, rightBWD))
+    wrap (CSignal fwdIn, bwdIn)  = (CSignal (pure ()), packetBuffer sizeBits (fwdIn, bwdIn))
