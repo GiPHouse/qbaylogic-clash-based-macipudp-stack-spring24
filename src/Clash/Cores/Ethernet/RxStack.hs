@@ -8,9 +8,8 @@ import Protocols
 import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
 import Clash.Cores.Ethernet.UpConverter (upConverterC)
 
--- For now this is just an Id circuit,
--- Will be replaced with everything that has to be done
--- for an ethernet stack in the future.
+
+{-# NOINLINE rxStack #-}
 rxStack 
   :: forall 
   (dataWidth :: Nat) 

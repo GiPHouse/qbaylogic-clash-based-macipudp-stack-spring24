@@ -1,4 +1,5 @@
 {-# language NumericUnderscores #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
@@ -11,6 +12,12 @@ import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
 import Clash.Cores.UART (baudGenerator)
 import Clash.Prelude (exposeClockResetEnable)
+import Clash.Cores.Ethernet.PacketStream
+import Protocols (toSignals, (|>))
+import Clash.Cores.Ethernet.UpConverter
+import Protocols.DfConv (fifo)
+import Data.Data (Proxy(Proxy))
+import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -38,6 +45,18 @@ data HubOut domain = HubOut
     hub_data :: "data" ::: Signal domain (BitVector 48)
   }
 
+-- topEntity
+--   :: Clock Dom25
+--   -> ( Signal Dom25 (Maybe (PacketStreamM2S 1 ()))
+--      , Signal Dom25 PacketStreamS2M
+--      )
+--   -> (Signal Dom25 PacketStreamS2M, Signal Dom25 (Maybe (PacketStreamM2S 4 ())))
+-- topEntity clk = toSignals ckt'
+--   where
+--     upConverterC' = exposeClockResetEnable upConverterC clk resetGen enableGen 
+--     ckt = upConverterC' |> asyncFifoC d10 clk resetGen enableGen clk resetGen enableGen
+--     ckt' = exposeClockResetEnable ckt clk resetGen enableGen 
+
 topEntity
   :: "clk25" ::: Clock Dom25
   -> "uart_rx" ::: Signal Dom50 Bit
@@ -62,8 +81,7 @@ topEntity clk25 _uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
 
     {- ETH0 ~ RGMII transceivers -}
     eth0Txclk = rgmii_rx_clk eth0_rx
-    (_eth0Err, eth0Data) = unbundle $ rgmiiReceiver eth0_rx (delayg d80) iddrx1f
-    eth0Tx = rgmiiSender eth0Txclk resetGen (delayg d0) oddrx1f eth0Data
+    eth0Tx = rgmiiSender eth0Txclk resetGen (delayg d0) oddrx1f (pure Nothing)
 
     {- ETH1 ~ RGMII transceivers -}
     eth1Txclk = rgmii_rx_clk eth1_rx

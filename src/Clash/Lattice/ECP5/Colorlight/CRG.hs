@@ -13,7 +13,7 @@ createDomain vSystem
   { vName="Dom25"
   , vPeriod=40000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -22,7 +22,7 @@ createDomain vSystem
   { vName="Dom50"
   , vPeriod=20000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -31,7 +31,7 @@ createDomain vSystem
   { vName="DomEth0"
   , vPeriod=8000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -40,7 +40,7 @@ createDomain vSystem
   { vName="DomDDREth0"
   , vPeriod=4000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -49,7 +49,7 @@ createDomain vSystem
   { vName="DomEth1"
   , vPeriod=8000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -58,7 +58,7 @@ createDomain vSystem
   { vName="DomDDREth1"
   , vPeriod=4000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
@@ -67,7 +67,7 @@ createDomain vSystem
   { vName="DomEthTx"
   , vPeriod=8000
   , vActiveEdge=Rising
-  , vResetKind=Asynchronous
+  , vResetKind=Synchronous
   , vInitBehavior=Unknown
   , vResetPolarity=ActiveHigh
   }
