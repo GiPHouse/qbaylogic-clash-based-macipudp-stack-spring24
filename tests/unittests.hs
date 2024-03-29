@@ -9,7 +9,8 @@ import qualified Test.Cores.Ethernet.DownConverter
 import qualified Test.Cores.Ethernet.PacketBuffer
 import qualified Test.Cores.Ethernet.MaybeControl
 import qualified Test.Cores.Ethernet.MaybeControlProperty
-
+import qualified Test.Cores.Ethernet.InterpacketGapInserter
+import qualified Test.Cores.Ethernet.AsyncFIFO
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -20,4 +21,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.DownConverter.tests
     , Test.Cores.Ethernet.MaybeControlProperty.tests
     , Test.Cores.Ethernet.PacketBuffer.tests
+    , Test.Cores.Ethernet.InterpacketGapInserter.tests
   ]
