@@ -6,6 +6,7 @@ module Clash.Cores.Ethernet.PacketBuffer
     ) where
 
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Util
 import Clash.Prelude
 import Data.Maybe
 
@@ -19,15 +20,15 @@ packetBuffer
   => KnownNat sizeBits
   => NFDataX metaType
   => 1 <= sizeBits
-  -- ^ Depth of the packet buffer 2^sizeBits
   => SNat sizeBits
-  -- ^ Input packetStream
+  -- ^ Depth of the packet buffer 2^sizeBits
   -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
-  -- ^ Output CSignal s
+  -- ^ Input packetStream
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
-packetBuffer SNat (fwdIn, bwdIn) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
+  -- ^ Output CSignal s
+packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> emptyBuffer <*> ramOut
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
