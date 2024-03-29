@@ -12,45 +12,58 @@ import Data.Proxy ( Proxy(Proxy) )
 
 -- import ethernet
 import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..) )
-import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel, rgmiiReceiver )
+import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), rgmiiReceiver )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
+import Clash.Cores.Ethernet.DownConverter
 
 -- import uart
--- import uart
-import Clash.Cores.UART ( ValidBaud, BaudGenerator )
+import Clash.Cores.UART ( BaudGenerator )
 
 -- import ECP5
 import Clash.Lattice.ECP5.Prims ( delayg, iddrx1f )
-import Clash.Lattice.ECP5.UART ( uartTxC, uartTxNoBaudGenC )
+import Clash.Lattice.ECP5.UART ( uartTxNoBaudGenC )
 
 -- import protocols
 import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.DfConv ( fifo )
 import Protocols.Internal ( CSignal(CSignal) )
 
+-- SNat depth
+--   -> Clock wDom
+--   -> Reset wDom
+--   -> Enable wDom
+--   -> Clock rDom
+--   -> Reset rDom
+--   -> Enable rDom
+--   -> Circuit (PacketStream wDom dataWidth metaType) (PacketStream rDom dataWidth metaType)
+-- Circuit (PacketStream wDom dataWidth metaType) (PacketStream rDom dataWidth metaType)
+-- _ :: Circuit (PacketStream domEth 1 ()) (PacketStream dom 1 ())
 
 uartEthRxStack
-  :: forall domEth domDDREth.
-  ( KnownDomain domDDREth
-  , HiddenClockResetEnable domEth
-  -- , ValidBaud domEth baud
+  :: forall dom domEth domDDREth.
+  ( KnownDomain dom
+  , KnownDomain domEth
+  , HiddenClockResetEnable dom
+  , KnownDomain domDDREth
   , KnownConf domEth ~ 'DomainConfiguration domEth 8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
   , KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
   )
-  => BaudGenerator domEth
+  => BaudGenerator dom
   -> RGMIIRXChannel domEth domDDREth
-  -> Signal domEth Bit
-uartEthRxStack baud channel = uartTxBitS
-  where
+  -> Signal dom Bit
+uartEthRxStack baudGen channel = uartTxBitS
+  where 
     rgmiiRx = rgmiiReceiver channel (delayg d80) iddrx1f
     packetStream = fmap rgmiiRecvToPacketStream rgmiiRx
 
-    ckt :: Circuit (PacketStream domEth 1 ()) (CSignal domEth Bit)
-    ckt = rxStack
+    ckt :: Circuit (PacketStream domEth 1 ()) (CSignal dom Bit)
+    ckt = rxStack @4 (rgmii_rx_clk channel)
       |> fifo Proxy Proxy (SNat @16000)
-      |> uartTxNoBaudGenC baud
+      |> downConverterC
+      |> uartTxNoBaudGenC baudGen
 
     (_, CSignal uartTxBitS) = toSignals ckt (packetStream, CSignal $ pure ())
+
 
 rgmiiRecvToPacketStream :: (Bool, Maybe (BitVector 8)) -> Maybe (PacketStreamM2S 1 ())
 rgmiiRecvToPacketStream (err, Just dat) = Just $ PacketStreamM2S (singleton dat) Nothing () err
