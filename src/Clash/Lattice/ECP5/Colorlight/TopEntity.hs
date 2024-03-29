@@ -12,13 +12,6 @@ import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
 import Clash.Cores.UART (baudGenerator)
 import Clash.Prelude (exposeClockResetEnable)
-import Clash.Cores.Ethernet.PacketStream
-import Protocols (toSignals, (|>))
-import Clash.Cores.Ethernet.UpConverter
-import Protocols.DfConv (fifo)
-import Data.Data (Proxy(Proxy))
-import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
-
 data SDRAMOut domain = SDRAMOut
   {
     sdram_clock :: "clk" :::Clock domain,
@@ -45,18 +38,6 @@ data HubOut domain = HubOut
     hub_data :: "data" ::: Signal domain (BitVector 48)
   }
 
--- topEntity
---   :: Clock Dom25
---   -> ( Signal Dom25 (Maybe (PacketStreamM2S 1 ()))
---      , Signal Dom25 PacketStreamS2M
---      )
---   -> (Signal Dom25 PacketStreamS2M, Signal Dom25 (Maybe (PacketStreamM2S 4 ())))
--- topEntity clk = toSignals ckt'
---   where
---     upConverterC' = exposeClockResetEnable upConverterC clk resetGen enableGen 
---     ckt = upConverterC' |> asyncFifoC d10 clk resetGen enableGen clk resetGen enableGen
---     ckt' = exposeClockResetEnable ckt clk resetGen enableGen 
-
 topEntity
   :: "clk25" ::: Clock Dom25
   -> "uart_rx" ::: Signal Dom50 Bit
@@ -74,10 +55,10 @@ topEntity
 topEntity clk25 _uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
   let
     (clk50, _clkEthTx, rst50, _rstEthTx) = crg clk25
+    en50 = enableGen
 
-    -- UART
-    uartTxBit = exposeClockResetEnable uartEthRxStack clk50 rst50 enableGen
-      (exposeClockResetEnable baudGenerator clk50 rst50 enableGen (SNat @19200)) eth0_rx
+    baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
+    uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
 
     {- ETH0 ~ RGMII transceivers -}
     eth0Txclk = rgmii_rx_clk eth0_rx

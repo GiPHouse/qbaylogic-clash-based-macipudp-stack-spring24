@@ -8,13 +8,11 @@ import Protocols
 import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
 import Clash.Cores.Ethernet.UpConverter (upConverterC)
 
-
-{-# NOINLINE rxStack #-}
-rxStack 
-  :: forall 
-  (dataWidth :: Nat) 
+rxStack
+  :: forall
+  (dataWidth :: Nat)
   (dom :: Domain)
-  (domEth :: Domain). 
+  (domEth :: Domain).
   ( HiddenClockResetEnable dom
   , KnownDomain domEth
   )
