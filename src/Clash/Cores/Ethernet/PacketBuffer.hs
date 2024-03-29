@@ -19,10 +19,13 @@ packetBuffer
   => KnownNat sizeBits
   => NFDataX metaType
   => 1 <= sizeBits
+  -- ^ Depth of the packet buffer 2^sizeBits
   => SNat sizeBits
-  -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType)),
-        Signal dom PacketStreamS2M
-    )
+  -- ^ Input packetStream
+  -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     , Signal dom PacketStreamS2M
+     )
+  -- ^ Output CSignal s
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
 packetBuffer SNat (leftFWD, rechtBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
   where
@@ -64,7 +67,8 @@ packetBuffer SNat (leftFWD, rechtBWD) = mux emptyBuffer (pure Nothing) (Just <$>
         Just (PacketStreamM2S { _last = Just _ }) -> True
         _ -> False
 
--- Fix the type signature of packetBufferC to match the expected type of fromSignals
+-- | PacketBuffer Circuit, does not generate backpressure on the RHS, but instead drops packets
+-- Respects backpressure on the LHS 
 packetBufferC
   :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
@@ -72,7 +76,9 @@ packetBufferC
     => KnownNat sizeBits
     => NFDataX metaType
     => 1 <= sizeBits
+    -- ^ Depth of the packet buffer 2^sizeBits
     => SNat sizeBits
+    -- ^ Packet buffer circuit
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC sizeBits = forceResetSanity |> fromPacketStream |> fromSignals wrap
   where
