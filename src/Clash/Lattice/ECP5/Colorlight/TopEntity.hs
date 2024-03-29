@@ -8,6 +8,8 @@ import Clash.Cores.Ethernet.RGMII
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
+import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
+import Clash.Cores.UART (baudGenerator)
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -54,7 +56,7 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
     (clk50, _clkEthTx, _rst50, _rstEthTx) = crg clk25
 
     -- UART
-    uartTxBit = uartRxBit
+    uartTxBit = uartEthRxStack (baudGenerator (SNat @19200)) eth0_rx
 
     {- ETH0 ~ RGMII transceivers -}
     eth0Txclk = rgmii_rx_clk eth0_rx

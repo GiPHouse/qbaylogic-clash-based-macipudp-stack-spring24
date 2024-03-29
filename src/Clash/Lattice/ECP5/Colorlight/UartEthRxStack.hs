@@ -16,11 +16,12 @@ import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel, rgmiiReceiver )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
 
 -- import uart
-import Clash.Cores.UART ( ValidBaud )
+-- import uart
+import Clash.Cores.UART ( ValidBaud, BaudGenerator )
 
 -- import ECP5
 import Clash.Lattice.ECP5.Prims ( delayg, iddrx1f )
-import Clash.Lattice.ECP5.UART ( uartTxC )
+import Clash.Lattice.ECP5.UART ( uartTxC, uartTxNoBaudGenC )
 
 -- import protocols
 import Protocols ( Circuit, toSignals, (|>) )
@@ -29,14 +30,14 @@ import Protocols.Internal ( CSignal(CSignal) )
 
 
 uartEthRxStack
-  :: forall baud domEth domDDREth.
+  :: forall domEth domDDREth.
   ( KnownDomain domDDREth
   , HiddenClockResetEnable domEth
-  , ValidBaud domEth baud
+  -- , ValidBaud domEth baud
   , KnownConf domEth ~ 'DomainConfiguration domEth 8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
   , KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
   )
-  => SNat baud
+  => BaudGenerator domEth
   -> RGMIIRXChannel domEth domDDREth
   -> Signal domEth Bit
 uartEthRxStack baud channel = uartTxBitS
@@ -47,7 +48,7 @@ uartEthRxStack baud channel = uartTxBitS
     ckt :: Circuit (PacketStream domEth 1 ()) (CSignal domEth Bit)
     ckt = rxStack
       |> fifo Proxy Proxy (SNat @16000)
-      |> uartTxC baud
+      |> uartTxNoBaudGenC baud
 
     (_, CSignal uartTxBitS) = toSignals ckt (packetStream, CSignal $ pure ())
 
