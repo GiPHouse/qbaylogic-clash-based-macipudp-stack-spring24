@@ -28,7 +28,7 @@ packetBuffer
   -- ^ Input packetStream
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
   -- ^ Output CSignal s
-packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> emptyBuffer <*> ramOut
+packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
