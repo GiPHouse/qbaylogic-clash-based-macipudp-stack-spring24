@@ -19,7 +19,12 @@ module Clash.Cores.Ethernet.RGMII
   ) where
 
 import Clash.Prelude
-import Data.Maybe ( isJust )
+import Data.Maybe 
+
+import Clash.Cores.Ethernet.PacketStream
+import Protocols
+
+
 -- | RX channel from the RGMII PHY
 data RGMIIRXChannel domain ddrDomain = RGMIIRXChannel
   {
@@ -83,9 +88,8 @@ toMaybe False _ = Nothing
 
 -- | receiver component of RGMII
 rgmiiReceiver
-  :: forall (dom :: Domain) (domDDR :: Domain) fPeriod edge reset init polarity
-   . KnownConfiguration domDDR ('DomainConfiguration domDDR fPeriod edge reset init polarity)
-  => KnownConfiguration dom ('DomainConfiguration dom (2*fPeriod) edge reset init polarity)
+  :: forall dom domDDR
+   . (2 * DomainPeriod domDDR ~ DomainPeriod dom, KnownDomain dom)
   => RGMIIRXChannel dom domDDR
   -- ^ rx channel from phy
   -> (forall a. Signal domDDR a -> Signal domDDR a)
@@ -119,3 +123,40 @@ rgmiiReceiver channel rxdelay iddr = bundle (ethRxErr, byteStream)
 
     byteStream :: Signal dom (Maybe (BitVector 8))
     byteStream = toMaybe <$> ethRxDv <*> rxData
+
+newtype RgmiiRxAdapterState = RgmiiRxAdapterState { _last_byte :: Maybe (BitVector 8) }
+  deriving (Generic, NFDataX)
+
+instance Protocol (RGMIIRXChannel domain ddrDomain) where
+  type Fwd (RGMIIRXChannel domain ddrDomain) = RGMIIRXChannel domain ddrDomain
+  type Bwd (RGMIIRXChannel domain ddrDomain) = Signal domain ()
+
+-- | Circuit that adapts a RGMIIRXChannel into a PacketStream
+unsafeRgmiiRxC :: forall dom domDDR
+   . HiddenClockResetEnable dom
+  => KnownDomain dom
+  => 2 * DomainPeriod domDDR ~ DomainPeriod dom
+  => RGMIIRXChannel dom domDDR
+  -- ^ rx channel from phy
+  -> (forall a. Signal domDDR a -> Signal domDDR a)
+  -- ^ rx delay function
+  -> (forall a. (NFDataX a, BitPack a) => Clock dom -> Reset dom -> Signal domDDR a -> Signal dom (a, a))
+  -- ^ iddr function
+  -> Circuit (RGMIIRXChannel dom domDDR) (PacketStream dom 1 ())
+unsafeRgmiiRxC channel rxdelay iddr = fromSignals ckt
+    where
+        inputS = rgmiiReceiver channel rxdelay iddr
+        ckt (_, bwdIn) = mealyB stateFunc s0 (inputS, bwdIn)
+          where
+            s0 = RgmiiRxAdapterState { _last_byte = Nothing }
+            stateFunc s ((rxErr, inp), PacketStreamS2M bwd) = (nextState, ((), out))
+              where
+                nextState = RgmiiRxAdapterState { _last_byte = inp }
+                -- drop packets when receiving backpressure
+                out = if not bwd then Nothing else fmap go (_last_byte s)
+                go x = PacketStreamM2S {
+                    _data = x :> Nil,
+                    _last = if isNothing inp then Just 0 else Nothing,
+                    _meta = (),
+                    _abort = rxErr
+                }
