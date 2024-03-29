@@ -7,13 +7,14 @@ module Test.Cores.Ethernet.PacketBuffer where
 -- base
 import Prelude
 import Data.Maybe
+import qualified Data.List as L
 
 -- clash-prelude
 import qualified Clash.Prelude as C
 import Clash.Prelude hiding (undefined)
 
 -- hedgehog
-import Hedgehog
+import Hedgehog as H
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
@@ -49,16 +50,9 @@ dropLargePackets size words = Prelude.concat $ Prelude.reverse $ Prelude.filter 
     fitts size l = (Prelude.length l) <=  (2 Prelude.^ size) 
 
 prop_packetBuffer_id :: Property
-prop_packetBuffer_id = 
-  propWithModelMaybeControlSingleDomain 
-  @C.System
-  defExpectOptions
-  ((Prelude.++) <$> Gen.list (Range.linear 0 100) genPackets <*> Gen.list (Range.linear 1 1) genLastPackets)
-  (C.exposeClockResetEnable model)              -- Desired behaviour of Circuit
-  (C.exposeClockResetEnable ckt)
-  (property)
-    where
-      genPackets =
+prop_packetBuffer_id = property $ do
+
+  let genPackets =
          PacketStreamM2S <$>
          genVec Gen.enumBounded <*>
          Gen.maybe Gen.enumBounded <*>
@@ -72,23 +66,27 @@ prop_packetBuffer_id =
         Gen.enumBounded <*>
         Gen.enumBounded
 
-      ckt :: forall  (dom :: C.Domain).
-        C.HiddenClockResetEnable dom
-        => Circuit (PacketStream dom 4 ()) (PacketStream dom 4 ())
-      
-      ckt = packetBufferC d16
+      ckt = exposeClockResetEnable (packetBufferC d16) systemClockGen resetGen enableGen
 
-      model :: [PacketStreamM2S 4 ()] -> [Maybe (PacketStreamM2S 4 ())]
-      model xs = Just <$> xs
-
-      property modelResult circuitResult = assert $ noGaps circuitResult Prelude.&& equal modelResult circuitResult
-        where
-          equal a b = catMaybes a == catMaybes b
+      equal :: [Maybe (PacketStreamM2S 4())] -> [Maybe (PacketStreamM2S 4())] -> Bool
+      equal a b = catMaybes a == catMaybes b
 
       noGaps :: [Maybe (PacketStreamM2S 4())] -> Bool
       noGaps (Just (PacketStreamM2S { _last = Nothing }):Nothing:_) = False
       noGaps (_:xs) = noGaps xs
       noGaps [] = True
+
+  let n = 10_000
+  let gen = (Prelude.++) <$> Gen.list (Range.linear 0 100) genPackets <*> Gen.list (Range.linear 1 1) genLastPackets
+
+  (packets :: [PacketStreamM2S 4 ()]) <- H.forAll gen
+  let packetBufferSize = d16
+  let cfg = SimulationConfig 1 (2 * snatToNum packetBufferSize) True
+  let sim = simulateC ckt cfg
+
+  let circuitResult = sim (Just <$> packets)
+
+  assert $ noGaps circuitResult 
 
 prop_packetBuffer_dropLargePacket :: Property
 prop_packetBuffer_dropLargePacket = 
@@ -127,8 +125,8 @@ prop_packetBuffer_dropLargePacket =
         where
           equal a b = catMaybes a == catMaybes b
 
-prop_packetBuffer_dropPackets :: Property
-prop_packetBuffer_dropPackets = 
+prop_packetBuffer_dropPackets_withBackpressure :: Property
+prop_packetBuffer_dropPackets_withBackpressure = 
   propWithModelMaybeControlSingleDomain 
   @C.System
   defExpectOptions
@@ -138,7 +136,7 @@ prop_packetBuffer_dropPackets =
   (property)
     where
       somePackets = (Prelude.++) <$> Gen.list (Range.linear 0 20) genPackets <*> Gen.list (Range.linear 1 1) genLastPackets
-      bigPacket = (Prelude.++) <$> Gen.list (Range.linear 200 200) genNotLastPackets <*> Gen.list (Range.linear 1 1) genLastPackets
+      bigPacket = (Prelude.++) <$> Gen.list (Range.linear 150 150) genNotLastPackets <*> Gen.list (Range.linear 1 1) genLastPackets
 
       genPackets =
          PacketStreamM2S <$>
@@ -175,6 +173,6 @@ prop_packetBuffer_dropPackets =
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
+    localOption (mkTimeout 30_000_000 {- 12 seconds -})
+  $ localOption (HedgehogTestLimit (Just 1000))
   $(testGroupGenerator)

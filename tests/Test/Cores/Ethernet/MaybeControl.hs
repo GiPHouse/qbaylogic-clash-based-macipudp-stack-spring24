@@ -73,16 +73,19 @@ propWithModelMaybeControl ::
   -- | Implementation
   Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)  ->
   -- | Property to test for. Function is given the data produced by the model
-  -- as (PacketStream dom dataWidth metaType) first argument, and the sampled data as a second argument.
+  -- as (Maybe (PacketStream dom dataWidth metaType)) first argument, and the sampled data as a second argument.
   ([Maybe (PacketStreamM2S dataWidth metaType)]  -> [Maybe (PacketStreamM2S dataWidth metaType)]  -> H.PropertyT IO ()) ->
   H.Property
 propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
   dat <- H.forAll genData
   let n = maximum (expectToLengths (Proxy @(PacketStream dom dataWidth metaType)) dat)
 
-
   let genStall = Gen.integral (Range.linear 0 10)
 
+
+  -- Generate stalls for LHS part of the protocol. The first line determines
+  -- whether to stall or not. The second determines how many cycles to stall
+  -- on each _valid_ cycle.
   lhsStallModes <- H.forAll (sequenceA (C.repeat @1 genStallMode))
   lhsStalls <- H.forAll (traverse (genStalls genStall n) lhsStallModes)
 
@@ -99,13 +102,13 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
       then def {resetCycles = max 1 (eoResetCycles eOpts - 5)}
       else def {resetCycles = eoResetCycles eOpts}
     expected = model dat
-    -- lhsStallC = stallC simConfig lhsStalls
-    -- rhsStallC = stallC simConfig rhsStalls
+    lhsStallC = stallC simConfig lhsStalls
+    rhsStallC = stallC simConfig rhsStalls
     drivenProtocol =
          driveC simDriveConfig (Just <$> dat)
-          -- |> lhsStallC
+          |> lhsStallC
           |> prot
-          -- |> rhsStallC
+          |> rhsStallC
     sampled = sampleC simConfig drivenProtocol
     lengths = pure $ length expected
 

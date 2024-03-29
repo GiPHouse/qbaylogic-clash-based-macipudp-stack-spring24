@@ -25,7 +25,7 @@ packetBuffer
         )
     -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
 
-packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
+packetBuffer SNat (leftFWD, rechtBWD) = mux emptyBuffer (pure Nothing) (Just <$> ramOut)
     where
         --The backing ram
         ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
@@ -51,8 +51,8 @@ packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> 
 
         -- Only write if there is space
         writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping)
-        -- remove notEmptyBuffer and add this to rightFWD
-        readEnable = notEmpty .&&. (_ready <$> leftBWD)
+        -- Read when the word has been received
+        readEnable = notEmpty .&&. (_ready <$> rechtBWD)
         notEmpty = not <$> emptyBuffer
 
         --The status signals

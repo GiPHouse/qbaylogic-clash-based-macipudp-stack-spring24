@@ -14,10 +14,10 @@ import qualified Test.Cores.Ethernet.MaybeControlProperty
 main :: IO ()
 main = defaultMain $ testGroup "."
   [ 
---    Test.Cores.Ethernet.PacketStream.tests
- -- , Test.Lattice.ECP5.UART.tests
- -- , Test.Cores.Ethernet.UpConverter.tests
- -- , Test.Cores.Ethernet.DownConverter.tests
-   Test.Cores.Ethernet.MaybeControlProperty.tests
-   , Test.Cores.Ethernet.PacketBuffer.tests
+    Test.Cores.Ethernet.PacketStream.tests
+    , Test.Lattice.ECP5.UART.tests
+    , Test.Cores.Ethernet.UpConverter.tests
+    , Test.Cores.Ethernet.DownConverter.tests
+    , Test.Cores.Ethernet.MaybeControlProperty.tests
+    , Test.Cores.Ethernet.PacketBuffer.tests
   ]

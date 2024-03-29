@@ -36,8 +36,6 @@ import Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControlSingleDomain)
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
--- | Test the packet stream instance
---   TODO: Use the fifo given by `DfConv`
 prop_MC_packetstream_fifo_id :: Property
 prop_MC_packetstream_fifo_id =
   propWithModelMaybeControlSingleDomain
@@ -56,7 +54,6 @@ prop_MC_packetstream_fifo_id =
       (PacketStream dom 1 Int)
   ckt = DfConv.fifo Proxy Proxy (C.SNat @10)
 
-  -- This is used to generate
   genPackets =
     PacketStreamM2S <$>
     (genVec Gen.enumBounded) <*>
