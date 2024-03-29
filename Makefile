@@ -18,6 +18,10 @@ clean_tests:
 test:
 	cabal test
 
+.PHONY: python_test
+python_test: prog
+	sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python -m unittest discover -s python_tests
+
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
 verilog=verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/topEntity.v

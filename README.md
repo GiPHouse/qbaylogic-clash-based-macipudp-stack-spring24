@@ -26,13 +26,20 @@ There is a `Makefile` with the following targets:
 - `make verilog`: Synthesize verilog code from the Clash TopEntity
 - `make netlist`: Synthesize a json netlist
 - `make pnr`: Place and route the json netlist
-- `make bitstream`: Create a bitstream fromthe place and routed netlist
+- `make bitstream`: Create a bitstream from the place and routed netlist
 - `make prog`: SRAM program the FPGA. This means the image is gone after a power
    cycle. This is much faster then flashing.
 - `make flash`: Flash the bitstream and reboot FPGA
+- `make python_test`: Programs the FPGA and runs the Python test suite
 
 A REPL can be started with:
 
 ```
 cabal repl
 ```
+
+## Running Python tests
+To be able to run `make python_test`, copy `python_tests/env.py.default` to
+`python_tests/env.py` and add the ethernet interface (see `ip addr`) and serial
+port device (something like `/dev/ttyACM0`, see for example
+`python -m serial.tools.list_ports`).
