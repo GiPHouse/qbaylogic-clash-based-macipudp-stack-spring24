@@ -91,6 +91,7 @@ library
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
@@ -134,6 +135,9 @@ test-suite test-library
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
+    Test.Cores.Ethernet.MaybeControl
+    Test.Cores.Ethernet.MaybeControlProperty
+    Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.AsyncFIFO
   build-depends:
@@ -145,7 +149,8 @@ test-suite test-library
     unordered-containers,
     tasty >= 1.2 && < 1.5,
     tasty-hedgehog,
-    tasty-th
+    tasty-th,
+    pretty-show
 
 -- Builds the executable 'clash', with clash-eth project in scope
 executable clash

@@ -64,3 +64,7 @@ chopPacket PacketStreamM2S {..} = packets where
 
   packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> zip lasts datas
 
+fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
+fullPackets [] = []
+fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
+                        in  init fragments ++ [lastFragment]

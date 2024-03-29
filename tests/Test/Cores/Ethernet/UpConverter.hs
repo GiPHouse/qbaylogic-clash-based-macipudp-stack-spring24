@@ -46,11 +46,6 @@ model fragments = out
     chunks = wholePackets >>= chopBy (C.natToNum @n)
     out    = fmap chunkToPacket chunks
 
-fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
-fullPackets [] = []
-fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
-                        in  init fragments ++ [lastFragment]
-
 -- | Test the upconverter stream instance
 upconverterTest :: forall n. 1 <= n => C.SNat n -> Property
 upconverterTest C.SNat =
@@ -87,4 +82,3 @@ tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (M.Just 1_000))
   $(testGroupGenerator)
-
