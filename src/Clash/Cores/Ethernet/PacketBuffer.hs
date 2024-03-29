@@ -39,13 +39,14 @@ packetBuffer SNat (leftFWD, leftBWD) = mux emptyBuffer (pure Nothing) (Just <$> 
 
         -- Registers : pointers
         wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
-        wordAddr = register 0 $ mux writeEnable (wordAddr + 1) wordAddr
+        wordAddr = register 0 $ mux dropping packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
         packetAddr = register 0 $ mux (lastWord .&&. writeEnable) (wordAddr + 1) packetAddr
         readAddr' = mux readEnable (readAddr + 1) readAddr
         readAddr = register 0 readAddr'
 
         -- Registers : status
-        dropping = register False ((fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord)))
+        dropping, emptyBuffer :: Signal dom (Bool)
+        dropping = register False $ (fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord))
         emptyBuffer  = (register 0 packetAddr) .==. readAddr
 
         -- Only write if there is space
