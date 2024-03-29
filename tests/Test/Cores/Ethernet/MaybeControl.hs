@@ -49,17 +49,8 @@ resetGen :: C.KnownDomain dom => Int -> C.Reset dom
 resetGen n = C.unsafeFromHighPolarity
   (C.fromList (replicate n True <> repeat False))
 
--- | Test a protocol against a pure model implementation. Circuit under test will
--- be arbitrarily stalled on the left hand and right hand side and tested for
--- a number of properties:
---
---   * Whether it does not produce too little data.
---   * Whether it does not produce /more/ data than expected.
---   * Whether it responds to backpressure correctly
---   * Whether it (eventually) drives a /nack/ while in reset.
---
--- Finally, the data will be tested against the property supplied in the last
--- argument.
+-- | Like propWithModel 
+-- returns a list of maybe (Packetstream dom dataWidth metaType) instead of (PacketStream dom dataWidth metaType)
 propWithModelMaybeControl ::
   forall (dom :: C.Domain) (dataWidth :: C.Nat) (metaType :: C.Type)  .
   (C.KnownDomain dom) =>
