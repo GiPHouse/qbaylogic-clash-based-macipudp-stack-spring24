@@ -24,6 +24,8 @@ import Protocols.DfConv hiding ( pure )
 import Protocols.Hedgehog.Internal
 import Protocols.Internal
 
+import Data.Coerce (coerce)
+
 -- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
 --   with metadata that can only change on packet delineation.
 --   We bundled _tdest, _tuser and _tid into one big _meta field which holds metadata.
@@ -107,17 +109,19 @@ instance DfConv (PacketStream dom dataWidth metaType) where
   type Dom (PacketStream dom dataWidth metaType) = dom
   type FwdPayload (PacketStream dom dataWidth metaType) = PacketStreamM2S dataWidth metaType
 
-  toDfCircuit proxy = toDfCircuitHelper proxy s0 blankOtp stateFn where
-    s0 = ()
-    blankOtp = Nothing
-    stateFn ack _ optItem
-      = pure (optItem, Nothing, Maybe.isJust optItem && _ready ack)
+  toDfCircuit _ = fromSignals go
+    where
+      go (fwdIn, bwdIn)
+        = ( (fmap coerce bwdIn, pure undefined)
+          , fmap Df.dataToMaybe $ P.fst fwdIn
+          )
 
-  fromDfCircuit proxy =  fromDfCircuitHelper proxy s0 blankOtp stateFn where
-    s0 = ()
-    blankOtp = PacketStreamS2M { _ready = False }
-    stateFn m2s ack _
-      = pure (PacketStreamS2M {_ready = ack }, m2s, False)
+  fromDfCircuit _ = fromSignals go
+    where
+      go (fwdIn, bwdIn)
+        = ( fmap coerce $ P.fst bwdIn
+          , (fmap Df.maybeToData fwdIn, pure undefined)
+          )
 
 instance (KnownDomain dom) =>
   Simulate (PacketStream dom dataWidth metaType) where
@@ -177,6 +181,6 @@ forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (Pa
 forceResetSanity
   = Circuit (\(fwd, bwd) -> unbundle . fmap f . bundle $ (rstLow, fwd, bwd))
  where
-  f (True,  _,   _  ) = (PacketStreamS2M False, Nothing)
+  f (True,    _,   _) = (PacketStreamS2M False, Nothing)
   f (False, fwd, bwd) = (bwd, fwd)
   rstLow = unsafeToHighPolarity hasReset

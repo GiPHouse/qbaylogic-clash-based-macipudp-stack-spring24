@@ -1,13 +1,12 @@
 import socket
 import fcntl
 import struct
-import sys
 import serial
-
 import env
 
+# baudrate needs to be the same as in TopEntity.hs
 def open_serial():
-    return serial.Serial(env.DEV, 19200, timeout=5)
+    return serial.Serial(env.DEV, 115200, timeout=5)
 
 def open_socket():
     ETH_P_ALL = 3

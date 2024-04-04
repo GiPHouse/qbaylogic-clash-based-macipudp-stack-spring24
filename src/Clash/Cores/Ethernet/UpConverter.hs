@@ -37,6 +37,52 @@ toMaybe False _ = Nothing
 toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
 toPacketStream UpConverterState{..} = toMaybe _ucFlush (PacketStreamM2S _ucBuf _ucLastIdx () _ucAborted)
 
+nextState
+  :: KnownNat dataWidth
+  => UpConverterState dataWidth
+  -> Maybe (PacketStreamM2S 1 ())
+  -> PacketStreamS2M
+  -> UpConverterState dataWidth
+nextState st@(UpConverterState {..}) Nothing (PacketStreamS2M inReady)
+  = nextSt
+    where
+      outReady = not _ucFlush || inReady
+      -- If we can accept data we can always set _ucFlush to false,
+      -- since we only change state if we can transmit and receive data
+      nextStRaw = st
+                    { _ucFlush = False
+                    , _ucAborted = isNothing _ucLastIdx && _ucAborted
+                    , _ucLastIdx = Nothing
+                    }
+      nextSt = if outReady then nextStRaw else st
+nextState st@(UpConverterState {..}) (Just PacketStreamM2S{..}) (PacketStreamS2M inReady)
+  = nextSt
+    where
+      inLast = isJust _last
+      -- We smear an abort over the entire rest of the packet
+      -- so the next abort is set:
+      --  - If fragment we are potentially flushing was not the last and we were already aborting;
+      --  - or if the incoming fragment is aborted
+      nextAbort = (isNothing _ucLastIdx && _ucAborted) || _abort
+      -- If we are not flushing we can accept data to be stored in _ucBuf,
+      -- but when we are flushing we can only accept if the current
+      -- output fragment is accepted by the sink
+      outReady = not _ucFlush || inReady
+      bufFull = _ucIdx == maxBound
+      nextBuf = replace _ucIdx (head _data) _ucBuf
+
+      nextFlush = inLast || bufFull
+      nextIdx = if nextFlush then 0 else _ucIdx + 1
+
+      nextStRaw = UpConverterState
+                    { _ucBuf =  nextBuf
+                    , _ucIdx = nextIdx
+                    , _ucFlush = nextFlush
+                    , _ucAborted = nextAbort
+                    , _ucLastIdx = toMaybe inLast _ucIdx
+                    }
+      nextSt = if outReady then nextStRaw else st
+
 upConverter
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
@@ -60,45 +106,10 @@ upConverter = mealyB go s0
       -> ( UpConverterState dataWidth
          , (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ()))
          )
-    go st@(UpConverterState {..}) (Nothing, PacketStreamS2M inReady)
-      = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
+    go st@(UpConverterState {..}) (fwdIn, bwdIn)
+      = (nextState st fwdIn bwdIn, (PacketStreamS2M outReady, toPacketStream st))
         where
-          -- If we can accept data we can always set _ucFlush to false,
-          -- since we only change state if we can transmit and receive data
-          nextStRaw = st
-                        { _ucFlush = False
-                        , _ucAborted = isNothing _ucLastIdx && _ucAborted
-                        , _ucLastIdx = Nothing
-                        }
-          outReady = not _ucFlush || inReady
-          nextSt = if outReady then nextStRaw else st
-    go st@(UpConverterState {..}) (Just (PacketStreamM2S{..}), PacketStreamS2M inReady)
-      = (nextSt, (PacketStreamS2M outReady, toPacketStream st))
-        where
-          inLast = isJust _last
-          -- We smear an abort over the entire rest of the packet
-          -- so the next abort is set:
-          --  - If fragment we are potentially flushing was not the last and we were already aborting;
-          --  - or if the incoming fragment is aborted
-          nextAbort = (isNothing _ucLastIdx && _ucAborted) || _abort
-          -- If we are not flushing we can accept data to be stored in _ucBuf,
-          -- but when we are flushing we can only accept if the current
-          -- output fragment is accepted by the sink
-          outReady = not _ucFlush || inReady
-          bufFull = _ucIdx == maxBound
-          nextBuf = replace _ucIdx (head _data) _ucBuf
-
-          nextFlush = inLast || bufFull
-          nextIdx = if nextFlush then 0 else _ucIdx + 1
-
-          nextStRaw = UpConverterState
-                        { _ucBuf =  nextBuf
-                        , _ucIdx = nextIdx
-                        , _ucFlush = nextFlush
-                        , _ucAborted = nextAbort
-                        , _ucLastIdx = toMaybe inLast _ucIdx
-                        }
-          nextSt = if outReady then nextStRaw else st
+          outReady = not _ucFlush || (_ready bwdIn)
 
 upConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
