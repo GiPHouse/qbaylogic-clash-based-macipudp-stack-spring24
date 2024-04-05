@@ -5,9 +5,6 @@
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
 import Clash.Annotations.TH
-import Clash.Cores.Ethernet.AsyncFIFO ( asyncFifoC )
-import Clash.Cores.Ethernet.PacketBuffer
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.RGMII
     ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
 import Clash.Cores.UART ( baudGenerator )
@@ -16,10 +13,7 @@ import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
-import Clash.Lattice.ECP5.UART ( uartRxNoBaudGenC', uartTxNoBaudGenC )
 import Clash.Prelude ( exposeClockResetEnable )
-import Protocols
-import Protocols.Internal ( CSignal(CSignal) )
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -63,16 +57,15 @@ topEntity
      )
 topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
   let
-    (clk50, _clkEthTx, rst50, _rstEthTx) = crg clk25
+    (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
     en50 = enableGen
-
     baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
 
     uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
 
     {- ETH0 ~ RGMII transceivers -}
     (_eth0Err, _eth0Data) = unbundle $ rgmiiReceiver eth0_rx (delayg d80) iddrx1f
-    eth0Tx = exposeClockResetEnable (uartEthTxStack (rgmii_rx_clk eth0_rx) resetGen baudGen uartRxBit _eth0Data) clk50 rst50 en50
+    eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
 
     {- ETH1 ~ RGMII transceivers -}
     eth1Txclk = rgmii_rx_clk eth1_rx
