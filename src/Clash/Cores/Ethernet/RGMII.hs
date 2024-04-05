@@ -14,6 +14,7 @@ and requiring type-level separation between the two "clock domains".
 module Clash.Cores.Ethernet.RGMII
   ( rgmiiSender
   , rgmiiReceiver
+  , unsafeRgmiiRxC
   , RGMIIRXChannel(..)
   , RGMIITXChannel (..)
   , rgmiiTxC
@@ -21,7 +22,9 @@ module Clash.Cores.Ethernet.RGMII
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
-import Data.Maybe ( isJust )
+
+import Clash.Cores.Ethernet.Util ( toMaybe )
+import Data.Maybe ( isJust, isNothing )
 import Protocols
 
 -- | RX channel from the RGMII PHY
@@ -90,17 +93,10 @@ rgmiiSender txClk rst txdelay oddr input err = channel
                 , rgmii_tx_data = txdelay txData
                 }
 
-
--- TODO: Maybe make utility module or use existing package
-toMaybe :: Bool -> a -> Maybe a
-toMaybe True x = Just x
-toMaybe False _ = Nothing
-
 -- | receiver component of RGMII
 rgmiiReceiver
-  :: forall (dom :: Domain) (domDDR :: Domain) fPeriod edge reset init polarity
-   . KnownConfiguration domDDR ('DomainConfiguration domDDR fPeriod edge reset init polarity)
-  => KnownConfiguration dom ('DomainConfiguration dom (2*fPeriod) edge reset init polarity)
+  :: forall dom domDDR
+   . (2 * DomainPeriod domDDR ~ DomainPeriod dom, KnownDomain dom)
   => RGMIIRXChannel dom domDDR
   -- ^ rx channel from phy
   -> (forall a. Signal domDDR a -> Signal domDDR a)
@@ -135,6 +131,40 @@ rgmiiReceiver channel rxdelay iddr = bundle (ethRxErr, byteStream)
     byteStream :: Signal dom (Maybe (BitVector 8))
     byteStream = toMaybe <$> ethRxDv <*> rxData
 
+data RgmiiRxAdapterState = RgmiiRxAdapterState {
+  _last_byte :: Maybe (BitVector 8),
+  _last_rx_err :: Bool
+} deriving (Show, Generic, NFDataX)
+
+-- | Circuit that adapts a RGMIIRXChannel to a PacketStream.
+-- This component ignores backpressure, because the RGMII RX PHY is unable to handle that.
+unsafeRgmiiRxC :: forall dom domDDR .
+  ( HiddenClockResetEnable dom
+  , KnownDomain dom
+  , 2 * DomainPeriod domDDR ~ DomainPeriod dom)
+  => (forall a. Signal domDDR a -> Signal domDDR a)
+  -- ^ rx delay function
+  -> (forall a. (NFDataX a, BitPack a) => Clock dom -> Reset dom -> Signal domDDR a -> Signal dom (a, a))
+  -- ^ iddr function
+  -> Circuit (RGMIIRXChannel dom domDDR) (PacketStream dom 1 ())
+unsafeRgmiiRxC rxdelay iddr = fromSignals ckt
+  where
+    ckt (fwdIn, bwdIn) = mealyB stateFunc s0 (rgmiiReceiver fwdIn rxdelay iddr, bwdIn)
+    s0 = RgmiiRxAdapterState {_last_byte = Nothing, _last_rx_err = False}
+    stateFunc s ((rxErr, byte), _) = (nextState, ((), fwdOut))
+      where
+        nextState = RgmiiRxAdapterState {_last_byte = byte, _last_rx_err = rxErr}
+        {- Forward the RGMII receiver's inputs from last clock cycle.
+           If the last byte from the RGMII receiver was valid and the current one is not valid, we set _last.
+           If the RGMII receiver gives an error, we assert abort. -}
+        fwdOut = fmap go (_last_byte s)
+        go x = PacketStreamM2S {
+            _data = x :> Nil,
+            _last = toMaybe (isNothing byte) 0,
+            _meta = (),
+            _abort = _last_rx_err s
+        }
+
 -- | RGMII transmit circuit
 rgmiiTxC
   :: forall dom domDDR
@@ -157,3 +187,4 @@ rgmiiTxC txDelay oddr = fromSignals go
         err = getErr fwdIn
         bwdOut = pure $ PacketStreamS2M {_ready = True}
         fwdOut = rgmiiSender hasClock hasReset txDelay oddr input err
+
