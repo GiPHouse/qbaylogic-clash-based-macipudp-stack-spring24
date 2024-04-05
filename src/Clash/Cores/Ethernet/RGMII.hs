@@ -20,7 +20,7 @@ module Clash.Cores.Ethernet.RGMII
   ) where
 
 import Clash.Prelude
-import Data.Maybe 
+import Data.Maybe
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util ( toMaybe )
@@ -135,18 +135,15 @@ unsafeRgmiiRxC :: forall dom domDDR .
   ( HiddenClockResetEnable dom
   , KnownDomain dom
   , 2 * DomainPeriod domDDR ~ DomainPeriod dom)
-  => RGMIIRXChannel dom domDDR
-  -- ^ rx channel from phy
-  -> (forall a. Signal domDDR a -> Signal domDDR a)
+  => (forall a. Signal domDDR a -> Signal domDDR a)
   -- ^ rx delay function
   -> (forall a. (NFDataX a, BitPack a) => Clock dom -> Reset dom -> Signal domDDR a -> Signal dom (a, a))
   -- ^ iddr function
   -> Circuit (RGMIIRXChannel dom domDDR) (PacketStream dom 1 ())
-unsafeRgmiiRxC channel rxdelay iddr = fromSignals ckt
+unsafeRgmiiRxC rxdelay iddr = fromSignals ckt
   where
-    ckt (_, bwdIn) = mealyB stateFunc s0 (inputS, bwdIn)
+    ckt (fwdIn, bwdIn) = mealyB stateFunc s0 (rgmiiReceiver fwdIn rxdelay iddr, bwdIn)
     s0 = RgmiiRxAdapterState {_last_byte = Nothing, _last_rx_err = False}
-    inputS = rgmiiReceiver channel rxdelay iddr
     stateFunc s ((rxErr, byte), _) = (nextState, ((), fwdOut))
       where
         nextState = RgmiiRxAdapterState {_last_byte = byte, _last_rx_err = rxErr}
