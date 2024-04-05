@@ -16,7 +16,7 @@ module Clash.Cores.Ethernet.RGMII
   , rgmiiReceiver
   , RGMIIRXChannel(..)
   , RGMIITXChannel (..)
-  , toEthTransmit
+  , rgmiiTxC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -135,8 +135,8 @@ rgmiiReceiver channel rxdelay iddr = bundle (ethRxErr, byteStream)
     byteStream :: Signal dom (Maybe (BitVector 8))
     byteStream = toMaybe <$> ethRxDv <*> rxData
 
--- | *GMII transmit circuit
-toEthTransmit
+-- | RGMII transmit circuit
+rgmiiTxC
   :: forall dom domDDR
    . HiddenClockResetEnable dom
   => KnownDomain dom
@@ -147,7 +147,7 @@ toEthTransmit
   -- ^ oddr function
   -> Circuit (PacketStream dom 1 ()) (RGMIITXChannel domDDR)
   -- ^ circuit that transforms a PacketStream to a RGMIITXChannel
-toEthTransmit txDelay oddr = fromSignals go
+rgmiiTxC txDelay oddr = fromSignals go
   where
     go :: (Signal dom (Maybe (PacketStreamM2S 1 ())), Signal domDDR ()) -> (Signal dom PacketStreamS2M, RGMIITXChannel domDDR)
     go (fwdIn, _) = (bwdOut, fwdOut)
