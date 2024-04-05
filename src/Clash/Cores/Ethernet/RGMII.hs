@@ -17,15 +17,15 @@ module Clash.Cores.Ethernet.RGMII
   , unsafeRgmiiRxC
   , RGMIIRXChannel(..)
   , RGMIITXChannel (..)
+  , rgmiiTxC
   ) where
 
-import Clash.Prelude
-import Data.Maybe
-
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.Util ( toMaybe )
-import Protocols
+import Clash.Prelude
 
+import Clash.Cores.Ethernet.Util ( toMaybe )
+import Data.Maybe ( isJust, isNothing )
+import Protocols
 
 -- | RX channel from the RGMII PHY
 data RGMIIRXChannel domain ddrDomain = RGMIIRXChannel
@@ -35,6 +35,10 @@ data RGMIIRXChannel domain ddrDomain = RGMIIRXChannel
     rgmii_rx_data :: "rx_data" ::: Signal ddrDomain (BitVector 4)
   }
 
+instance Protocol (RGMIIRXChannel domain ddrDomain) where
+  type Fwd (RGMIIRXChannel domain ddrDomain) = RGMIIRXChannel domain ddrDomain
+  type Bwd (RGMIIRXChannel domain ddrDomain) = Signal domain ()
+
 -- | TX channel to the RGMII PHY
 data RGMIITXChannel ddrDomain = RGMIITXChannel
   {
@@ -42,11 +46,15 @@ data RGMIITXChannel ddrDomain = RGMIITXChannel
     rgmii_tx_ctl :: "tx_ctl" ::: Signal ddrDomain Bit,
     rgmii_tx_data :: "tx_data" ::: Signal ddrDomain (BitVector 4)
   }
+
+instance Protocol (RGMIITXChannel ddrDomain) where
+  type Fwd (RGMIITXChannel ddrDomain) = RGMIITXChannel ddrDomain
+  type Bwd (RGMIITXChannel ddrDomain) = Signal ddrDomain ()
+
 -- | sender component of RGMII -> NOTE: for now transmission error is not considered
 rgmiiSender
-  :: forall dom domDDR fPeriod edge reset init polarity
-   . KnownConfiguration domDDR ('DomainConfiguration domDDR fPeriod edge reset init polarity)
-  => KnownConfiguration dom ('DomainConfiguration dom (2*fPeriod) edge reset init polarity)
+  :: forall dom domDDR
+   . 2 * DomainPeriod domDDR ~ DomainPeriod dom
   => Clock dom
   -- ^ the DDR tx clock
   -> Reset dom
@@ -56,13 +64,16 @@ rgmiiSender
   -- ^ oddr function
   -> Signal dom (Maybe (BitVector 8))
   -- ^ Maybe the byte we have to output
+  -> Signal dom Bool
+  -- ^ Error signal whether the current packet is corrupt
   -> RGMIITXChannel domDDR
   -- ^ tx channel to the phy
-rgmiiSender txClk rst txdelay oddr input = channel
+rgmiiSender txClk rst txdelay oddr input err = channel
   where
     txEn, txErr :: Signal dom Bit
     txEn = boolToBit . isJust <$> input -- set tx_en high
-    txErr = pure 0 -- for now error always low
+    txErr = fmap boolToBit err
+
     ethTxData1, ethTxData2 :: Signal dom (BitVector 4)
     (ethTxData1, ethTxData2) = unbundle $ maybe (undefined, undefined) split <$> input
 
@@ -157,3 +168,27 @@ unsafeRgmiiRxC rxdelay iddr = fromSignals ckt
             _meta = (),
             _abort = _last_rx_err s
         }
+
+-- | RGMII transmit circuit
+rgmiiTxC
+  :: forall dom domDDR
+   . HiddenClockResetEnable dom
+  => KnownDomain dom
+  => 2 * DomainPeriod domDDR ~ DomainPeriod dom
+  => (forall a. Signal domDDR a -> Signal domDDR a)
+  -- ^ tx delay function
+  -> (forall a. (NFDataX a, BitPack a) => Clock dom -> Reset dom -> Signal dom a -> Signal dom a -> Signal domDDR a)
+  -- ^ oddr function
+  -> Circuit (PacketStream dom 1 ()) (RGMIITXChannel domDDR)
+  -- ^ circuit that transforms a PacketStream to a RGMIITXChannel
+rgmiiTxC txDelay oddr = fromSignals go
+  where
+    go (fwdIn, _) = (bwdOut, fwdOut)
+      where
+        getTx = fmap $ fmap (head . _data)
+        getErr = fmap (maybe False _abort)
+        input = getTx fwdIn
+        err = getErr fwdIn
+        bwdOut = pure $ PacketStreamS2M {_ready = True}
+        fwdOut = rgmiiSender hasClock hasReset txDelay oddr input err
+

@@ -91,13 +91,18 @@ library
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
+    Clash.Cores.Ethernet.RxStack
     Clash.Cores.Ethernet.Util
+    Clash.Cores.Ethernet.InterpacketGapInserter
+    Clash.Cores.Ethernet.AsyncFIFO
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
+    Clash.Lattice.ECP5.Colorlight.UartEthRxStack
   default-language: Haskell2010
   build-depends:
     interpolate,
@@ -132,6 +137,11 @@ test-suite test-library
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
+    Test.Cores.Ethernet.MaybeControl
+    Test.Cores.Ethernet.MaybeControlProperty
+    Test.Cores.Ethernet.PacketBuffer
+    Test.Cores.Ethernet.InterpacketGapInserter
+    Test.Cores.Ethernet.AsyncFIFO
   build-depends:
     clash-eth,
     QuickCheck,
@@ -141,7 +151,8 @@ test-suite test-library
     unordered-containers,
     tasty >= 1.2 && < 1.5,
     tasty-hedgehog,
-    tasty-th
+    tasty-th,
+    pretty-show
 
 -- Builds the executable 'clash', with clash-eth project in scope
 executable clash

@@ -8,15 +8,19 @@ format:
 	stylish-haskell -c ./.stylish-haskell.yaml -r -i src
 
 check_format:
-	cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml 
-	echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml 
+	cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
+	echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
 	stylish-haskell -c ./.stylish-haskell-check.yaml -r src
-	
-clean_tests: 
+
+clean_tests:
 	rm ./.stylish-haskell-check.yaml
 
 test:
 	cabal test
+
+.PHONY: python_test
+python_test: prog
+	sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
@@ -26,7 +30,7 @@ pnr=netlist/pnr.cfg
 bitstream=netlist/clash-eth.bit
 
 ${verilog}: ${HASKELL_SOURCES}
-	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -fclash-clear
+	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
 
 .PHONY: verilog
 verilog: $(verilog)
@@ -61,8 +65,8 @@ prog: ${bitstream}
 flash: ${bitstream}
 	sudo "PATH=$$PATH" env ecpprog -p -a ${bitstream}
 
-int: 
+int:
 	cabal run -- clashi
 
 hoogle:
-	hoogle server --local --port 8080 
+	hoogle server --local --port 8080

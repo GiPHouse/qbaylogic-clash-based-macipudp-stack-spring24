@@ -9,6 +9,7 @@ import Clash.Explicit.Prelude
 import Data.String.Interpolate ( i )
 import Data.String.Interpolate.Util ( unindent )
 
+
 createDomain vSystem
   { vName="Dom25"
   , vPeriod=40000

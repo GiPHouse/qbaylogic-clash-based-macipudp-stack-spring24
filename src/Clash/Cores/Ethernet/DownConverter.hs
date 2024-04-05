@@ -80,11 +80,12 @@ downConverter = mealyB go s0
       :: DownConverterState dataWidth
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
       -> (DownConverterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S 1 ())))
-    go st@(DownConverterState {..}) (Nothing, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
+    go st@(DownConverterState {..}) (fwdIn, PacketStreamS2M inReady) = (st', (bwdOut, fwdOut))
       where
-        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady
-                   then (_dcSize - 1, _dcBuf <<+ 0)
-                   else (_dcSize, _dcBuf)
+        (_dcSize',_dcBuf')
+          = if _dcSize > 0 && inReady
+              then (_dcSize - 1, _dcBuf <<+ 0)
+              else (_dcSize, _dcBuf)
 
         -- If the next buffer contains no valid bytes,
         -- and the final byte was acknowledged, we can
@@ -92,27 +93,15 @@ downConverter = mealyB go s0
         -- The || is lazy, and we need this: if the output
         -- of the downconverter is Nothing, we are not allowed to
         -- evaluate inReady.
-        outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
-        st' = st
-                { _dcBuf = _dcBuf'
-                , _dcSize = _dcSize'
-                }
+        outReady = _dcSize == 0 || (_dcSize == 1 && inReady)
+        st' = case fwdIn of
+                Just inp | outReady -> fromPacketStreamM2S inp
+                _ -> st  { _dcBuf = _dcBuf'
+                         , _dcSize = _dcSize'
+                         }
 
-    go st@(DownConverterState {..}) (Just packetStream, PacketStreamS2M inReady) = (st', (PacketStreamS2M outReady, toMaybePacketStreamM2S st))
-      where
-        (_dcSize',_dcBuf') = if _dcSize > 0 && inReady
-                   then (_dcSize - 1, _dcBuf <<+ 0)
-                   else (_dcSize, _dcBuf)
-
-        outReady = _dcSize == 0 || (_dcSize' == 0 && inReady)
-
-        st'
-          | outReady = fromPacketStreamM2S packetStream
-          | otherwise = st
-                          { _dcBuf = _dcBuf'
-                          , _dcSize = _dcSize'
-                          }
-
+        bwdOut = PacketStreamS2M outReady
+        fwdOut = toMaybePacketStreamM2S st
 
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
