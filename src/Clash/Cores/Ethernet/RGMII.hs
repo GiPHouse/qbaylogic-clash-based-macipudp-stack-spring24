@@ -149,7 +149,6 @@ rgmiiTxC
   -- ^ circuit that transforms a PacketStream to a RGMIITXChannel
 rgmiiTxC txDelay oddr = fromSignals go
   where
-    go :: (Signal dom (Maybe (PacketStreamM2S 1 ())), Signal domDDR ()) -> (Signal dom PacketStreamS2M, RGMIITXChannel domDDR)
     go (fwdIn, _) = (bwdOut, fwdOut)
       where
         getTx = fmap $ fmap (head . _data)
