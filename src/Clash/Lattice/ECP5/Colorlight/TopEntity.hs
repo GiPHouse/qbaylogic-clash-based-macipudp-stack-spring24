@@ -62,12 +62,13 @@ topEntity clk25 _uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
 
     {- ETH0 ~ RGMII transceivers -}
     eth0Txclk = rgmii_rx_clk eth0_rx
-    eth0Tx = rgmiiSender eth0Txclk resetGen (delayg d0) oddrx1f (pure Nothing)
+    (eth0Err, eth0Data) = unbundle $ rgmiiReceiver eth0_rx (delayg d80) iddrx1f
+    eth0Tx = rgmiiSender eth0Txclk resetGen (delayg d0) oddrx1f eth0Data eth0Err
 
     {- ETH1 ~ RGMII transceivers -}
     eth1Txclk = rgmii_rx_clk eth1_rx
-    (_eth1Err, eth1Data) = unbundle $ rgmiiReceiver eth1_rx (delayg d80) iddrx1f
-    eth1Tx = rgmiiSender eth1Txclk resetGen (delayg d0) oddrx1f eth1Data
+    (eth1Err, eth1Data) = unbundle $ rgmiiReceiver eth1_rx (delayg d80) iddrx1f
+    eth1Tx = rgmiiSender eth1Txclk resetGen (delayg d0) oddrx1f eth1Data eth1Err
 
     in
       ( uartTxBit
