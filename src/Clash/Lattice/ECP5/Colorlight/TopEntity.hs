@@ -63,8 +63,6 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
 
     uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
 
-    {- ETH0 ~ RGMII transceivers -}
-    (_eth0Err, _eth0Data) = unbundle $ rgmiiReceiver eth0_rx (delayg d80) iddrx1f
     eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
 
     {- ETH1 ~ RGMII transceivers -}

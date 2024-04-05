@@ -16,6 +16,8 @@ import Clash.Prelude
 import Protocols
 import Protocols.Internal ( CSignal(CSignal) )
 
+-- | Runs incoming packets from a UART signal through the ethernet transmit
+-- stack, creating an RGMIITXChannel.
 uartEthTxStack
   :: forall (dom :: Domain) (domEth :: Domain) (domDDREth :: Domain)
    . ( KnownDomain dom
@@ -25,10 +27,15 @@ uartEthTxStack
      , KnownConf domEth ~ 'DomainConfiguration domEth 8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
      , KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh)
   => Clock domEth
+  -- ^ Clock to pass on to the RGMII sender
   -> Reset domEth
+  -- ^ Reset to pass on to the RGMII sender
   -> BaudGenerator dom
+  -- ^ Baud generator for the UART receiver
   -> Signal dom Bit
+  -- ^ Input signal
   -> RGMIITXChannel domDDREth
+  -- ^ Output channel
 uartEthTxStack clkEth rstEth baudGen uartRxS = snd $ toSignals ckt (CSignal uartRxS, pure ())
   where
     ckt = uartRxNoBaudGenC' baudGen

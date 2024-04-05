@@ -9,6 +9,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Protocols
 
+-- | Processes bytes to send over ethernet
 txStack
   :: forall (dataWidth :: Nat) (dom :: Domain) (domEth :: Domain)
    . ( KnownNat dataWidth
