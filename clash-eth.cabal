@@ -107,6 +107,7 @@ library
   build-depends:
     interpolate,
     clash-cores,
+    clash-cores-crc,
     deepseq,
     hashable,
     -- For debugging

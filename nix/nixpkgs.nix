@@ -14,12 +14,16 @@ let
         # Add overrides here
         circuit-notation = self.callCabal2nix "circuit-notation" sources.circuit-notation {};
         # dontCheck disables test dependencies which gave problems here
+        clash-cores-crc =
+          self.callCabal2nix "clash-cores-crc" sources.clash-cores-crc {};
         clash-protocols =
           pkgs.haskell.lib.dontCheck (self.callCabal2nix "clash-protocols" sources.clash-protocols {});
         doctest-parallel =
           self.callCabal2nix "doctest-parallel" sources.doctest-parallel {};
         clash-prelude =
           self.callCabal2nix "clash-prelude" (sources.clash-compiler + "/clash-prelude") {};
+        clash-prelude-hedgehog =
+          self.callCabal2nix "clash-prelude-hedgehoge" (sources.clash-compiler + "/clash-prelude-hedgehog") {};
         clash-lib =
           self.callCabal2nix "clash-lib" (sources.clash-compiler + "/clash-lib") {};
         clash-ghc =
