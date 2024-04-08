@@ -32,7 +32,8 @@ There is a `Makefile` with the following targets:
 - `make flash`: Flash the bitstream and reboot FPGA
 - `make namespace <interface>`: Create a networking namespace "colorlight" and add `<interface>` to it
 - `make delete_namespace`: Delete the networking namespace "colorlight"
-- `make python_test <interface>`: Program the FPGA and run the Python test suite within a networking namespace
+- `make python_test`: Program the FPGA and run the Python test suite within a networking namespace. Requires that `make namespace <interface>` has been set.
+- `make unsafe_python_test`: Program the FPGA and run the Python test suite outside of a networking namespace.
 
 A REPL can be started with:
 

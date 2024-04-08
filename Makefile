@@ -42,8 +42,19 @@ delete_namespace:
 
 .PHONY: python_test
 python_test: prog
-	$(MAKE) namespace ifname=$(ifname)
-	sudo ip netns exec colorlight sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests
+	@if [ -f /run/netns/colorlight ]; then \
+		sudo ip netns exec colorlight sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests; \
+	else \
+		echo "ERROR: Namespace colorlight does not exist. Create it first or run \"make unsafe_python_test\""; \
+	fi
+
+.PHONY: unsafe_python_test
+unsafe_python_test: prog
+	@if [ ! -f /run/netns/colorlight ]; then \
+		sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests; \
+	else \
+		echo "ERROR: Namespace colorlight found, delete it first."; \
+	fi
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
