@@ -18,9 +18,32 @@ clean_tests:
 test:
 	cabal test
 
+.PHONY: namespace
+namespace:
+	@if [ ! -f /run/netns/colorlight ]; then \
+		echo "Adding $(ifname) to namespace colorlight"; \
+		sudo ip netns add colorlight; \
+		sudo ip link set $(ifname) netns colorlight; \
+		sudo ip netns exec colorlight ip addr add 192.168.1.0/24 dev $(ifname); \
+		sudo ip netns exec colorlight ip6tables -A OUTPUT -p icmpv6 --icmpv6-type router-solicitation -j DROP; \
+		sudo ip netns exec colorlight ip link set $(ifname) up; \
+	else \
+		echo "Namespace colorlight already exists"; \
+	fi
+
+.PHONY: delete_namespace
+delete_namespace:
+	@if [ -f /run/netns/colorlight ]; then \
+		echo "Deleting namespace colorlight"; \
+		sudo ip netns delete colorlight; \
+	else \
+		echo "Namespace colorlight does not exist"; \
+	fi
+
 .PHONY: python_test
 python_test: prog
-	sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests
+	$(MAKE) namespace ifname=$(ifname)
+	sudo ip netns exec colorlight sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
