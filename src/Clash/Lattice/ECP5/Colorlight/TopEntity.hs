@@ -1,3 +1,4 @@
+{-# language FlexibleContexts #-}
 {-# language NumericUnderscores #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 
@@ -6,12 +7,14 @@ module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 import Clash.Annotations.TH
 import Clash.Cores.Ethernet.RGMII
     ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
+import Clash.Cores.UART ( baudGenerator )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
+import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
-import Clash.Cores.UART (baudGenerator)
-import Clash.Prelude (exposeClockResetEnable)
+import Clash.Prelude ( exposeClockResetEnable )
+
 data SDRAMOut domain = SDRAMOut
   {
     sdram_clock :: "clk" :::Clock domain,
@@ -52,18 +55,15 @@ topEntity
      , "eth1" ::: RGMIITXChannel DomDDREth1
      , "hub" ::: HubOut Dom50
      )
-topEntity clk25 _uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
+topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
   let
-    (clk50, _clkEthTx, rst50, _rstEthTx) = crg clk25
+    (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
     en50 = enableGen
-
     baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
+
     uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
 
-    {- ETH0 ~ RGMII transceivers -}
-    eth0Txclk = rgmii_rx_clk eth0_rx
-    (eth0Err, eth0Data) = unbundle $ rgmiiReceiver eth0_rx (delayg d80) iddrx1f
-    eth0Tx = rgmiiSender eth0Txclk resetGen (delayg d0) oddrx1f eth0Data eth0Err
+    eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
 
     {- ETH1 ~ RGMII transceivers -}
     eth1Txclk = rgmii_rx_clk eth1_rx

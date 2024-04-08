@@ -18,3 +18,11 @@ def get_mac_addr(socket, ifname=env.IFNAME):
     ifname_c = struct.pack('256s', ifname[:15].encode())
     info = fcntl.ioctl(socket.fileno(), 0x8927, ifname_c)
     return bytes.fromhex(info[18:24].hex())
+
+def make_uart_packet(data: bytes):
+    """
+    Turns bytes into packets, to be read on the FPGA with toPacketC, uartRxC' or uartRxNoBaudGenC'
+    """
+    if data == b'':
+        return b''
+    return struct.pack("<H", len(data) - 1) + data
