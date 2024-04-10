@@ -18,18 +18,15 @@ clean_tests:
 test:
 	cabal test
 
+/run/netns/colorlight:
+	sudo ip netns add colorlight
+	sudo ip link set $(IFNAME) netns colorlight
+	sudo ip netns exec colorlight ip addr add 192.168.1.0/24 dev $(IFNAME)
+	sudo ip netns exec colorlight ip6tables -A OUTPUT -p icmpv6 --icmpv6-type router-solicitation -j DROP
+	sudo ip netns exec colorlight ip link set $(IFNAME) up
+
 .PHONY: namespace
-namespace:
-	@if [ ! -f /run/netns/colorlight ]; then \
-		echo "Adding $(ifname) to namespace colorlight"; \
-		sudo ip netns add colorlight; \
-		sudo ip link set $(ifname) netns colorlight; \
-		sudo ip netns exec colorlight ip addr add 192.168.1.0/24 dev $(ifname); \
-		sudo ip netns exec colorlight ip6tables -A OUTPUT -p icmpv6 --icmpv6-type router-solicitation -j DROP; \
-		sudo ip netns exec colorlight ip link set $(ifname) up; \
-	else \
-		echo "Namespace colorlight already exists"; \
-	fi
+namespace: /run/netns/colorlight
 
 .PHONY: delete_namespace
 delete_namespace:
@@ -41,20 +38,9 @@ delete_namespace:
 	fi
 
 .PHONY: python_test
-python_test: prog
-	@if [ -f /run/netns/colorlight ]; then \
-		sudo ip netns exec colorlight sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests; \
-	else \
-		echo "ERROR: Namespace colorlight does not exist. Create it first or run \"make unsafe_python_test\""; \
-	fi
-
-.PHONY: unsafe_python_test
-unsafe_python_test: prog
-	@if [ ! -f /run/netns/colorlight ]; then \
-		sudo "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests; \
-	else \
-		echo "ERROR: Namespace colorlight found, delete it first."; \
-	fi
+python_test: /run/netns/colorlight prog
+	sudo ip netns exec colorlight \
+	sudo "IFNAME=$(IFNAME)" "DEV=$(DEV)" "PATH=$$PATH" "PYTHONPATH=$$PYTHONPATH" python3 -m unittest discover -s python_tests
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
