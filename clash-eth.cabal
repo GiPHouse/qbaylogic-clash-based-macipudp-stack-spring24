@@ -99,6 +99,7 @@ library
     Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketDispatcher
     Clash.Cores.Ethernet.PacketStream
+    Clash.Cores.Ethernet.PadPacket
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
     Clash.Cores.Ethernet.RxStack
