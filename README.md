@@ -45,3 +45,10 @@ To be able to run `make python_test`, copy `env.sh.default` to
 `env.sh` and add the ethernet interface (see `ip a`) and serial
 port device (something like `/dev/ttyACM0`, see for example
 `python -m serial.tools.list_ports`).
+
+To use Wireshark with the test suite, first manually create the
+namespace with `make namespace`, then run Wireshark in the
+namspace with `sudo ip netns exec colorlight sudo wireshark`.
+The test suite can then be ran as normal.
+Alternatively, Python files can be ran manually with
+`sudo ip netns exec colorlight sudo ./<filename>`.
