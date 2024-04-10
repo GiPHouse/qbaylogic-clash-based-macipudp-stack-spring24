@@ -30,10 +30,9 @@ There is a `Makefile` with the following targets:
 - `make prog`: SRAM program the FPGA. This means the image is gone after a power
    cycle. This is much faster then flashing.
 - `make flash`: Flash the bitstream and reboot FPGA
-- `make namespace <interface>`: Create a networking namespace "colorlight" and add `<interface>` to it
+- `make namespace`: Create a networking namespace "colorlight"
 - `make delete_namespace`: Delete the networking namespace "colorlight"
-- `make python_test`: Program the FPGA and run the Python test suite within a networking namespace. Requires that `make namespace <interface>` has been set.
-- `make unsafe_python_test`: Program the FPGA and run the Python test suite outside of a networking namespace.
+- `make python_test`: Program the FPGA and run the Python test suite within a networking namespace.
 
 A REPL can be started with:
 
@@ -42,7 +41,7 @@ cabal repl
 ```
 
 ## Running Python tests
-To be able to run `make python_test`, copy `python_tests/env.py.default` to
-`python_tests/env.py` and add the ethernet interface (see `ip addr`) and serial
+To be able to run `make python_test`, copy `env.sh.default` to
+`env.sh` and add the ethernet interface (see `ip a`) and serial
 port device (something like `/dev/ttyACM0`, see for example
 `python -m serial.tools.list_ports`).
