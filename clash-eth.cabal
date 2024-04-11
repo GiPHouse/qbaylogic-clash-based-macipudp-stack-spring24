@@ -90,6 +90,7 @@ library
   hs-source-dirs: src
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Cores.Ethernet.Depacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketStream
@@ -134,6 +135,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketStream
     Test.Lattice.ECP5.UART
