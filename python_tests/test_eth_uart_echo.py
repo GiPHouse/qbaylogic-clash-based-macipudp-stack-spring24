@@ -1,6 +1,5 @@
 import unittest
 import util
-import env
 
 input = "Hello, world!"
 
@@ -12,7 +11,7 @@ class TestEthUartEcho(unittest.TestCase):
         payload += b'\x00' * padding_needed
 
         with util.open_socket() as s, util.open_serial() as se:
-            mac = util.get_mac_addr(s, env.IFNAME)
+            mac = util.get_mac_addr(s, util.IFNAME)
             frame = mac + mac + eth_type + payload
             s.send(frame)
             response = se.read(1500)

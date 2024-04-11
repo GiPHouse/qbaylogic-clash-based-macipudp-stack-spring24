@@ -22,5 +22,6 @@ in pkgs.haskellPackages.shellFor {
 
   shellHook = ''
     echo "Run a local hoogle server with \"hoogle server --local\""
+    source env.sh
   '';
 }

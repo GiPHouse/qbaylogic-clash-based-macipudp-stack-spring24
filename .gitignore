@@ -29,4 +29,5 @@ system-verilog
 netlist
 
 python_tests/__pycache__/
-python_tests/env.py
+
+env.sh

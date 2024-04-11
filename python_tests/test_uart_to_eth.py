@@ -1,7 +1,6 @@
 import struct
 import unittest
 import util
-import env
 import socket
 
 class TestUartToEth(unittest.TestCase):
