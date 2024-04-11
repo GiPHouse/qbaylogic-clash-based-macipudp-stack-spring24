@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Clash.Cores.Ethernet.UpConverter
   ( padPacketC
   ) where
@@ -7,9 +8,10 @@ import Clash.Prelude
 import Protocols
 
 data PadPacketState
-  = Forward { cycles :: Index 64}
-  | Pad { cycles :: Index 64}
-  deriving (Show, Generic, NFDataX)
+  = Filling { cycles :: Index 64}
+  | Full
+  | Padding { cycles :: Index 64}
+  deriving (Eq, Show, Generic, NFDataX)
 
 padPacket
   :: forall (dataWidth :: Nat) (dom :: Domain).
@@ -27,15 +29,43 @@ padPacket
   --   Output packet stream to the sink
 padPacket = mealyB go s0
   where
-    s0 = Forward 0
+    s0 = Filling 0
     go
       :: PadPacketState
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
       -> ( PadPacketState
          , (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ()))
          )
-    go st (fwdIn, bwdIn)
-      = undefined
+    go st (fwdIn, PacketStreamS2M inReady)
+      = (nextState st fwdIn inReady, (bwdOut st fwdIn inReady, fwdOut st fwdIn inReady))
+    
+    -- If we receive backpressure, we don't need to change the state
+    nextState st _ False = st
+
+    -- If we are filling, then the next state depends on _last
+    -- If _last is Nothing and we fill the 64 bytes, then go to Full state, otherwise keep filling
+    -- If _last is Just, then go to Padding state if not full, oterhwise go to s0
+    nextState (Filling n) (Just PacketStreamM2S {..}) True = case _last of
+      Nothing -> if n < maxBound - (natToNum @dataWidth) then Filling (n + (natToNum @dataWidth)) else Full
+      Just i  -> if n < maxBound - resize i then Padding (n + resize i) else s0
+
+    -- If we are filling and don't receive any input, we keep filling
+    nextState (Filling n) Nothing _ = Filling n
+
+    -- If we are full, then we stay in Full state until _last is Just
+    nextState Full (Just PacketStreamM2S {..}) True = case _last of
+      Nothing -> Full
+      Just _ -> s0
+
+    -- If we are full and don't receive any input, stay full
+    nextState Full Nothing _ = Full
+
+    -- While padding, it does not matter if we receive input
+    nextState (Padding n) _ True = if n > (natToNum @dataWidth) then Padding (n - (natToNum @dataWidth)) else s0
+
+    bwdOut = undefined
+
+    fwdOut = undefined
 
 padPacketC
   :: forall (dataWidth :: Nat) (dom :: Domain).
