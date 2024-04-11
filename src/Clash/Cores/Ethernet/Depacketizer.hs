@@ -46,9 +46,9 @@ sFunc :: forall (dataWidth :: Nat) (n :: Nat) (g :: Nat) (metaIn :: Type) (metaO
   -> (Maybe (PacketStreamM2S dataWidth metaIn), PacketStreamS2M)
   -> (DepacketizerState dataWidth n metaIn, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth metaOut)))
 
--- A packet is incoming, so we check if the preamble matches. If dataWidth >= 8, then the full preamble can be validated immediately,
+-- A packet is incoming, so we start depacketizing. If dataWidth >= n, then depacketization is done immediately,
 -- so forwarding data can start immediately next clock cycle. Else, we need to wait some more clock cycles. In this case,
--- we move to state Strip and record how many bytes of the preamble are already validated.
+-- we move to state Strip and record how many bytes are already parsed.
 sFunc dataWidth n Idle (Just inp, _bwdIn) = (nextState, (PacketStreamS2M True, Nothing))
   where
     parsedBytes :: Vec n (BitVector 8)
@@ -62,7 +62,7 @@ sFunc dataWidth n Idle (Just inp, _bwdIn) = (nextState, (PacketStreamS2M True, N
                   else Forward {_last_fragment = inp, _state = parsedBytes}
         SNatGT -> Parse {_byte_idx = snatToNum dataWidth, _state = parsedBytes}
 
--- Further validation of the preamble in case dataWidth < 8.
+-- Further depacketization in case dataWidth < n.
 sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = case compareSNat n dataWidth of
   SNatLE -> undefined -- impossible branch, because we immediately go to Forward in this case
   SNatGT -> (nextState, (PacketStreamS2M True, Nothing))
@@ -81,12 +81,10 @@ sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = cas
                      else Forward {_last_fragment = inp, _state = bytes}
         | otherwise = Parse {_byte_idx = i + snatToNum dataWidth, _state = bytes}
 
--- The preamble was valid, and now we are forwarding all fragments of the corresponding packet.
--- To do this, we need to store eventual data that was submitted together with the preamble and shift the stream.
+-- Depacketization is done, and now we are forwarding all fragments of the corresponding packet.
+-- To do this, we need to store eventual data that was submitted together with the header and shift the stream.
 sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just inp, bwdIn) = (nextState, (bwdIn, fwdOut))
   where
-    -- todo maybe the problem is backpressure somehow?
-    -- e.g. changing state when receving backpressure
     lastData = _data lastFragment
     nextState = case _last lastFragment of
       Nothing -> case _last inp of
@@ -130,7 +128,8 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
                   then Nothing
                   else Just (i + snatToNum (subSNat dataWidth x :: SNat (dataWidth - Mod n dataWidth)))
 
--- Sometimes _last has been set, but we cannot send all data immediately due to stream shifting.
+-- Sometimes _last has been set, but we cannot send all data immediately due to stream shifting. In this case,
+-- we need to send the remainder of the data.
 sFunc dataWidth n LastForward {_last_fragment = lastFragment, _state = state} (_, _) = (Idle, (PacketStreamS2M False, fwdOut))
   where
     x = modSNat n dataWidth

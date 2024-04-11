@@ -68,3 +68,7 @@ fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n 
 fullPackets [] = []
 fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
                         in  init fragments ++ [lastFragment]
+
+addPacketWithLastSet :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
+addPacketWithLastSet [] = error "empty list not supported"
+addPacketWithLastSet fs = fs ++ [(head fs) {_last = Just 0}]
