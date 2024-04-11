@@ -1,10 +1,11 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# language RecordWildCards #-}
 module Clash.Cores.Ethernet.UpConverter
   ( padPacketC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
+import Data.Maybe
 import Protocols
 
 data PadPacketState
@@ -38,7 +39,7 @@ padPacket = mealyB go s0
          )
     go st (fwdIn, PacketStreamS2M inReady)
       = (nextState st fwdIn inReady, (bwdOut st fwdIn inReady, fwdOut st fwdIn inReady))
-    
+
     -- If we receive backpressure, we don't need to change the state
     nextState st _ False = st
 
@@ -63,7 +64,8 @@ padPacket = mealyB go s0
     -- While padding, it does not matter if we receive input
     nextState (Padding n) _ True = if n > (natToNum @dataWidth) then Padding (n - (natToNum @dataWidth)) else s0
 
-    bwdOut = undefined
+    bwdOut (Padding _) _ _ = PacketStreamS2M {_ready = False}
+    bwdOut _ fwdIn inReady = PacketStreamS2M {_ready = isNothing fwdIn && inReady}
 
     fwdOut = undefined
 
