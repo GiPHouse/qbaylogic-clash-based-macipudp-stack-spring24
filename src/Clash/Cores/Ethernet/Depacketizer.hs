@@ -56,11 +56,12 @@ sFunc dataWidth n Idle (Just inp, _bwdIn) = (nextState, (PacketStreamS2M True, N
       SNatLE -> take n (_data inp :: Vec (n + (dataWidth-n)) (BitVector 8))
       SNatGT -> fst (shiftInAtN (replicate n 0x00) (_data inp))
 
-    nextState = case compareSNat n dataWidth of
-        SNatLE -> if isJust (_last inp)
-                  then LastForward {_last_fragment = inp, _state = parsedBytes}
-                  else Forward {_last_fragment = inp, _state = parsedBytes}
+    nextState = case _last inp of
+      Nothing -> case compareSNat n dataWidth of
+        SNatLE -> Forward {_last_fragment = inp, _state = parsedBytes}
         SNatGT -> Parse {_byte_idx = snatToNum dataWidth, _state = parsedBytes}
+      -- We do not accept Justs in this state, in this case we go to Idle.
+      Just _ -> Idle
 
 -- Further depacketization in case dataWidth < n.
 sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = case compareSNat n dataWidth of
@@ -75,18 +76,20 @@ sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = cas
           then fst (shiftInAtN state (take (modSNat n dataWidth) (_data inp)))
           else fst (shiftInAtN state (_data inp))
 
-      nextState
-        | overflow = if isJust (_last inp)
-                     then LastForward {_last_fragment = inp, _state = bytes}
-                     else Forward {_last_fragment = inp, _state = bytes}
-        | otherwise = Parse {_byte_idx = i + snatToNum dataWidth, _state = bytes}
+      nextState = case _last inp of
+        Nothing -> if overflow
+                   then Forward {_last_fragment = inp, _state = bytes}
+                   else Parse {_byte_idx = i + snatToNum dataWidth, _state = bytes}
+        -- We do not accept Justs in this state, in this case we go to Idle.
+        Just _ -> Idle
 
 -- Depacketization is done, and now we are forwarding all fragments of the corresponding packet.
 -- To do this, we need to store eventual data that was submitted together with the header and shift the stream.
 sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just inp, bwdIn) = (nextState, (bwdIn, fwdOut))
   where
     lastData = _data lastFragment
-    nextState = case _last lastFragment of
+    -- don't change state upon receiving backpressure
+    nextState = if bwdIn == PacketStreamS2M False then Forward {_last_fragment = lastFragment, _state = state} else case _last lastFragment of
       Nothing -> case _last inp of
         Nothing -> Forward {_last_fragment = inp, _state = state}
         Just i -> case compareSNat n dataWidth of
@@ -130,8 +133,10 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
 
 -- Sometimes _last has been set, but we cannot send all data immediately due to stream shifting. In this case,
 -- we need to send the remainder of the data.
-sFunc dataWidth n LastForward {_last_fragment = lastFragment, _state = state} (_, _) = (Idle, (PacketStreamS2M False, fwdOut))
+sFunc dataWidth n LastForward {_last_fragment = lastFragment, _state = state} (_, bwdIn) = (nextState, (PacketStreamS2M False, fwdOut))
   where
+    -- don't change state upon receiving backpressure
+    nextState = if bwdIn == PacketStreamS2M False then LastForward {_last_fragment = lastFragment, _state = state} else Idle
     x = modSNat n dataWidth
     i = fromJust (_last lastFragment)
     lastData = _data lastFragment
@@ -146,7 +151,7 @@ sFunc dataWidth n LastForward {_last_fragment = lastFragment, _state = state} (_
       _abort = False
     }
 
-sFunc _ _ _ (Nothing, bwdIn) = (Idle, (bwdIn, Nothing))
+sFunc _ _ s (Nothing, bwdIn) = (s, (bwdIn, Nothing))
 
 
 -- | Generic component that depacketizes the first `n` bytes of the incoming PacketStream,
@@ -166,7 +171,7 @@ depacketizerC :: forall (dom :: Domain) (dataWidth :: Nat) (n :: Nat) (g :: Nat)
   => SNat dataWidth
   -> SNat n
   -> Circuit (PacketStream dom dataWidth metaIn) (PacketStream dom dataWidth metaOut)
-depacketizerC dataWidth n = fromSignals $ mealyB (sFunc dataWidth n) s0
+depacketizerC dataWidth n = forceResetSanity |> (fromSignals $ mealyB (sFunc dataWidth n) s0)
   where
     s0 = Idle
 
@@ -210,11 +215,8 @@ fwdIn9 = [
   Nothing,
   Nothing,
   Nothing,
-  --Just (PacketStreamM2S (0x55 :> 0x55 :> 0x55 :> 0x55 :> 0x55 :> 0x55 :> 0x55 :> 0xD5 :> 0x00 :> Nil) (Just 8) () False)
-  --, Just (PacketStreamM2S (0x01 :> 0x02 :> 0x03 :> 0x04 :> 0x05 :> 0x06 :> 0x07 :> 0x08 :> 0x09 :> Nil) Nothing () False)
-  --, Just (PacketStreamM2S (0x0A :> 0x0B :> 0x0C :> 0x0D :> 0x0E :> 0x0F :> 0x10 :> 0x11 :> 0x12 :> Nil) Nothing () False)
-  --, Just (PacketStreamM2S (0x13 :> 0x14 :> 0x15 :> 0x16 :> 0x17 :> 0x18 :> 0x19 :> 0x1A :> 0x1B :> Nil) (Just 8) () False)]
   Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
