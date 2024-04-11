@@ -33,11 +33,8 @@ import Test.Cores.Ethernet.Util
 import Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.PacketStream
 
-genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
-genVec gen = sequence (C.repeat gen)
-
 model :: forall n. 1 <= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-model fragments = fragments >>= chopPacket 
+model fragments = fragments >>= chopPacket
 
 -- | Test the downconverter stream instance
 downconverterTest :: forall n. 1 <= n => C.SNat n -> Property

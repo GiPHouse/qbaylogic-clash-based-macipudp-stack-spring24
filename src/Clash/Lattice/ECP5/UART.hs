@@ -49,40 +49,40 @@ data ToPacketsState
   -- ^ Reading first size byte
   | ReadSize2 (BitVector 8)
   -- ^ Reading second size byte
-  | ReadData (BitVector 16)
+  | ReadData (Unsigned 16)
   -- ^ Reading data
   deriving (Generic, NFDataX)
 
 -- | Turns a stream of raw bytes into a stream of packets according to the following "protocol":
--- Packets consist of two bytes interpreted as a 16-bit integer n, followed by n + 1 bytes x_0, ..., x_n,
+-- Packets consist of two bytes interpreted as an `Unsigned 16` n, followed by n + 1 bytes x_0, ..., x_n,
 -- i.e. n is the index of the last byte of this packet.
 -- _data, _meta and _abort of x_0, ..., x_n are copied to the output signal. _last is Just 0 only for x_n.
 -- For the size bytes, _last, _meta and _abort are ignored.
 -- n is read in little-endian byte order.
 toPacketsC
-  :: forall (dom :: Domain) (metaType :: Type)
+  :: forall (dom :: Domain)
    . HiddenClockResetEnable dom
   => KnownDomain dom
-  => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+  => Circuit (CSignal dom (Maybe (BitVector 8))) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
 toPacketsC = fromSignals ckt
   where
     ckt
-      :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
-      -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+      :: (CSignal dom (Maybe (BitVector 8)), CSignal dom ())
+      -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
     ckt (CSignal fwdInS, _) = (CSignal $ pure (), CSignal (mealy go ReadSize1 fwdInS))
-    go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
+    go :: ToPacketsState -> Maybe (BitVector 8) -> (ToPacketsState, Maybe (PacketStreamM2S 1 ()))
     go s Nothing = (s, Nothing)
-    go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
-    go (ReadSize2 size) (Just (PacketStreamM2S {_data})) = (ReadData (head _data ++# size), Nothing)
-    go (ReadData 0) (Just packetStream) = (ReadSize1, Just packetStream {_last = Just 0})
-    go (ReadData size) (Just packetStream) = (ReadData (size - 1), Just packetStream {_last = Nothing})
+    go ReadSize1 (Just byte) = (ReadSize2 byte, Nothing)
+    go (ReadSize2 size) (Just byte) = (ReadData $ unpack (byte ++# size), Nothing)
+    go (ReadData 0) (Just byte) = (ReadSize1, Just $ PacketStreamM2S (singleton byte) (Just 0) () False)
+    go (ReadData size) (Just byte) = (ReadData (size - 1), Just $ PacketStreamM2S (singleton byte) Nothing () False)
 
 -- | UART receiver circuit
 uartRxC
   :: HiddenClockResetEnable dom
   => ValidBaud dom baud
   => SNat baud
-  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (BitVector 8)))
 uartRxC = uartRxNoBaudGenC . baudGenerator
 
 -- | UART receiver circuit
@@ -93,14 +93,11 @@ uartRxNoBaudGenC
   :: forall (dom :: Domain)
    . HiddenClockResetEnable dom
   => BaudGenerator dom
-  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
+  -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (BitVector 8)))
 uartRxNoBaudGenC baudGen = fromSignals ckt
   where
-    ckt :: (CSignal dom Bit, CSignal dom ()) -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
-    ckt (CSignal rxBit, _) = (def, CSignal $ convert $ uartRxNoBaudGen baudGen rxBit)
-
-    convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
-    convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
+    ckt :: (CSignal dom Bit, CSignal dom ()) -> (CSignal dom (), CSignal dom (Maybe (BitVector 8)))
+    ckt (CSignal rxBit, _) = (def, CSignal $ uartRxNoBaudGen baudGen rxBit)
 
 -- | UART receiver circuit interpreting packets. See also `toPacketsC`.
 uartRxC'

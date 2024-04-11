@@ -36,9 +36,6 @@ import Test.Cores.Ethernet.Util
 import Clash.Cores.Ethernet.UpConverter
 import Clash.Cores.Ethernet.PacketStream
 
-genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
-genVec gen = sequence (C.repeat gen)
-
 model :: forall n. C.KnownNat n => [PacketStreamM2S 1 ()] -> [PacketStreamM2S n ()]
 model fragments = out
   where

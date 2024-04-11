@@ -1,5 +1,4 @@
 {-# language FlexibleContexts #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-} -- Orphhan Hashable instances
 
 module Clash.Cores.Ethernet.PacketStream
   ( PacketStreamM2S(..)
@@ -12,7 +11,6 @@ module Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude hiding ( sample )
 import Prelude qualified as P
 
-import Data.Hashable ( Hashable, hashWithSalt )
 import Data.Maybe qualified as Maybe
 import Data.Proxy
 
@@ -84,16 +82,6 @@ instance ( KnownNat dataWidth, Eq metaType) => Eq (PacketStreamM2S dataWidth met
       lastEq = _last st1 == _last st2
       n = maybe 0 (\i -> 8 * (fromIntegral $ maxBound - i)) (_last st1)
       dataEq = (shiftR (pack $ _data st1) n) == (shiftR (pack $ _data st2) n)
-
--- Orphan hashable instances
-deriving instance (KnownNat n) => Hashable (BitVector n)
-deriving instance (KnownNat n) => Hashable (Index n)
-instance (KnownNat n, Hashable a) => Hashable (Vec n a) where
-  hashWithSalt s v = hashWithSalt s (toList v)
-
-deriving instance
-  (KnownNat dataWidth, Hashable metaType)
-  => Hashable (PacketStreamM2S dataWidth metaType)
 
 instance Protocol (PacketStream dom dataWidth metaType) where
   type Fwd (PacketStream dom dataWidth metaType) = Signal dom (Maybe (PacketStreamM2S dataWidth metaType))

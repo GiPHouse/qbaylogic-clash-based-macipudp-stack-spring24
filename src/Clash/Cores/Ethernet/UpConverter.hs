@@ -1,7 +1,6 @@
 {-# language RecordWildCards #-}
 module Clash.Cores.Ethernet.UpConverter
-  ( upConverter
-  , upConverterC
+  ( upConverterC
   ) where
 
 import Clash.Prelude
@@ -13,6 +12,7 @@ import Protocols ( Circuit(..), fromSignals, (|>) )
 
 
 
+-- | Upconverter state, consisting of at most p (BitVector 8)'s and a vector indicating which bytes are valid
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
     _ucBuf     :: Vec dataWidth (BitVector 8),
@@ -27,13 +27,13 @@ data UpConverterState (dataWidth :: Nat) =
     -- ^ If true the current buffer contains the last byte of the current packet
   }
   deriving (Generic, NFDataX)
--- ^ Upconverter state, consisting of at most p (BitVector 8)'s and a vector indicating which bytes are valid
 
 -- | Maybe put this in a utility module?
 toMaybe :: Bool -> a -> Maybe a
 toMaybe True x = Just x
 toMaybe False _ = Nothing
 
+-- | Takes a state for the UpConverter and extracts the output for the UpConverter
 toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
 toPacketStream UpConverterState{..} = toMaybe _ucFlush (PacketStreamM2S _ucBuf _ucLastIdx () _ucAborted)
 
@@ -100,6 +100,10 @@ upConverter = mealyB go s0
                         }
           nextSt = if outReady then nextStRaw else st
 
+-- | Up converter circuit. Converts a packet stream of single bytes to a packet
+-- stream of arbitrary data widths. A packet has the abort bit set if any of the
+-- input packets has the abort bit.
+-- Does not stall.
 upConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

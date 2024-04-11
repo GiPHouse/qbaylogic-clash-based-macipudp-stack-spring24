@@ -18,6 +18,7 @@ data InterpacketGapInserterState gapSize
 
 
 -- | State transition function of the interpacket gap inserter, in mealy form.
+-- When it detects a last packet, it asserts backpressure for gapSize cycles.
 gapInserterT :: forall (gapSize :: Nat) .
   ( 1 <= gapSize
   , KnownNat gapSize)
@@ -32,10 +33,12 @@ gapInserterT :: forall (gapSize :: Nat) .
        )
      )
   -- ^ Output packetstream to PHY tx and output backpressure to DownConverter
+
 -- Assert backpressure for `gapSize` clock cycles. During these cycles, the output is Nothing.
 gapInserterT Insert { cycles = c } (_, _) = (nextState, (PacketStreamS2M False, Nothing))
   where
     nextState = if c == maxBound then Forward else Insert { cycles = c + 1 }
+
 -- Forward incoming data. Once the last flag is set, we insert the interpacket gap.
 gapInserterT Forward (Just inp, inReady) = (nextState, (inReady, Just inp))
   where

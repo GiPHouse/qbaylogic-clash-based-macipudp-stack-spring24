@@ -1,8 +1,7 @@
 {-# language RecordWildCards #-}
 
 module Clash.Cores.Ethernet.DownConverter
-  ( downConverter
-  , downConverterC
+  ( downConverterC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -113,7 +112,9 @@ downConverter = mealyB go s0
                           , _dcSize = _dcSize'
                           }
 
-
+-- | Down converter circuit. Converters a packet stream of arbitrary data width
+-- to a packet stream of single bytes. Smears the abort bits.
+-- Can process input every dataWidth cycles.
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

@@ -27,30 +27,28 @@ import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols
+import Protocols.Internal (CSignal(CSignal))
 import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Lattice.ECP5.UART
 import qualified Protocols.DfConv as DfConv
-
-genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
-genVec gen = sequence (C.repeat gen)
+import Test.Cores.Ethernet.Util
 
 -- | Tests that data can be sent through UART, except for _abort and _last and _meta signals. Ignores backpressure.
 prop_uart_tx_rx_id :: Property
 prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.exposeClockResetEnable id) ckt
   where
     ckt = C.exposeClockResetEnable (
-      uartTxC @C.System (C.SNat @6250000) 
-      |> uartRxC (C.SNat @6250000) 
-      |> unsafeToPacketStream
+      uartTxC @C.System (C.SNat @6250000)
+      |> uartRxC (C.SNat @6250000)
+      |> unsafeByteToPacketStream
       |> DfConv.fifo (Proxy :: Proxy (PacketStream C.System 1 ())) (Proxy :: Proxy (PacketStream C.System 1 ())) (C.SNat @50)
       )
 
     gen :: Gen (ExpectType (PacketStream dom 1 ()))
     gen = Gen.list (Range.linear 0 50) genPackets
-
     genPackets =
       PacketStreamM2S <$>
       genVec Gen.enumBounded <*>
@@ -58,22 +56,27 @@ prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.e
       Gen.enumBounded <*>
       pure False
 
+    unsafeByteToPacketStream :: Circuit (CSignal dom (Maybe (C.BitVector 8))) (PacketStream dom 1 ())
+    unsafeByteToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), go fwdInS))
+      where
+        go = fmap $ fmap $ \byte -> PacketStreamM2S (C.singleton byte) Nothing () False
+
 -- Model for `toPacketsC`.
-toPackets :: [PacketStreamM2S 1 a] -> [PacketStreamM2S 1 a]
+toPackets :: [C.BitVector 8] -> [PacketStreamM2S 1 ()]
 toPackets (l0 : (l1 : xs)) = packet ++ toPackets xs' where
-  len = 1 + fromIntegral (C.head (_data l1) C.++# C.head (_data l0))
+  len = 1 + fromIntegral (l1 C.++# l0)
   (packet, xs') = splitPacketAt len xs
 toPackets _ = []
 
--- | Like `splitAt`, but also sets _last.
-splitPacketAt :: Int -> [PacketStreamM2S 1 a] -> ([PacketStreamM2S 1 a], [PacketStreamM2S 1 a])
+-- | Like `splitAt`, but turns bytes into PacketStreamM2S with _last set correctly.
+splitPacketAt :: Int -> [C.BitVector 8] -> ([PacketStreamM2S 1 ()], [C.BitVector 8])
 splitPacketAt n ls
   | n <= 0 = ([], ls)
   | otherwise = splitAt' n ls
     where
       splitAt' _ [] = ([], [])
-      splitAt' 1 (x : xs) = ([x {_last = Just 0}], xs)
-      splitAt' m (x : xs) = ((x {_last = Nothing}) :xs', xs'')
+      splitAt' 1 (x : xs) = ([PacketStreamM2S (C.singleton x) (Just 0) () False], xs)
+      splitAt' m (x : xs) = (PacketStreamM2S (C.singleton x) Nothing () False : xs', xs'')
         where
           (xs', xs'') = splitAt' (m - 1) xs
 
@@ -81,14 +84,8 @@ splitPacketAt n ls
 prop_topackets :: Property
 prop_topackets = property $ do
   let n = 10_000
-      gen = Gen.list (Range.linear 0 n) $
-        Gen.maybe $
-        PacketStreamM2S <$>
-        genVec Gen.enumBounded <*>
-        Gen.maybe Gen.enumBounded <*>
-        Gen.enumBounded <*>
-        Gen.enumBounded
-  packets <- forAll (gen :: Gen [Maybe (PacketStreamM2S 1 Int)])
+      gen = Gen.list (Range.linear 0 n) $ Gen.maybe Gen.enumBounded
+  packets <- forAll (gen :: Gen [Maybe (C.BitVector 8)])
   let ckt = C.exposeClockResetEnable @C.System toPacketsC C.clockGen C.resetGen C.enableGen
       throughCkt = catMaybes $ take (n + 1) $ simulateCS ckt (Nothing : packets L.++ L.repeat Nothing)
       throughModel = toPackets (catMaybes packets)

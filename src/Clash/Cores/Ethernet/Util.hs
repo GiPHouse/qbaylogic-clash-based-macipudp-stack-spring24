@@ -1,3 +1,4 @@
+-- | Utility module for small, low-complexity functions. Please keep this small.
 module Clash.Cores.Ethernet.Util
     ( toMaybe
     ) where
