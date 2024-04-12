@@ -1,8 +1,5 @@
 module Clash.Cores.Ethernet.Depacketizer
-  ( depacketizerC
-  , macDepacketizerC
-  , MacAddress
-  , EthernetHeader) where
+  (depacketizerC) where
 
 import Data.Maybe
 
@@ -11,10 +8,6 @@ import Clash.Prelude
 import Protocols
 
 import Clash.Cores.Ethernet.PacketStream
-
-import Control.DeepSeq (NFData)
-
-import qualified Data.List as L
 
 
 data DepacketizerState dataWidth n metaIn
@@ -33,11 +26,11 @@ data DepacketizerState dataWidth n metaIn
   }
   deriving (Show, Generic, NFDataX)
 
-sFunc :: forall (dataWidth :: Nat) (n :: Nat) (g :: Nat) (metaIn :: Type) (metaOut :: Type) .
+sFunc :: forall (dataWidth :: Nat) (n :: Nat) (m :: Nat) (metaIn :: Type) (metaOut :: Type) .
   ( KnownNat dataWidth
   , KnownNat n
   , 1 <= dataWidth
-  , Mod n dataWidth + g ~ dataWidth
+  , Mod n dataWidth + m ~ dataWidth
   , BitPack metaOut
   , BitSize metaOut ~ n * 8)
   => SNat dataWidth
@@ -88,18 +81,23 @@ sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = cas
 sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just inp, bwdIn) = (nextState, (bwdIn, fwdOut))
   where
     lastData = _data lastFragment
-    -- don't change state upon receiving backpressure
-    nextState = if bwdIn == PacketStreamS2M False then Forward {_last_fragment = lastFragment, _state = state} else case _last lastFragment of
-      Nothing -> case _last inp of
-        Nothing -> Forward {_last_fragment = inp, _state = state}
-        Just i -> case compareSNat n dataWidth of
-          SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n :: SNat (dataWidth - n))) == 0 && i /= 0
-                    then LastForward {_last_fragment = inp, _state = state}
-                    else Idle
-          SNatGT -> if satAdd SatZero i (snatToNum (subSNat dataWidth (modSNat n dataWidth))) == 0
-                    then LastForward {_last_fragment = inp, _state = state}
-                    else Idle
-      Just _ -> Idle
+    -- Don't change state upon receiving backpressure.
+    nextState =
+      if bwdIn == PacketStreamS2M False
+      then Forward {_last_fragment = lastFragment, _state = state}
+      else case _last lastFragment of
+        Nothing -> case _last inp of
+          Nothing -> Forward {_last_fragment = inp, _state = state}
+          Just i -> case compareSNat n dataWidth of
+            SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n :: SNat (dataWidth - n))) == 0 && i /= 0
+                      then LastForward {_last_fragment = inp, _state = state}
+                      else Idle
+            SNatGT -> case compareSNat (modSNat n dataWidth) d0 of
+              SNatLE -> Idle -- no adjustments necessary
+              SNatGT -> if satAdd SatZero i (snatToNum (subSNat dataWidth (modSNat n dataWidth))) == 0
+                      then LastForward {_last_fragment = inp, _state = state}
+                      else Idle
+        Just _ -> Idle
     
     fwdOut = Just PacketStreamM2S {
       _data = outData,
@@ -126,7 +124,9 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
         SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n)) == 0 && i /= 0
                   then Nothing
                   else Just (i + snatToNum (subSNat dataWidth n :: SNat (dataWidth - n)))
-        SNatGT -> let x = modSNat n dataWidth in
+        SNatGT -> case compareSNat (modSNat n dataWidth) d0 of
+          SNatLE -> Just i -- no adjustments necessary
+          SNatGT -> let x = modSNat n dataWidth in
                   if satAdd SatZero i (snatToNum (subSNat dataWidth x)) == 0
                   then Nothing
                   else Just (i + snatToNum (subSNat dataWidth x :: SNat (dataWidth - Mod n dataWidth)))
@@ -135,8 +135,10 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
 -- we need to send the remainder of the data.
 sFunc dataWidth n LastForward {_last_fragment = lastFragment, _state = state} (_, bwdIn) = (nextState, (PacketStreamS2M False, fwdOut))
   where
-    -- don't change state upon receiving backpressure
-    nextState = if bwdIn == PacketStreamS2M False then LastForward {_last_fragment = lastFragment, _state = state} else Idle
+    -- Don't change state upon receiving backpressure.
+    nextState = if bwdIn == PacketStreamS2M False
+                then LastForward {_last_fragment = lastFragment, _state = state}
+                else Idle
     x = modSNat n dataWidth
     i = fromJust (_last lastFragment)
     lastData = _data lastFragment
@@ -157,110 +159,18 @@ sFunc _ _ s (Nothing, bwdIn) = (s, (bwdIn, Nothing))
 -- | Generic component that depacketizes the first `n` bytes of the incoming PacketStream,
 -- that is, it reads and strips `n` bytes from the head of the stream and puts these in _meta.
 -- Works for any `metaOut` which implements BitPack and which BitSize is a multiple of 8 bits.
-depacketizerC :: forall (dom :: Domain) (dataWidth :: Nat) (n :: Nat) (g :: Nat) (metaIn :: Type) (metaOut :: Type).
+depacketizerC :: forall (dom :: Domain) (dataWidth :: Nat) (n :: Nat) (m :: Nat) (metaIn :: Type) (metaOut :: Type).
   ( KnownDomain dom
   , HiddenClockResetEnable dom
   , KnownNat dataWidth
   , KnownNat n
   , 1 <= dataWidth
   , 1 <= n
-  , Mod n dataWidth + g ~ dataWidth
+  , Mod n dataWidth + m ~ dataWidth
   , NFDataX metaIn
   , BitPack metaOut
   , BitSize metaOut ~ n * 8)
   => SNat dataWidth
   -> SNat n
   -> Circuit (PacketStream dom dataWidth metaIn) (PacketStream dom dataWidth metaOut)
-depacketizerC dataWidth n = forceResetSanity |> (fromSignals $ mealyB (sFunc dataWidth n) s0)
-  where
-    s0 = Idle
-
-
-newtype MacAddress = MacAddress (Vec 6 (BitVector 8))
-  deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-data EthernetHeader = EthernetHeader {
-  _mac_dst :: MacAddress,
-  _mac_src :: MacAddress,
-  _ether_type :: BitVector 16
-} deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-macDepacketizerC :: forall (dom :: Domain) (dataWidth :: Nat) (g :: Nat) .
-  ( KnownDomain dom
-  , HiddenClockResetEnable dom
-  , KnownNat dataWidth
-  , 1 <= dataWidth
-  , Mod 14 dataWidth + g ~ dataWidth)
-  => SNat dataWidth
-  -> Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth EthernetHeader)
-macDepacketizerC dataWidth = depacketizerC dataWidth d14
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fwdIn9 :: [Maybe (PacketStreamM2S 9 ())]
-fwdIn9 = [
-  Nothing,
-  Nothing,
-  Nothing,
-  Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> Nil) (Just 0) () False)]
-  L.++ L.repeat Nothing
-
-bwdIn9 :: [PacketStreamS2M]
-bwdIn9 = fmap PacketStreamS2M (L.repeat True)
-
-
-fwdIn14 :: [Maybe (PacketStreamM2S 14 ())]
-fwdIn14 = [
-  Nothing,
-  Nothing,
-  Nothing,
-  Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) (Just 0) () False)]
-  L.++ L.repeat Nothing
-
-bwdIn14 :: [PacketStreamS2M]
-bwdIn14 = fmap PacketStreamS2M (L.repeat True)
-
-clk :: Clock System
-clk = systemClockGen
-
-rst :: Reset System
-rst = systemResetGen
-
-en :: Enable System
-en = enableGen
-
-fwdOut9 :: Signal System (Maybe (PacketStreamM2S 9 EthernetHeader))
-bwdOut9 :: Signal System PacketStreamS2M
-(bwdOut9, fwdOut9) = toSignals ckt (fromList fwdIn9, fromList bwdIn9)
-  where ckt = exposeClockResetEnable (macDepacketizerC d9) clk rst en
-
-
-fwdOut14 :: Signal System (Maybe (PacketStreamM2S 14 EthernetHeader))
-bwdOut14 :: Signal System PacketStreamS2M
-(bwdOut14, fwdOut14) = toSignals ckt (fromList fwdIn14, fromList bwdIn14)
-  where ckt = exposeClockResetEnable (macDepacketizerC d14) clk rst en
+depacketizerC dataWidth n = forceResetSanity |> fromSignals (mealyB (sFunc dataWidth n) Idle)

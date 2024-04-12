@@ -1,192 +1,122 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
 
-module Test.Cores.Ethernet.Depacketizer where
+module Test.Cores.Ethernet.Depacketizer 
+  (depacketizerModel) where
 
 -- base
 import Prelude
-import Data.Proxy
 import Data.Maybe
 import qualified Data.List as L
 
 -- clash-prelude
 import Clash.Prelude hiding (concatMap)
 import qualified Clash.Prelude as C
-import Clash.Prelude (type (<=))
-
--- hedgehog
-import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-
--- tasty
-import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
-
--- clash-protocols
-import Protocols
-import Protocols.Hedgehog
-import qualified Protocols.DfConv as DfConv
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.Depacketizer
 
 import Test.Cores.Ethernet.Util
 
-genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
-genVec gen = sequence (C.repeat gen)
 
-
--- | Shifts a PacketStream to the left by n bytes, and drops these bytes
-{-shiftStreamL :: forall (dataWidth :: Nat) (n :: Nat) (g :: Nat) (meta :: Type) .
-  (KnownNat n
-  , 1 <= n
-  , n <= 8
+-- | Shifts a PacketStream to the left by n bytes, drops these bytes and adjusts the byte enable at the end accordingly.
+-- Assumes that the only fragment in the list that has _last set is the fragment at the end.
+-- To achieve this, see `chopByPacket`.
+shiftStreamL :: forall (dataWidth :: Nat) (n :: Nat) (meta :: Type) .
+  ( KnownNat dataWidth
+  , KnownNat n
   , 1 <= dataWidth
-  , n + g ~ dataWidth)
+  , n <= dataWidth)
   => SNat n
   -> SNat dataWidth
-  -> PacketStreamM2S dataWidth meta -> [PacketStreamM2S dataWidth meta] -> [PacketStreamM2S dataWidth meta]
-
+  -> PacketStreamM2S dataWidth meta
+  -> [PacketStreamM2S dataWidth meta]
+  -> [PacketStreamM2S dataWidth meta]
 shiftStreamL _ _ _ [] = []
-shiftStreamL n dataWidth old [f] = let i = fromJust (_last f) in
-  if i >= snatToNum n -- if i > n then send 2 fragments else 1
-  then x:[y]
-  else [z]
+shiftStreamL n dataWidth old [f] = if fromJust (_last f) >= snatToNum n
+  then f1:[f2]
+  else [f3]
     where
-
       i = fromJust (_last f)
-      dataa :: Vec dataWidth (BitVector 8)
-      dataa = oldData C.++ newData
-      oldData :: Vec (dataWidth - n) (BitVector 8)
       oldData = C.take (subSNat dataWidth n) (rotateLeftS (_data old) n)
-      newData :: Vec n (BitVector 8)
       newData = C.take n (_data f)
-      temp = PacketStreamM2S {
-        _data = dataa,
-        _last = Nothing,
-        _meta = _meta f,
-        _abort = False
+      f1 = f {
+        _data = oldData C.++ newData,
+        _last = Nothing
       }
-      z = temp {_last = Just (i + 4)}--{_last = Just (satAdd SatWrap i (9 - (snatToNum n)))}
-      x = temp
-      newnewData = rotateLeftS (_data f) n
-      y = temp {
-        _data = newnewData,
+      f2 = f {
+        _data = rotateLeftS (_data f) n,
         _last = Just (satAdd SatWrap i (snatToNum (subSNat dataWidth n)))
       }
-
-shiftStreamL n dataWidth old (f:fs) = PacketStreamM2S {
-  _data = dataa,
-  _last = Nothing,
-  _meta = _meta old,
-  _abort = False
-} : shiftStreamL n dataWidth f fs
+      f3 = f1 {
+        _last = Just (i + snatToNum (subSNat dataWidth n))
+      }
+shiftStreamL n dataWidth old (f:fs) = old {_data = oldData C.++ newData} : shiftStreamL n dataWidth f fs
   where
-    dataa :: Vec dataWidth (BitVector 8)
-    dataa = oldData C.++ newData
-    oldData :: Vec (dataWidth - n) (BitVector 8)
-    oldData = C.take (subSNat dataWidth n) (rotateLeftS (_data old) n)
-    newData :: Vec n (BitVector 8)
-    newData = C.take n (_data f)-}
+    oldData = C.take (subSNat dataWidth n :: SNat (dataWidth-n)) (rotateLeftS (_data old) n)
+    newData = C.take n (_data f :: Vec (n + (dataWidth-n)) (BitVector 8)) :: Vec n (BitVector 8)
 
+-- | Depacketizes `n` bytes and puts this in the `_meta` field of all fragments.
+-- If the number of fragments in the input list is lower than the number we needed to depacketize `n` bytes,
+-- then the output boolean is False.
+depacketize :: forall (dataWidth :: Nat) (n :: Nat) (metaIn :: Type) (metaOut :: Type) .
+  ( KnownNat dataWidth
+  , KnownNat n
+  , 1 <= dataWidth
+  , Mod n dataWidth <= dataWidth
+  , BitPack metaOut
+  , BitSize metaOut ~ n * 8)
+  => SNat dataWidth
+  -> SNat n
+  -> Vec n (BitVector 8)
+  -> Index n
+  -> [PacketStreamM2S dataWidth metaIn]
+  -> (PacketStreamM2S dataWidth metaOut, [PacketStreamM2S dataWidth metaOut], Bool)
+-- Could not depacketize, too little fragments. We signal this with a boolean.
+depacketize _ _ _ _ [] = (Prelude.undefined, Prelude.undefined, False)
+depacketize dataWidth n cache i (x:xs) = out
+  where
+    out = case compareSNat n dataWidth of
+      SNatLE -> (old, rest, True)
+        where
+          old = x {_meta = metaData}
+          rest = L.map (\f -> f  {_meta = metaData}) xs
+          metaData = unpack $ pack (C.take n (_data x :: Vec (n + (dataWidth-n)) (BitVector 8)))
+      SNatGT ->
+        if satAdd SatZero i (snatToNum dataWidth) == 0
+        then (old, rest, True)
+        else depacketize dataWidth n newCache2 (i + snatToNum dataWidth) xs
+          where
+            metaData = unpack $ pack newCache1
+            old = x {_meta = metaData}
+            rest = L.map (\f -> f {_meta = metaData}) xs
+            newCache1 :: Vec n (BitVector 8) = case compareSNat (modSNat n dataWidth) d0 of
+              SNatLE -> newCache2
+              SNatGT -> fst $ shiftInAtN cache (C.take (modSNat n dataWidth) (_data x :: Vec (Mod n dataWidth + (dataWidth - Mod n dataWidth)) (BitVector 8)))
+            newCache2 = fst $ shiftInAtN cache (_data x)
 
-
-
--- | Shifts a PacketStream to the left by n bytes, and drops these bytes
-shiftStreamL9 :: forall (n :: Nat) (g :: Nat) (meta :: Type) .
-  (KnownNat n
+-- | Model of the generic `depacketizerC`.
+depacketizerModel :: forall (dataWidth :: Nat) (n :: Nat) (metaIn :: Type) (metaOut :: Type) .
+  ( KnownNat dataWidth
+  , KnownNat n
+  , 1 <= dataWidth
   , 1 <= n
-  , n <= 8
-  , n + g ~ 9)
-  => SNat n
-  -> PacketStreamM2S 9 meta -> [PacketStreamM2S 9 meta] -> [PacketStreamM2S 9 meta]
-
-shiftStreamL9 _ _ [] = []
-shiftStreamL9 n old [f] = let i = fromJust (_last f) in
-  if i >= snatToNum n -- if i > n then send 2 fragments else 1
-  then x:[y]
-  else [z]
-    where
-
-      i = fromJust (_last f)
-      dataa :: Vec 9 (BitVector 8)
-      dataa = oldData C.++ newData
-      oldData :: Vec (9 - n) (BitVector 8)
-      oldData = C.take (subSNat d9 n) (rotateLeftS (_data old) n)
-      newData :: Vec n (BitVector 8)
-      newData = C.take n (_data f)
-      temp = PacketStreamM2S {
-        _data = dataa,
-        _last = Nothing,
-        _meta = _meta f,
-        _abort = False
-      }
-      z = temp {_last = Just (i + 4)}--{_last = Just (satAdd SatWrap i (9 - (snatToNum n)))}
-      x = temp
-      newnewData = rotateLeftS (_data f) n
-      y = temp {
-        _data = newnewData,
-        --_last = Just (satAdd SatWrap i (snatToNum (subSNat d9 n :: SNat (9-n))))
-        _last = Just (satAdd SatWrap i ((8 - snatToNum n) + 1))
-      }
-
-shiftStreamL9 n old (f:fs) = PacketStreamM2S {
-  _data = dataa,
-  _last = Nothing,
-  _meta = _meta old,
-  _abort = False
-} : shiftStreamL9 n f fs
+  , Mod n dataWidth <= dataWidth
+  , BitPack metaOut
+  , BitSize metaOut ~ n * 8)
+  => SNat dataWidth
+  -> SNat n
+  -> [PacketStreamM2S dataWidth metaIn]
+  -> [PacketStreamM2S dataWidth metaOut]
+depacketizerModel dataWidth n ps = concatMap go (chunkByPacket ps)
   where
-    dataa :: Vec 9 (BitVector 8)
-    dataa = oldData C.++ newData
-    oldData :: Vec (9 - n) (BitVector 8)
-    oldData = C.take (subSNat d9 n) (rotateLeftS (_data old) n)
-    newData :: Vec n (BitVector 8)
-    newData = C.take n (_data f)
-
-
-depacketize ::[PacketStreamM2S 9 ()] -> (PacketStreamM2S 9 EthernetHeader, [PacketStreamM2S 9 EthernetHeader])
-depacketize (f1:f2:fs) = (f2 {_meta = metaData}, Prelude.map go fs)
-  where
-    metaData = unpack $ pack $ _data f1 C.++ C.take d5 (_data f2)
-    go f = f {_meta = metaData}
-depacketize _ = error "expected a list with >= 2 elements"
-
-
-model9 :: [PacketStreamM2S 9 ()] -> [PacketStreamM2S 9 EthernetHeader]
-model9 bs = concatMap go (chunkByPacket bs)
-  where
-    go fs = if L.length fs < 2 then [] else shiftStreamL9 d5 old ds
+    go fs = case compareSNat n dataWidth of
+      SNatLE -> if good then case compareSNat dataWidth n of
+        -- dataWidth ~ n: no shifting necessary.
+        SNatLE -> rest
+        SNatGT -> shiftStreamL n dataWidth old rest else []
+      SNatGT -> if good then case compareSNat (modSNat n dataWidth) d0 of
+        -- n mod dataWidth ~ 0: no shifting necessary.
+        SNatLE -> rest
+        SNatGT -> shiftStreamL (modSNat n dataWidth) dataWidth old rest else []
       where
-        (old, ds) = depacketize fs
-
-
-prop_depacketizer :: Property
-prop_depacketizer =
-  propWithModelSingleDomain
-    @C.System
-    defExpectOptions
-    (fmap addPacketWithLastSet (Gen.list (Range.linear 6 100) genPackets))
-    (C.exposeClockResetEnable model9)
-    (C.exposeClockResetEnable @C.System (macDepacketizerC d9))
-    (===)
-    where
-  -- This is used to generate
-        genPackets =
-            PacketStreamM2S <$>
-            (genVec Gen.enumBounded) <*>
-            (Gen.maybe Gen.enumBounded) <*>
-            Gen.enumBounded <*>
-            Gen.enum False False
-            --fmap (const False) Gen.enumBounded
-
-tests :: TestTree
-tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1000))
-  $(testGroupGenerator)
+        (old :: PacketStreamM2S dataWidth metaOut, rest, good) = depacketize dataWidth n (C.replicate n 0xAB) 0 fs
