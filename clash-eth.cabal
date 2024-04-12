@@ -93,6 +93,7 @@ library
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketArbiter
     Clash.Cores.Ethernet.PacketBuffer
+    Clash.Cores.Ethernet.PacketDispatcher
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
@@ -138,6 +139,7 @@ test-suite test-library
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
+    Test.Cores.Ethernet.PacketDispatcher
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
