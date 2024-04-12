@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.MacDepacketizer where
 
@@ -8,30 +8,29 @@ module Test.Cores.Ethernet.MacDepacketizer where
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude hiding (concatMap)
-import qualified Clash.Prelude as C
+import Clash.Prelude hiding ( concatMap )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols.Hedgehog
 
 -- Me
+import Clash.Cores.Ethernet.MacDepacketizer ( EthernetHeader, macDepacketizerC )
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.MacDepacketizer
-    ( EthernetHeader, macDepacketizerC )
 
-import Test.Cores.Ethernet.Util
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
+import Test.Cores.Ethernet.Util
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

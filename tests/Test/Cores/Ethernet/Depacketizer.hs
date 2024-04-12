@@ -1,16 +1,16 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# language FlexibleContexts #-}
 
-module Test.Cores.Ethernet.Depacketizer 
+module Test.Cores.Ethernet.Depacketizer
   (depacketizerModel) where
 
 -- base
-import Prelude
+import Data.List qualified as L
 import Data.Maybe
-import qualified Data.List as L
+import Prelude
 
 -- clash-prelude
-import Clash.Prelude hiding (concatMap)
-import qualified Clash.Prelude as C
+import Clash.Prelude hiding ( concatMap )
+import Clash.Prelude qualified as C
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream

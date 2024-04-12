@@ -99,7 +99,7 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
                       then LastForward {_last_fragment = inp, _state = state}
                       else Idle
         Just _ -> Idle
-    
+
     fwdOut = Just PacketStreamM2S {
       _data = outData,
       _last = final,

@@ -7,10 +7,10 @@ import Clash.Prelude
 
 import Protocols
 
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Depacketizer
+import Clash.Cores.Ethernet.PacketStream
 
-import Control.DeepSeq (NFData)
+import Control.DeepSeq ( NFData )
 
 
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))
