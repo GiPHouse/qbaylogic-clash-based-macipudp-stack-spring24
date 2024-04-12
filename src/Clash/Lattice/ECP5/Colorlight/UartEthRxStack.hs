@@ -8,10 +8,10 @@ module Clash.Lattice.ECP5.Colorlight.UartEthRxStack
 import Clash.Prelude
 
 -- import ethernet
+import Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..) )
 import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), rgmiiReceiver )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
-import Clash.Cores.Ethernet.DownConverter
 
 -- import uart
 import Clash.Cores.UART ( BaudGenerator )
@@ -21,9 +21,9 @@ import Clash.Lattice.ECP5.Prims ( delayg, iddrx1f )
 import Clash.Lattice.ECP5.UART ( uartTxNoBaudGenC )
 
 -- import protocols
+import Clash.Cores.Ethernet.AsyncFIFO
 import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.Internal ( CSignal(CSignal) )
-import Clash.Cores.Ethernet.AsyncFIFO
 
 uartEthRxStack
   :: forall dom domEth domDDREth.

@@ -1,6 +1,6 @@
 {-# language FlexibleContexts #-}
+{-# language NoMonomorphismRestriction #-}
 {-# language NumericUnderscores #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
@@ -10,9 +10,9 @@ import Clash.Cores.Ethernet.RGMII
 import Clash.Cores.UART ( baudGenerator )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
-import Clash.Lattice.ECP5.Prims
-import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
+import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
+import Clash.Lattice.ECP5.Prims
 import Clash.Prelude ( exposeClockResetEnable )
 
 data SDRAMOut domain = SDRAMOut

@@ -2,11 +2,11 @@ module Clash.Cores.Ethernet.RxStack
 ( rxStack
 ) where
 
+import Clash.Cores.Ethernet.AsyncFIFO ( asyncFifoC )
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.UpConverter ( upConverterC )
 import Clash.Prelude
 import Protocols
-import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
-import Clash.Cores.Ethernet.UpConverter (upConverterC)
 
 rxStack
   :: forall
