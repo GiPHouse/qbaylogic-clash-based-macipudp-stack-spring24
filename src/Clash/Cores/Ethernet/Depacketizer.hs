@@ -93,7 +93,7 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
       Nothing -> case _last inp of
         Nothing -> Forward {_last_fragment = inp, _state = state}
         Just i -> case compareSNat n dataWidth of
-          SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n :: SNat (dataWidth - n))) == 0
+          SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n :: SNat (dataWidth - n))) == 0 && i /= 0
                     then LastForward {_last_fragment = inp, _state = state}
                     else Idle
           SNatGT -> if satAdd SatZero i (snatToNum (subSNat dataWidth (modSNat n dataWidth))) == 0
@@ -123,7 +123,7 @@ sFunc dataWidth n Forward {_last_fragment = lastFragment, _state = state} (Just 
     final = case _last inp of
       Nothing -> Nothing
       Just i -> case compareSNat n dataWidth of
-        SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n)) == 0
+        SNatLE -> if satAdd SatZero i (snatToNum (subSNat dataWidth n)) == 0 && i /= 0
                   then Nothing
                   else Just (i + snatToNum (subSNat dataWidth n :: SNat (dataWidth - n)))
         SNatGT -> let x = modSNat n dataWidth in
@@ -227,6 +227,24 @@ fwdIn9 = [
 bwdIn9 :: [PacketStreamS2M]
 bwdIn9 = fmap PacketStreamS2M (L.repeat True)
 
+
+fwdIn14 :: [Maybe (PacketStreamM2S 14 ())]
+fwdIn14 = [
+  Nothing,
+  Nothing,
+  Nothing,
+  Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :> 0x00 :>0x00:> 0x00:> 0x00:> 0x00:> 0x00:> Nil) (Just 0) () False)]
+  L.++ L.repeat Nothing
+
+bwdIn14 :: [PacketStreamS2M]
+bwdIn14 = fmap PacketStreamS2M (L.repeat True)
+
 clk :: Clock System
 clk = systemClockGen
 
@@ -240,3 +258,9 @@ fwdOut9 :: Signal System (Maybe (PacketStreamM2S 9 EthernetHeader))
 bwdOut9 :: Signal System PacketStreamS2M
 (bwdOut9, fwdOut9) = toSignals ckt (fromList fwdIn9, fromList bwdIn9)
   where ckt = exposeClockResetEnable (macDepacketizerC d9) clk rst en
+
+
+fwdOut14 :: Signal System (Maybe (PacketStreamM2S 14 EthernetHeader))
+bwdOut14 :: Signal System PacketStreamS2M
+(bwdOut14, fwdOut14) = toSignals ckt (fromList fwdIn14, fromList bwdIn14)
+  where ckt = exposeClockResetEnable (macDepacketizerC d14) clk rst en
