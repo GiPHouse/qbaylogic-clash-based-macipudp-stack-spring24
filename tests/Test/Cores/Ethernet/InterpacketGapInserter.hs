@@ -1,36 +1,36 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.InterpacketGapInserter where
 
 -- base
 import Prelude
 
-import qualified Data.List as L
+import Data.List qualified as L
 
 -- clash-prelude
-import Clash.Prelude hiding (repeat)
-import qualified Clash.Prelude as C
+import Clash.Prelude hiding ( repeat )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.InterpacketGapInserter
+import Clash.Cores.Ethernet.PacketStream
 
 genVec :: (KnownNat n, 1 <= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)

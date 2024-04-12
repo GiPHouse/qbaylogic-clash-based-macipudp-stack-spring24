@@ -1,10 +1,10 @@
 module Main where
 
+import Build_doctests ( flags, module_sources, pkgs )
 import Prelude
-import Build_doctests (flags, pkgs, module_sources)
-import Test.DocTest (doctest)
-import System.Environment (lookupEnv)
+import System.Environment ( lookupEnv )
 import System.Process
+import Test.DocTest ( doctest )
 
 getGlobalPackageDb :: IO String
 getGlobalPackageDb = readProcess "ghc" ["--print-global-package-db"] ""

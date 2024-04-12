@@ -5,12 +5,12 @@ clean:
 	rm -rf netlist
 
 format:
-	stylish-haskell -c ./.stylish-haskell.yaml -r -i src
+	stylish-haskell -c ./.stylish-haskell.yaml -r -i src tests
 
 check_format:
 	cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
 	echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
-	stylish-haskell -c ./.stylish-haskell-check.yaml -r src
+	stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
 
 clean_tests:
 	rm ./.stylish-haskell-check.yaml

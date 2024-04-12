@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.UpConverter where
 
@@ -8,22 +8,22 @@ module Test.Cores.Ethernet.UpConverter where
 import Prelude
 
 -- maybe
-import qualified Data.Maybe as M
+import Data.Maybe qualified as M
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude (type (<=))
+import Clash.Prelude ( type (<=) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
@@ -33,8 +33,8 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.UpConverter
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.UpConverter
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

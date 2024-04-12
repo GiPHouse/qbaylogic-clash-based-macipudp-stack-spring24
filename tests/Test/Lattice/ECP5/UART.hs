@@ -1,29 +1,29 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Lattice.ECP5.UART where
 
 -- base
-import Prelude
-import Data.Proxy
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
+import Data.Proxy
+import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude (type (<=))
+import Clash.Prelude ( type (<=) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
@@ -32,7 +32,7 @@ import Protocols.Hedgehog
 -- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Lattice.ECP5.UART
-import qualified Protocols.DfConv as DfConv
+import Protocols.DfConv qualified as DfConv
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -42,8 +42,8 @@ prop_uart_tx_rx_id :: Property
 prop_uart_tx_rx_id = idWithModelSingleDomain @C.System defExpectOptions gen (C.exposeClockResetEnable id) ckt
   where
     ckt = C.exposeClockResetEnable (
-      uartTxC @C.System (C.SNat @6250000) 
-      |> uartRxC (C.SNat @6250000) 
+      uartTxC @C.System (C.SNat @6250000)
+      |> uartRxC (C.SNat @6250000)
       |> unsafeToPacketStream
       |> DfConv.fifo (Proxy :: Proxy (PacketStream C.System 1 ())) (Proxy :: Proxy (PacketStream C.System 1 ())) (C.SNat @50)
       )

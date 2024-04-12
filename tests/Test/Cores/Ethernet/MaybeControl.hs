@@ -3,10 +3,10 @@ A collection of Hedgehog helpers to test Circuit components. To test a
 protocol component against a combinatorial model, see 'idWithModel'. To write
 your own tester, see 'Test'.
 -}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# language FlexibleContexts #-}
+{-# language FlexibleInstances #-}
+{-# language NamedFieldPuns #-}
+{-# language UndecidableInstances #-}
 
 module Test.Cores.Ethernet.MaybeControl (
   propWithModelMaybeControl
@@ -17,26 +17,26 @@ module Test.Cores.Ethernet.MaybeControl (
 import Clash.Cores.Ethernet.PacketStream
 
 -- base
+import Data.Proxy ( Proxy(Proxy) )
+import GHC.Stack ( HasCallStack )
 import Prelude
-import GHC.Stack (HasCallStack)
-import Data.Proxy (Proxy(Proxy))
 
 -- clash-protocols
 import Protocols
 import Protocols.Hedgehog.Internal
 
 -- clash-prelude
-import qualified Clash.Prelude as C
+import Clash.Prelude qualified as C
 
 -- hedgehog
-import qualified Hedgehog as H
-import qualified Hedgehog.Internal.Property as H
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog qualified as H
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Internal.Property qualified as H
+import Hedgehog.Range qualified as Range
 
 -- pretty print
-import Text.Show.Pretty (ppShow)
 import Data.Maybe
+import Text.Show.Pretty ( ppShow )
 
 
 -- | Whether to stall or not. Used in 'idWithModel'.
@@ -49,7 +49,7 @@ resetGen :: C.KnownDomain dom => Int -> C.Reset dom
 resetGen n = C.unsafeFromHighPolarity
   (C.fromList (replicate n True <> repeat False))
 
--- | Like propWithModel 
+-- | Like propWithModel
 -- returns a list of maybe (Packetstream dom dataWidth metaType) instead of (PacketStream dom dataWidth metaType)
 propWithModelMaybeControl ::
   forall (dom :: C.Domain) (dataWidth :: C.Nat) (metaType :: C.Type)  .
@@ -59,7 +59,7 @@ propWithModelMaybeControl ::
   ExpectOptions ->
   -- | Test data generator
   H.Gen [PacketStreamM2S dataWidth metaType] ->
-  -- | Model 
+  -- | Model
   ([PacketStreamM2S dataWidth metaType] -> [Maybe (PacketStreamM2S dataWidth metaType)]) ->
   -- | Implementation
   Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)  ->
@@ -117,11 +117,11 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
       forall m .
       (HasCallStack, H.MonadTest m) =>
       -- | Timeout
-      ExpectOptions -> 
-      -- | Expected number of values  
-      C.Vec 1 Int -> 
+      ExpectOptions ->
+      -- | Expected number of values
+      C.Vec 1 Int ->
       -- | Sampled data
-      [Maybe (PacketStreamM2S dataWidth metaType)] -> 
+      [Maybe (PacketStreamM2S dataWidth metaType)] ->
       -- | packaged results
       m [Maybe (PacketStreamM2S dataWidth metaType)]
 
@@ -133,7 +133,7 @@ propWithModelMaybeControl eOpts genData model prot prop = H.property $ do
           -- Timeout counter. If it reaches zero we time out.
           Int ->
           -- Expected number of values
-          Int -> 
+          Int ->
           -- Amount of Nothings encountered
           Int ->
           -- Sampled data

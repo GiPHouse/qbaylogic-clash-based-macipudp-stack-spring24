@@ -1,18 +1,18 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# language FlexibleContexts #-}
+{-# language RecordWildCards #-}
 module Test.Cores.Ethernet.Util where
 
 -- prelude
 import Prelude
 
 -- list
-import qualified Data.List as L
+import Data.List qualified as L
 
 -- maybe
-import qualified Data.Maybe as M
+import Data.Maybe qualified as M
 
 -- clash-prelude
-import qualified Clash.Prelude as C
+import Clash.Prelude qualified as C
 
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream

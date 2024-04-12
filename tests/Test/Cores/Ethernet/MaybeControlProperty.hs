@@ -1,37 +1,37 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.MaybeControlProperty where
 
 -- base
-import Prelude
-import Data.Proxy
 import Data.Maybe
+import Data.Proxy
+import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude (type (<=))
+import Clash.Prelude ( type (<=) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
+import Protocols.DfConv qualified as DfConv
 import Protocols.Hedgehog
-import qualified Protocols.DfConv as DfConv
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream
-import Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControlSingleDomain)
+import Test.Cores.Ethernet.MaybeControl ( propWithModelMaybeControlSingleDomain )
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

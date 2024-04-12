@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.DownConverter where
 
@@ -8,19 +8,19 @@ module Test.Cores.Ethernet.DownConverter where
 import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude (type (<=))
+import Clash.Prelude ( type (<=) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
@@ -37,7 +37,7 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 model :: forall n. 1 <= n => C.KnownNat n => [PacketStreamM2S n ()] -> [PacketStreamM2S 1 ()]
-model fragments = fragments >>= chopPacket 
+model fragments = fragments >>= chopPacket
 
 -- | Test the downconverter stream instance
 downconverterTest :: forall n. 1 <= n => C.SNat n -> Property

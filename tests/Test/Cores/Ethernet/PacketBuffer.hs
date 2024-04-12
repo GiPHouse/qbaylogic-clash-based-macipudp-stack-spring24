@@ -1,36 +1,36 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.PacketBuffer where
 
 -- base
-import Prelude
 import Data.Maybe
+import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude hiding (undefined)
+import Clash.Prelude hiding ( undefined )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog as H
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketBuffer
-import Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControlSingleDomain)
+import Clash.Cores.Ethernet.PacketStream
+import Test.Cores.Ethernet.MaybeControl ( propWithModelMaybeControlSingleDomain )
 import Test.Cores.Ethernet.Util as U
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
@@ -59,19 +59,19 @@ prop_packetBuffer_id = property $ do
       gen = U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets
 
   (packets :: [PacketStreamM2S 4 ()]) <- H.forAll gen
- 
+
   let packetBufferSize = d16
       cfg = SimulationConfig 1 (2 * snatToNum packetBufferSize) True
       sim = simulateC ckt cfg
 
       circuitResult = sim (Just <$> packets)
 
-  assert $ noGaps circuitResult 
+  assert $ noGaps circuitResult
 
--- Fails ~SOMETIMES~ 
+-- Fails ~SOMETIMES~
 -- prop_packetBuffer_dropPackets :: Property
--- prop_packetBuffer_dropPackets = 
---   propWithModelMaybeControlSingleDomain 
+-- prop_packetBuffer_dropPackets =
+--   propWithModelMaybeControlSingleDomain
 --   @C.System
 --   defExpectOptions
 --   ((Prelude.++) <$>  somePackets <*> ((Prelude.++) <$> bigPacket <*> somePackets) )
@@ -94,21 +94,21 @@ prop_packetBuffer_id = property $ do
 
 --       lastToNothing :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
 --       lastToNothing list = setLast <$> list
---         where 
+--         where
 --           setLast word = word {_last = Nothing}
 
 --       dropLargePackets :: Int -> [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
 --       dropLargePackets size wordlist = Prelude.concat $ Prelude.reverse $ Prelude.filter fitts $ splitOnLast wordlist [] []
---         where 
+--         where
 --           splitOnLast :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()] -> [[PacketStreamM2S 4 ()]] -> [[PacketStreamM2S 4 ()]]
---           splitOnLast (x:xs) packet list = case (x:xs) of 
+--           splitOnLast (x:xs) packet list = case (x:xs) of
 --             (PacketStreamM2S { _last = Nothing } : bs ) -> splitOnLast bs (x : packet) list
 --             (PacketStreamM2S { _last = Just _ }  : bs ) -> splitOnLast bs [] ((Prelude.reverse (x : packet)) : list)
---           splitOnLast [] [] list = list 
+--           splitOnLast [] [] list = list
 --           splitOnLast [] packet list = (Prelude.reverse packet) : list
 
 --           fitts :: [PacketStreamM2S 4 ()] -> Bool
---           fitts l = (Prelude.length l) <=  (2 Prelude.^ size) 
+--           fitts l = (Prelude.length l) <=  (2 Prelude.^ size)
 
 tests :: TestTree
 tests =

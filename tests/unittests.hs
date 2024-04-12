@@ -2,14 +2,14 @@ import Prelude
 
 import Test.Tasty
 
-import qualified Test.Cores.Ethernet.PacketStream
-import qualified Test.Lattice.ECP5.UART
-import qualified Test.Cores.Ethernet.UpConverter
-import qualified Test.Cores.Ethernet.DownConverter
-import qualified Test.Cores.Ethernet.PacketBuffer
-import qualified Test.Cores.Ethernet.MaybeControlProperty
-import qualified Test.Cores.Ethernet.InterpacketGapInserter
-import qualified Test.Cores.Ethernet.AsyncFIFO
+import Test.Cores.Ethernet.AsyncFIFO qualified
+import Test.Cores.Ethernet.DownConverter qualified
+import Test.Cores.Ethernet.InterpacketGapInserter qualified
+import Test.Cores.Ethernet.MaybeControlProperty qualified
+import Test.Cores.Ethernet.PacketBuffer qualified
+import Test.Cores.Ethernet.PacketStream qualified
+import Test.Cores.Ethernet.UpConverter qualified
+import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
