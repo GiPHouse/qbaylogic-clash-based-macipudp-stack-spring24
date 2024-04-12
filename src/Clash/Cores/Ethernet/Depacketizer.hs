@@ -58,7 +58,8 @@ sFunc dataWidth n Idle (Just inp, _bwdIn) = (nextState, (PacketStreamS2M True, N
 
 -- Further depacketization in case dataWidth < n.
 sFunc dataWidth n Parse {_byte_idx = i, _state = state} (Just inp, _bwdIn) = case compareSNat n dataWidth of
-  SNatLE -> undefined -- impossible branch, because we immediately go to Forward in this case
+  -- Unreachable branch, because we immediately go to Forward in this case.
+  SNatLE -> errorX "unreachable"
   SNatGT -> (nextState, (PacketStreamS2M True, Nothing))
     where
       overflow = satAdd SatZero i (snatToNum dataWidth) == 0

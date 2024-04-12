@@ -22,6 +22,7 @@ data EthernetHeader = EthernetHeader {
   _ether_type :: BitVector 16
 } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
+-- | Parses the first 14 bytes of the incoming PacketStream into an `EthernetHeader`.
 macDepacketizerC :: forall (dom :: Domain) (dataWidth :: Nat) (m :: Nat) .
   ( KnownDomain dom
   , HiddenClockResetEnable dom
