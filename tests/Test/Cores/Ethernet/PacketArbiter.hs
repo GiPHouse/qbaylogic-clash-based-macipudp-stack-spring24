@@ -1,47 +1,48 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# language FlexibleContexts #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
 
 module Test.Cores.Ethernet.PacketArbiter where
 
 -- base
-import Prelude
 import Data.Maybe
+import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude (type(<=))
+import Clash.Prelude ( type (<=) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketArbiter
+import Clash.Cores.Ethernet.PacketStream
 import Test.Cores.Ethernet.Util
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 prop_packetarbiter_roundrobin :: Property
-prop_packetarbiter_roundrobin = makePropPacketArbiter C.d10 C.d4 RoundRobin
+prop_packetarbiter_roundrobin = makePropPacketArbiter C.d5 C.d2 RoundRobin
 
 prop_packetarbiter_parallel :: Property
-prop_packetarbiter_parallel = makePropPacketArbiter C.d10 C.d4 Clash.Cores.Ethernet.PacketArbiter.Parallel
+prop_packetarbiter_parallel = makePropPacketArbiter C.d5 C.d2 Clash.Cores.Ethernet.PacketArbiter.Parallel
 
 -- | Tests a packet arbiter for any data width and number of sources. In particular,
--- the following property is tested: packets from the same source 
+-- tests that packets from all sources are sent out unmodified in the same order
+-- they were in in the source streams.
 makePropPacketArbiter
   :: forall p n
    . ( C.KnownNat p
@@ -55,11 +56,11 @@ makePropPacketArbiter
   -> Property
 makePropPacketArbiter _ _ mode = propWithModelSingleDomain
   @C.System
-  defExpectOptions 
+  defExpectOptions
   genSources
   (C.exposeClockResetEnable concat)
   (C.exposeClockResetEnable (packetArbiterC mode))
-  (\xs ys -> diff xs (\as bs -> partitionPackets as == partitionPackets bs) ys)
+  (\xs ys -> partitionPackets xs === partitionPackets ys)
   where
     genSources = mapM (fmap fullPackets . Gen.list (Range.linear 0 100) . genPacket) (C.indicesI @p)
 

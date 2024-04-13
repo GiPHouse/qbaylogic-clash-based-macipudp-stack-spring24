@@ -1,15 +1,13 @@
 module Clash.Cores.Ethernet.PacketArbiter
   ( packetArbiterC
   , ArbiterMode(..)
-  , sampleOut, sampleOut'
   ) where
 
-import Clash.Prelude
 import Clash.Cores.Ethernet.PacketStream
-import Protocols
+import Clash.Prelude
+import Data.Bifunctor qualified as B
 import Data.Maybe
-import qualified Data.Bifunctor as B
-import qualified Data.List
+import Protocols
 
 -- | Collect mode for `packetArbiterC`
 data ArbiterMode
@@ -35,28 +33,15 @@ packetArbiterC mode = Circuit (B.first unbundle . mealyB go (maxBound, True) . B
       :: (Index p, Bool)
       -> (Vec p (Maybe (PacketStreamM2S n a)), PacketStreamS2M)
       -> ((Index p, Bool), (Vec p PacketStreamS2M, Maybe (PacketStreamM2S n a)))
-    go (i, first) (fwds, bwd) = ((i'', continue), (bwds, fwd))
+    go (i, first) (fwds, bwd@(PacketStreamS2M ack)) = ((i', continue), (bwds, fwd))
       where
         bwds = replace i bwd (repeat (PacketStreamS2M False))
         fwd = fwds !! i
         continue = case fwd of
-          Nothing -> first
-          Just (PacketStreamM2S _ (Just _) _ _) -> True
+          Nothing -> first -- only switch sources if this is not somewhere inside a packet
+          Just (PacketStreamM2S _ (Just _) _ _) -> ack -- switch source once last packet is acknowledged
           _ -> False
-        i' = case mode of
-          RoundRobin -> satSucc SatWrap i -- next index
-          Parallel -> fromMaybe maxBound $ fold @(p - 1) (<|>) (zipWith (<$) indicesI fwds) -- index of last sink with data
-        i'' = if continue then i' else i
-
-dataIn =
-    [Nothing, Just (PacketStreamM2S (0xFF :> Nil) Nothing () False), Nothing                                               , Nothing                                               , Just (PacketStreamM2S (0xFF :> Nil) (Just 0) () False), Nothing                                                        , Nothing, Nothing] :>
-    [Nothing, Nothing                                              , Just (PacketStreamM2S (0x00 :> Nil) (Just 0) () False), Just (PacketStreamM2S (0x00 :> Nil) (Just 0) () False), Just (PacketStreamM2S (0x00 :> Nil) (Just 0) () False), Just (PacketStreamM2S (0x00 :> Nil) (Just 0) () False)] :>
-    Data.List.repeat Nothing :>
-    Data.List.repeat Nothing :>
-    Data.List.repeat Nothing :>
-    Nil
-sampleOut = exposeClockResetEnable
-  (simulateC (packetArbiterC RoundRobin) def dataIn)
-  systemClockGen systemResetGen enableGen
-
-sampleOut' mode = exposeClockResetEnable (simulateC (packetArbiterC mode) def (Data.List.repeat (Just $ PacketStreamM2S (0xAA :> Nil) (Just 0) () False) :> Data.List.repeat (Just $ PacketStreamM2S (0x00 :> Nil) (Just 0) () False) :> Data.List.repeat Nothing :> Nil)) systemClockGen systemResetGen enableGen
+        i' = case (mode, continue) of
+          (_, False) -> i
+          (RoundRobin, _) -> satSucc SatWrap i -- next index
+          (Parallel, _) -> fromMaybe maxBound $ fold @(p - 1) (<|>) (zipWith (<$) indicesI fwds) -- index of last sink with data
