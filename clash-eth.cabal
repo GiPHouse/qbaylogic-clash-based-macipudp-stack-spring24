@@ -108,6 +108,7 @@ library
     Clash.Cores.Ethernet.InterpacketGapInserter
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
+    Clash.Cores.Ethernet.FcsInserter
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -163,6 +164,7 @@ test-suite test-library
     QuickCheck,
     hedgehog,
     clash-cores,
+    clash-cores-crc,
     hashable,
     unordered-containers,
     tasty >= 1.2 && < 1.5,
