@@ -11,10 +11,13 @@ import Data.Maybe
 import qualified Data.Bifunctor as B
 import qualified Data.List
 
--- | Collect mode in `packetArbiterC`
+-- | Collect mode for `packetArbiterC`
 data ArbiterMode
-  = RoundRobin -- ^ Collect in a round-robin fashion.
-  | Parallel   -- ^ Check components in parallel. Biased to wards the last source.
+  = RoundRobin
+  -- ^ Collect in a round-robin fashion. Fair and cheaper than `Parallel`.
+  | Parallel
+  -- ^ Check components in parallel. This mode has a higher throughput, but is
+  -- biased towards the last source and also slightly more expensive.
 
 -- | Collects packets from all sources, respecting packet boundaries.
 packetArbiterC
@@ -24,6 +27,7 @@ packetArbiterC
      , 1 <= p
      )
   => ArbiterMode
+  -- ^ See `ArbiterMode`
   -> Circuit (Vec p (PacketStream dom n a)) (PacketStream dom n a)
 packetArbiterC mode = Circuit (B.first unbundle . mealyB go (maxBound, True) . B.first bundle)
   where
