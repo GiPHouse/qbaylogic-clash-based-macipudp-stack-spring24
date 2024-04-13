@@ -136,6 +136,7 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Ethernet.Util
+    Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
