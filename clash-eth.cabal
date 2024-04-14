@@ -143,8 +143,6 @@ test-suite test-library
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
-    Test.Cores.Ethernet.MaybeControl
-    Test.Cores.Ethernet.MaybeControlProperty
     Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.AsyncFIFO

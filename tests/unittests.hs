@@ -5,7 +5,6 @@ import Test.Tasty
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.DownConverter qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
-import Test.Cores.Ethernet.MaybeControlProperty qualified
 import Test.Cores.Ethernet.PacketArbiter qualified
 import Test.Cores.Ethernet.PacketBuffer qualified
 import Test.Cores.Ethernet.PacketDispatcher qualified
