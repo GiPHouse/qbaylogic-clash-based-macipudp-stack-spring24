@@ -32,15 +32,21 @@ import Clash.Cores.Ethernet.PacketDispatcher
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
+-- | Tests that the packet dispatcher works correctly with one sink that accepts
+-- all packets; essentially an id test.
+prop_packetdispatcher_id :: Property
+prop_packetdispatcher_id = makePropPacketDispatcher C.d4
+  ((const True :: Int -> Bool) C.:> C.Nil)
+
 -- | Tests the packet dispatcher for a data width of four bytes and three
 -- overlapping but incomplete dispatch functions, effectively testing whether
 -- the circuit sends input to the first allowed output channel and drops input
 -- if there are none.
 prop_packetdispatcher :: Property
-prop_packetdispatcher = makePropPacketdispatcher C.d4 hs
+prop_packetdispatcher = makePropPacketDispatcher C.d4 fs
   where
-    hs :: C.Vec 3 (C.Index 4 -> Bool)
-    hs =
+    fs :: C.Vec 3 (C.Index 4 -> Bool)
+    fs =
       (>= 3) C.:>
       (>= 2) C.:>
       (>= 1) C.:>
@@ -48,8 +54,8 @@ prop_packetdispatcher = makePropPacketdispatcher C.d4 hs
 
 -- | Generic test function for the packet dispatcher, testing for all data widths,
 -- dispatch functions, and some meta types
-makePropPacketdispatcher
-  :: forall (p :: C.Nat) (dataWidth :: C.Nat) a
+makePropPacketDispatcher
+  :: forall (p :: C.Nat) (dataWidth :: C.Nat) (a :: C.Type)
    . ( C.KnownNat p
      , 1 <= p
      , C.KnownNat dataWidth
@@ -61,25 +67,23 @@ makePropPacketdispatcher
   => C.SNat dataWidth
   -> C.Vec p (a -> Bool)
   -> Property
-makePropPacketdispatcher n fs = idWithModelSingleDomain @C.System
+makePropPacketDispatcher _ fs = idWithModelSingleDomain @C.System
   defExpectOptions
   (Gen.list (Range.linear 0 100) genPackets)
-  (C.exposeClockResetEnable (model n fs))
+  (C.exposeClockResetEnable (model 0))
   (C.exposeClockResetEnable (packetDispatcherC fs))
   where
-    model :: C.SNat n -> C.Vec p (a -> Bool) -> [PacketStreamM2S n a] -> C.Vec p [PacketStreamM2S n a]
-    model _ gs = model' 0 where
-      model' :: C.Index p -> [PacketStreamM2S n a] -> C.Vec p [PacketStreamM2S n a]
-      model' _ [] = pure []
-      model' i (y : ys)
-        | (gs C.!! i) (_meta y) = let next = model' 0 ys in C.replace i (y : (next C.!! i)) next
-        | i < maxBound = model' (i + 1) (y : ys)
-        | otherwise = model' 0 ys
+    model :: C.Index p -> [PacketStreamM2S dataWidth a] -> C.Vec p [PacketStreamM2S dataWidth a]
+    model _ [] = pure []
+    model i (y : ys)
+      | (fs C.!! i) (_meta y) = let next = model 0 ys in C.replace i (y : (next C.!! i)) next
+      | i < maxBound = model (i + 1) (y : ys)
+      | otherwise = model 0 ys
 
     -- TODO use util function from client review branch
     genPackets =
       PacketStreamM2S <$>
-      genVec Gen.enumBounded <*>
+      genVec @dataWidth Gen.enumBounded <*>
       Gen.maybe Gen.enumBounded <*>
       Gen.enumBounded <*>
       Gen.enumBounded
