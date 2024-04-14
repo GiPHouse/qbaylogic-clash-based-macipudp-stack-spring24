@@ -1,20 +1,30 @@
+{-# LANGUAGE FlexibleContexts #-}
 import Prelude
 
 import Test.Tasty
 
-import Test.Cores.Ethernet.AsyncFIFO qualified
-import Test.Cores.Ethernet.Depacketizer qualified
-import Test.Cores.Ethernet.DownConverter qualified
-import Test.Cores.Ethernet.InternetChecksum qualified
-import Test.Cores.Ethernet.InterpacketGapInserter qualified
-import Test.Cores.Ethernet.MacDepacketizer qualified
-import Test.Cores.Ethernet.PacketArbiter qualified
-import Test.Cores.Ethernet.PacketBuffer qualified
-import Test.Cores.Ethernet.PacketDispatcher qualified
-import Test.Cores.Ethernet.PacketStream qualified
-import Test.Cores.Ethernet.PaddingInserter qualified
-import Test.Cores.Ethernet.UpConverter qualified
-import Test.Lattice.ECP5.UART qualified
+import qualified Test.Cores.Ethernet.AsyncFIFO 
+import qualified Test.Cores.Ethernet.Depacketizer 
+import qualified Test.Cores.Ethernet.DownConverter 
+import qualified Test.Cores.Ethernet.InternetChecksum 
+import qualified Test.Cores.Ethernet.InterpacketGapInserter 
+import qualified Test.Cores.Ethernet.MacDepacketizer 
+import qualified Test.Cores.Ethernet.PacketArbiter 
+import qualified Test.Cores.Ethernet.PacketBuffer 
+import qualified Test.Cores.Ethernet.PacketDispatcher 
+import qualified Test.Cores.Ethernet.PacketStream 
+import qualified Test.Cores.Ethernet.PaddingInserter 
+import qualified Test.Lattice.ECP5.UART 
+import qualified Test.Cores.Ethernet.UpConverter
+import qualified Test.Cores.Ethernet.MaybeControl
+import qualified Test.Cores.Ethernet.MaybeControlProperty
+import qualified Test.Cores.Ethernet.FcsInserter
+import Clash.Cores.Crc (HardwareCrc, deriveHardwareCrc)
+import Clash.Cores.Crc.Catalog (Crc32_ethernet)
+
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
+
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -31,4 +41,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
     , Test.Cores.Ethernet.InternetChecksum.tests
+    , Test.Cores.Ethernet.FcsInserter.tests
   ]
