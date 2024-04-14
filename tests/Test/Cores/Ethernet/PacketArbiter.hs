@@ -5,8 +5,8 @@
 module Test.Cores.Ethernet.PacketArbiter where
 
 -- base
+import Data.List ( groupBy, sortOn )
 import Prelude
-import Data.List (groupBy, sortOn)
 
 -- clash-prelude
 import Clash.Prelude ( type (<=) )
