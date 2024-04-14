@@ -1,12 +1,12 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# language AllowAmbiguousTypes #-}
+{-# language FlexibleContexts #-}
+{-# language RecordWildCards #-}
 
 module Clash.Cores.Ethernet.Depacketizer
   (depacketizerC) where
+import Data.Constraint ( Dict(..), (:-)(..) )
 import Data.Maybe
-import Data.Constraint ((:-)(..), Dict(..))
-import Unsafe.Coerce (unsafeCoerce)
+import Unsafe.Coerce ( unsafeCoerce )
 
 import Clash.Prelude
 
@@ -38,8 +38,11 @@ type ParseBufSize (headerBytes :: Nat) (dataWidth :: Nat)
 type ForwardBufSize (headerBytes :: Nat) (dataWidth :: Nat)
   = Mod (dataWidth - (Mod headerBytes dataWidth)) dataWidth
 
--- | Postulates that our parseBuffer size with an additional @dataWidth@
---   bytes is the sames as @headerBytes@ plus the forward buffer size,
+-- Postulates that our parseBuffer size with an additional @dataWidth@
+-- bytes is the sames as @headerBytes@ plus the forward buffer size.
+--
+-- If this is modified in the future the test named prop_equivalentBufSizes
+-- In Test.Cores.Ethernet.Depacketizer must be changed.
 equivalentBufSizes ::
   forall (headerBytes :: Nat) (dataWidth :: Nat).
   (1 <= dataWidth)
@@ -48,21 +51,6 @@ equivalentBufSizes ::
          headerBytes + ForwardBufSize headerBytes dataWidth
        )
 equivalentBufSizes = unsafeCoerce (Dict :: Dict (0 ~ 0))
-
--- TODO:
--- Add this to automated tests so we test whether our our proof from nothing
--- is actually valid. If you want to be extra fancy you can write down
--- an actual proof. If you want to be be super extra fancy you write a proof
--- in agda/idris/coq/lean/insert proof assistant of choice.
--- divRU n d = div (n + (d - 1)) d
--- lhs a b = a * (divRU b a) - a + a
--- rhs a b = b + mod (a - (mod b a)) a
-
--- i0 = [1,2..1000]
--- i1 = [0,1..1000]
-
--- lr = lhs <$> i0 <*> i1
--- rr = rhs <$> i0 <*> i1
 
 type DepacketizerCt (headerBytes :: Nat) (dataWidth :: Nat)
   = ( 1 <= DivRU headerBytes dataWidth
