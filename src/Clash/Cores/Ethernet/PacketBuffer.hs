@@ -28,7 +28,7 @@ packetBuffer
   -- ^ Input packetStream
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
   -- ^ Output CSignal s
-packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
+packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> (not <$> emptyBuffer) <*> ramOut
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
@@ -38,7 +38,7 @@ packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
       where
         func False _          _     = Nothing
         func _     Nothing    _     = Nothing
-        func _     (Just dat) wordAddr = Just (wordAddr, dat)
+        func _     (Just dat) wa = Just (wa, dat)
 
     -- Registers : pointers
     wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
@@ -48,15 +48,14 @@ packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
     readAddr = register 0 readAddr'
 
     -- Registers : status
-    dropping, emptyBuffer :: Signal dom (Bool)
+    dropping, emptyBuffer :: Signal dom Bool
     dropping = register False $ (fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord))
-    emptyBuffer  = (register 0 packetAddr) .==. readAddr
+    emptyBuffer  = register 0 packetAddr .==. readAddr
 
     -- Only write if there is space
     writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping)
     -- Read when the word has been received
-    readEnable = notEmpty .&&. (_ready <$> bwdIn)
-    notEmpty = not <$> emptyBuffer
+    readEnable = (not <$> emptyBuffer) .&&. (_ready <$> bwdIn)
 
     --The status signals
     fullBuffer = (wordAddr + 1)  .==. readAddr
