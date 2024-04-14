@@ -5,8 +5,8 @@
 module Test.Cores.Ethernet.PacketArbiter where
 
 -- base
-import Data.Maybe
 import Prelude
+import Data.List (groupBy, sortOn)
 
 -- clash-prelude
 import Clash.Prelude ( type (<=) )
@@ -34,9 +34,19 @@ import Test.Cores.Ethernet.Util
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
+-- | Tests the round-robin packet arbiter with one source; essentially an id test
+prop_packetarbiter_roundrobin_id :: Property
+prop_packetarbiter_roundrobin_id = makePropPacketArbiter C.d1 C.d2 RoundRobin
+
+-- | Tests the parallel packet arbiter with one source; essentially an id test
+prop_packetarbiter_parallel_id :: Property
+prop_packetarbiter_parallel_id = makePropPacketArbiter C.d1 C.d2 Clash.Cores.Ethernet.PacketArbiter.Parallel
+
+-- Tests the round-robin arbiter with five sources
 prop_packetarbiter_roundrobin :: Property
 prop_packetarbiter_roundrobin = makePropPacketArbiter C.d5 C.d2 RoundRobin
 
+-- Tests the parallel arbiter with five sources
 prop_packetarbiter_parallel :: Property
 prop_packetarbiter_parallel = makePropPacketArbiter C.d5 C.d2 Clash.Cores.Ethernet.PacketArbiter.Parallel
 
@@ -63,7 +73,6 @@ makePropPacketArbiter _ _ mode = propWithModelSingleDomain
   (\xs ys -> partitionPackets xs === partitionPackets ys)
   where
     genSources = mapM (fmap fullPackets . Gen.list (Range.linear 0 100) . genPacket) (C.indicesI @p)
-
     -- TODO use util function from client review branch
     genPacket i =
       PacketStreamM2S <$>
@@ -72,16 +81,8 @@ makePropPacketArbiter _ _ mode = propWithModelSingleDomain
       pure i <*>
       Gen.enumBounded
 
-    partitionPackets
-      :: [PacketStreamM2S n (C.Index p)]
-      -> C.Vec p [PacketStreamM2S n (C.Index p)]
-    partitionPackets = snd . go
-      where
-        go [] = (maxBound, C.repeat [])
-        go (x:xs) = (idx, C.replace idx (x:(v C.!! idx)) v)
-          where
-            (idx', v) = go xs
-            idx = if isJust (_last x) then _meta x else idx'
+    partitionPackets packets = sortOn (_meta . head . head) $
+      groupBy (\a b -> _meta a == _meta b) <$> chunkByPacket packets
 
 tests :: TestTree
 tests =
