@@ -7,10 +7,11 @@ module Test.Cores.Ethernet.PacketBuffer where
 -- base
 import Prelude
 import Data.Maybe
+import qualified Data.List as L
 
 -- clash-prelude
 import qualified Clash.Prelude as C
-import Clash.Prelude hiding (undefined)
+import Clash.Prelude hiding (undefined, (++), drop, take)
 
 -- hedgehog
 import Hedgehog as H
@@ -30,7 +31,6 @@ import Protocols.Hedgehog
 -- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketBuffer
-import Test.Cores.Ethernet.MaybeControl (propWithModelMaybeControlSingleDomain)
 import Test.Cores.Ethernet.Util as U
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
@@ -43,75 +43,77 @@ genPackets =  PacketStreamM2S <$>
               Gen.enumBounded <*>
               Gen.enumBounded
 
-equal :: [Maybe (PacketStreamM2S 4 ())] -> [Maybe (PacketStreamM2S 4 ())] -> Bool
-equal a b = catMaybes a == catMaybes b
+isSubsequenceOf :: Eq a => [a] -> [a] -> Bool
+isSubsequenceOf [] _ = True
+isSubsequenceOf _ [] = False
+isSubsequenceOf (x:xs) (y:ys)
+    | x == y    = isSubsequenceOf xs ys
+    | otherwise = isSubsequenceOf xs (y:ys)
 
-prop_packetBuffer_id :: Property
-prop_packetBuffer_id = property $ do
-
-  let ckt = exposeClockResetEnable (packetBufferC d16) systemClockGen resetGen enableGen
-
-      noGaps :: [Maybe (PacketStreamM2S 4())] -> Bool
-      noGaps (Just (PacketStreamM2S { _last = Nothing }):Nothing:_) = False
-      noGaps (_:xs) = noGaps xs
-      noGaps [] = True
-
+prop_packetBuffer_drop :: Property
+prop_packetBuffer_drop = property $ do
+  let packetBufferSize = d5
+      ckt = exposeClockResetEnable (packetBufferC packetBufferSize) systemClockGen resetGen enableGen
       gen = U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets
 
-  (packets :: [PacketStreamM2S 4 ()]) <- H.forAll gen
- 
-  let packetBufferSize = d16
-      cfg = SimulationConfig 1 (2 * snatToNum packetBufferSize) True
-      sim = simulateC ckt cfg
+  packets :: [PacketStreamM2S 4 ()] <- H.forAll gen
 
-      circuitResult = sim (Just <$> packets)
+  let packetSize = 2 Prelude.^ snatToNum packetBufferSize
+      cfg = SimulationConfig 1 (2 * packetSize) False
+      cktResult = simulateC ckt cfg (Just <$> packets)
 
-  assert $ noGaps circuitResult 
+  let cktByPacket = chunkByPacket $ catMaybes cktResult
+      genByPacket = chunkByPacket packets
+  diff cktByPacket isSubsequenceOf genByPacket
 
--- Fails ~SOMETIMES~ 
--- prop_packetBuffer_dropPackets :: Property
--- prop_packetBuffer_dropPackets = 
---   propWithModelMaybeControlSingleDomain 
---   @C.System
---   defExpectOptions
---   ((Prelude.++) <$>  somePackets <*> ((Prelude.++) <$> bigPacket <*> somePackets) )
---   (C.exposeClockResetEnable model)              -- Desired behaviour of Circuit
---   (C.exposeClockResetEnable ckt)
---   (prop)
---     where
---       somePackets = U.fullPackets <$> Gen.list (Range.linear 0 20) genPackets
---       bigPacket = U.fullPackets <$> lastToNothing <$> Gen.list (Range.linear 151 151) genPackets
 
---       ckt :: forall  (dom :: C.Domain).
---         C.HiddenClockResetEnable dom
---         => Circuit (PacketStream dom 4 ()) (PacketStream dom 4 ())
---       ckt = packetBufferC d7
+prop_packetBuffer_dropLarge :: Property
+prop_packetBuffer_dropLarge =
+  propWithModelSingleDomain
+    @C.System
+    (ExpectOptions 50 (Just $ 1_000) 30 False)
+    (liftA3 (\a b c -> a ++ b ++ c) genSmall genBig genSmall)
+    (C.exposeClockResetEnable model)
+    (C.exposeClockResetEnable ckt)
+    (===)
+ where
+  bufferSize = d5
+  genSmallSize = 5
+  genBigSize = 40
 
---       model :: [PacketStreamM2S 4 ()] -> [Maybe (PacketStreamM2S 4 ())]
---       model xs = Just <$> (dropLargePackets 7 xs)
+  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
+  ckt = packetBufferC bufferSize
 
---       prop modelResult circuitResult = assert $ equal modelResult circuitResult
+  model :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
+  model packets = take genSmallSize packets ++ drop (genSmallSize + genBigSize) packets
+  -- model = id
 
---       lastToNothing :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
---       lastToNothing list = setLast <$> list
---         where 
---           setLast word = word {_last = Nothing}
+  genSmall = U.fullPackets <$> Gen.list (Range.linear genSmallSize genSmallSize) genNotLasts
+  genBig = U.fullPackets <$> Gen.list (Range.linear genBigSize genBigSize) genNotLasts
 
---       dropLargePackets :: Int -> [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
---       dropLargePackets size wordlist = Prelude.concat $ Prelude.reverse $ Prelude.filter fitts $ splitOnLast wordlist [] []
---         where 
---           splitOnLast :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()] -> [[PacketStreamM2S 4 ()]] -> [[PacketStreamM2S 4 ()]]
---           splitOnLast (x:xs) packet list = case (x:xs) of 
---             (PacketStreamM2S { _last = Nothing } : bs ) -> splitOnLast bs (x : packet) list
---             (PacketStreamM2S { _last = Just _ }  : bs ) -> splitOnLast bs [] ((Prelude.reverse (x : packet)) : list)
---           splitOnLast [] [] list = list 
---           splitOnLast [] packet list = (Prelude.reverse packet) : list
+  genNotLasts :: Gen (PacketStreamM2S 4 ())
+  genNotLasts =  PacketStreamM2S <$>
+            genVec Gen.enumBounded <*>
+            pure Nothing <*>
+            Gen.enumBounded <*>
+            Gen.enumBounded
 
---           fitts :: [PacketStreamM2S 4 ()] -> Bool
---           fitts l = (Prelude.length l) <=  (2 Prelude.^ size) 
+
+prop_packetBuffer_id :: Property
+prop_packetBuffer_id =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    (U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets)
+    (C.exposeClockResetEnable id)
+    (C.exposeClockResetEnable ckt)
+    (===)
+ where
+  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
+  ckt = packetBufferC d12
 
 tests :: TestTree
 tests =
     localOption (mkTimeout 30_000_000 {- 30 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1000))
+  $ localOption (HedgehogTestLimit (Just 10_000))
   $(testGroupGenerator)
