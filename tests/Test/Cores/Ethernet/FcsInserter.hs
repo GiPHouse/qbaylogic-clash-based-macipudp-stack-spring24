@@ -3,6 +3,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Test.Cores.Ethernet.FcsInserter where
 
 -- base

@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 import Prelude
 
 import Test.Tasty
@@ -11,6 +12,13 @@ import qualified Test.Cores.Ethernet.MaybeControl
 import qualified Test.Cores.Ethernet.MaybeControlProperty
 import qualified Test.Cores.Ethernet.InterpacketGapInserter
 import qualified Test.Cores.Ethernet.AsyncFIFO
+import qualified Test.Cores.Ethernet.FcsInserter
+import Clash.Cores.Crc (HardwareCrc, deriveHardwareCrc)
+import Clash.Cores.Crc.Catalog (Crc32_ethernet)
+
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
+
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -21,4 +29,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.MaybeControlProperty.tests
     , Test.Cores.Ethernet.PacketBuffer.tests
     , Test.Cores.Ethernet.InterpacketGapInserter.tests
+    , Test.Cores.Ethernet.FcsInserter.tests
   ]
