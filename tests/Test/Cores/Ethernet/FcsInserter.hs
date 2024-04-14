@@ -77,7 +77,8 @@ insertCrc packet = L.init packet ++ [filled, trailing]
 
 
 -- | Test the fcsinserter
-fcsinserterTest :: Property
+fcsinserterTest 
+  :: HardwareCrc Crc32_ethernet 8 4 => Property
 fcsinserterTest =
   propWithModelSingleDomain
     @C.System
@@ -105,10 +106,11 @@ fcsinserterTest =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_fcsinserter_d4 :: Property
+prop_fcsinserter_d4 
+  :: HardwareCrc Crc32_ethernet 8 4 => Property
 prop_fcsinserter_d4 = fcsinserterTest 
 
-tests :: TestTree
+tests :: HardwareCrc Crc32_ethernet 8 4 => TestTree
 tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))

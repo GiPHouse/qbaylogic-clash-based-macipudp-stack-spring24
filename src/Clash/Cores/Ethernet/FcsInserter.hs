@@ -223,7 +223,7 @@ fcsHelperT
 -- myEngine = crcEngine' $ Proxy @Crc32_ethernet
 
 
-packets = List.groupBy (\x _ -> isJust x && (isJust . _last . fromJustX $ x)) fwdIn
-expectedOut = M.join [sampleN (List.length packet + 1) $ myEngine (fromList $ True : List.repeat False) (fromList $ fmap packetStreamM2SToBv <$> packet) | packet <- packets]
+-- packets = List.groupBy (\x _ -> isJust x && (isJust . _last . fromJustX $ x)) fwdIn
+-- expectedOut = M.join [sampleN (List.length packet + 1) $ myEngine (fromList $ True : List.repeat False) (fromList $ fmap packetStreamM2SToBv <$> packet) | packet <- packets]
 
 

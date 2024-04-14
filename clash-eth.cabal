@@ -144,6 +144,7 @@ test-suite test-library
     Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.AsyncFIFO
+    Test.Cores.Ethernet.FcsInserter
   build-depends:
     clash-eth,
     QuickCheck,
