@@ -32,36 +32,45 @@ import Clash.Cores.Ethernet.PacketStream
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
 
-
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-macDepacketizerPropertyGenerator :: forall (dataWidth :: Nat) (m :: Nat) .
+macDepacketizerPropertyGenerator
+  :: forall (dataWidth :: Nat).
   ( KnownNat dataWidth
   , 1 <= dataWidth
-  , Mod 14 dataWidth + m ~ dataWidth)
+  )
   => SNat dataWidth
   -> Property
-macDepacketizerPropertyGenerator dataWidth =
+macDepacketizerPropertyGenerator _ =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap addPacketWithLastSet (Gen.list (Range.linear 1 100) genPackets))
+    (fmap fullPackets (Gen.list (Range.linear 1 100) genPackets))
     (C.exposeClockResetEnable model)
-    (C.exposeClockResetEnable @C.System (macDepacketizerC dataWidth))
+    (C.exposeClockResetEnable @C.System macDepacketizerC)
     (===)
     where
-      model = depacketizerModel dataWidth d14 :: [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth EthernetHeader]
+      model :: [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth EthernetHeader]
+      model = depacketizerModel const
       genPackets =
           PacketStreamM2S <$>
           genVec Gen.enumBounded <*>
           Gen.maybe Gen.enumBounded <*>
           Gen.enumBounded <*>
-          Gen.enum False False
+          Gen.enumBounded
 
--- | n mod dataWidth ~ 0
+-- | n mod dataWidth ~ 1
+prop_mac_depacketizer_d1 :: Property
+prop_mac_depacketizer_d1 = macDepacketizerPropertyGenerator d1
+
+-- | n mod dataWidth ~ 3
+prop_mac_depacketizer_d3 :: Property
+prop_mac_depacketizer_d3 = macDepacketizerPropertyGenerator d3
+
+-- | n mod dataWidth ~ 1
 prop_mac_depacketizer_d7 :: Property
-prop_mac_depacketizer_d7 = macDepacketizerPropertyGenerator d7
+prop_mac_depacketizer_d7 = macDepacketizerPropertyGenerator d3
 
 -- | dataWidth < header byte size
 prop_mac_depacketizer_d9 :: Property
