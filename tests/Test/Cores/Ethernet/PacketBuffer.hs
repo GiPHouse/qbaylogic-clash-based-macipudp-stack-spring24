@@ -6,9 +6,6 @@ module Test.Cores.Ethernet.PacketBuffer where
 
 -- base
 import Prelude
-import Data.Maybe
-import qualified Data.List as L
-
 -- clash-prelude
 import qualified Clash.Prelude as C
 import Clash.Prelude hiding (undefined, (++), drop, take)
@@ -32,6 +29,14 @@ import Protocols.Hedgehog
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketBuffer
 import Test.Cores.Ethernet.Util as U
+
+
+genClean :: Gen (PacketStreamM2S 4 ())
+genClean =  PacketStreamM2S <$>
+    genVec Gen.enumBounded <*>
+    pure Nothing <*>
+    Gen.enumBounded <*>
+    pure False
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -78,14 +83,7 @@ prop_packetBuffer_id_small_buffer =
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
   ckt = packetBufferC d5
 
-  genListofLists = Gen.list (Range.linear 0 6) $ Gen.list (Range.linear 0 32) genNotLasts
-   
-  genNotLasts :: Gen (PacketStreamM2S 4 ())
-  genNotLasts =  PacketStreamM2S <$>
-    genVec Gen.enumBounded <*>
-    pure Nothing <*>
-    Gen.enumBounded <*>
-    pure False
+  genListofLists = Gen.list (Range.linear 0 10) $ Gen.list (Range.linear 0 31) genClean
 
 
 prop_packetBuffer_no_gaps :: Property
@@ -145,12 +143,6 @@ prop_csignal_packetBuffer_drop =
   genSmall = U.fullPackets <$> Gen.list (Range.linear 1 5) genClean
   genBig = U.fullPackets <$> Gen.list (Range.linear 33 50) genClean
 
-  genClean :: Gen (PacketStreamM2S 4 ())
-  genClean =  PacketStreamM2S <$>
-      genVec Gen.enumBounded <*>
-      pure Nothing <*>
-      Gen.enumBounded <*>
-      pure False
 
 
 tests :: TestTree
