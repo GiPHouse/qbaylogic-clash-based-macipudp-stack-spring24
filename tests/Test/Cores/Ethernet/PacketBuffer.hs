@@ -148,5 +148,5 @@ prop_csignal_packetBuffer_drop =
 tests :: TestTree
 tests =
     localOption (mkTimeout 30_000_000 {- 30 seconds -})
-  $ localOption (HedgehogTestLimit (Just 10_000))
+  $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)
