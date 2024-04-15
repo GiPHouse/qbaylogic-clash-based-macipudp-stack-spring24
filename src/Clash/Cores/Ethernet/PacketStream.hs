@@ -24,7 +24,7 @@ import Protocols.DfConv hiding ( pure )
 import Protocols.Hedgehog.Internal
 import Protocols.Internal
 
-import Data.Coerce (coerce)
+import Data.Coerce ( coerce )
 
 -- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
 --   with metadata that can only change on packet delineation.
@@ -173,7 +173,7 @@ unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (Pac
 unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
 
 -- | Converts a packetStream into a CSignal.
-fromPacketStream :: forall dom n meta. HiddenClockResetEnable dom 
+fromPacketStream :: forall dom n meta. HiddenClockResetEnable dom
   => Circuit (PacketStream dom n meta) (CSignal dom (Maybe (PacketStreamM2S n meta)))
 fromPacketStream = forceResetSanity |> Circuit (\(inFwd, _) -> (pure (PacketStreamS2M True), CSignal inFwd))
 
