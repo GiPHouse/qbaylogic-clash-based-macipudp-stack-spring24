@@ -49,11 +49,50 @@ isSubsequenceOf (x:xs) (y:ys)
     | x == y    = isSubsequenceOf xs ys
     | otherwise = isSubsequenceOf xs (y:ys)
 
-prop_packetBuffer_drop :: Property
-prop_packetBuffer_drop = property $ do
-  let packetBufferSize = d5
+-- | test for id and proper dropping of aborted packets
+prop_packetBuffer_id :: Property
+prop_packetBuffer_id =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    (U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets)
+    (C.exposeClockResetEnable dropAbortedPackets)
+    (C.exposeClockResetEnable ckt)
+    (===)
+ where
+  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
+  ckt = packetBufferC d12
+
+  -- test for id and proper dropping of aborted packets
+prop_packetBuffer_id_small_buffer :: Property
+prop_packetBuffer_id_small_buffer =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    (Prelude.concat <$> (fmap U.fullPackets <$> genListofLists))
+    (C.exposeClockResetEnable dropAbortedPackets)
+    (C.exposeClockResetEnable ckt)
+    (===)
+ where
+  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
+  ckt = packetBufferC d5
+
+  genListofLists = Gen.list (Range.linear 0 6) $ Gen.list (Range.linear 0 32) genNotLasts
+   
+  genNotLasts :: Gen (PacketStreamM2S 4 ())
+  genNotLasts =  PacketStreamM2S <$>
+    genVec Gen.enumBounded <*>
+    pure Nothing <*>
+    Gen.enumBounded <*>
+    pure False
+
+
+prop_packetBuffer_no_gaps :: Property
+prop_packetBuffer_no_gaps = property $ do
+  let packetBufferSize = d12
+      maxInputSize = 50
       ckt = exposeClockResetEnable (packetBufferC packetBufferSize) systemClockGen resetGen enableGen
-      gen = U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets
+      gen = U.fullPackets <$> Gen.list (Range.linear 0 maxInputSize) genPackets
 
   packets :: [PacketStreamM2S 4 ()] <- H.forAll gen
 
@@ -61,55 +100,57 @@ prop_packetBuffer_drop = property $ do
       cfg = SimulationConfig 1 (2 * packetSize) False
       cktResult = simulateC ckt cfg (Just <$> packets)
 
-  let cktByPacket = chunkByPacket $ catMaybes cktResult
-      genByPacket = chunkByPacket packets
-  diff cktByPacket isSubsequenceOf genByPacket
+  assert $ noGaps $ take (5*maxInputSize) cktResult
 
+  where
+    noGaps :: [Maybe (PacketStreamM2S 4 ())] -> Bool
+    noGaps (Just (PacketStreamM2S{_last = Nothing}):Nothing:_) = False
+    noGaps (_:xs) = noGaps xs
+    noGaps _ = True
 
-prop_packetBuffer_dropLarge :: Property
-prop_packetBuffer_dropLarge =
+prop_csignal_packetBuffer_id :: Property
+prop_csignal_packetBuffer_id =
   propWithModelSingleDomain
     @C.System
-    (ExpectOptions 50 (Just $ 1_000) 30 False)
-    (liftA3 (\a b c -> a ++ b ++ c) genSmall genBig genSmall)
+    defExpectOptions
+    (U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets)
+    (C.exposeClockResetEnable dropAbortedPackets)
+    (C.exposeClockResetEnable ckt)
+    (===)
+ where
+  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
+  ckt = fromPacketStream |> cSignalPacketBufferC d12
+
+prop_csignal_packetBuffer_drop :: Property
+prop_csignal_packetBuffer_drop =
+  propWithModelSingleDomain
+    @C.System
+    (ExpectOptions 50 (Just 1_000) 30 False)
+    (liftA3 (\a b c -> a ++ b ++ c)  genSmall genBig genSmall)
     (C.exposeClockResetEnable model)
     (C.exposeClockResetEnable ckt)
     (===)
  where
   bufferSize = d5
-  genSmallSize = 5
-  genBigSize = 40
 
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = packetBufferC bufferSize
+  ckt = fromPacketStream |> cSignalPacketBufferC bufferSize
 
   model :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
-  model packets = take genSmallSize packets ++ drop (genSmallSize + genBigSize) packets
-  -- model = id
+  model packets = Prelude.concat $ take 1 packetChunk ++ drop 2 packetChunk
+    where
+      packetChunk = chunkByPacket packets
 
-  genSmall = U.fullPackets <$> Gen.list (Range.linear genSmallSize genSmallSize) genNotLasts
-  genBig = U.fullPackets <$> Gen.list (Range.linear genBigSize genBigSize) genNotLasts
+  genSmall = U.fullPackets <$> Gen.list (Range.linear 1 5) genClean
+  genBig = U.fullPackets <$> Gen.list (Range.linear 33 50) genClean
 
-  genNotLasts :: Gen (PacketStreamM2S 4 ())
-  genNotLasts =  PacketStreamM2S <$>
-            genVec Gen.enumBounded <*>
-            pure Nothing <*>
-            Gen.enumBounded <*>
-            Gen.enumBounded
+  genClean :: Gen (PacketStreamM2S 4 ())
+  genClean =  PacketStreamM2S <$>
+      genVec Gen.enumBounded <*>
+      pure Nothing <*>
+      Gen.enumBounded <*>
+      pure False
 
-
-prop_packetBuffer_id :: Property
-prop_packetBuffer_id =
-  propWithModelSingleDomain
-    @C.System
-    defExpectOptions
-    (U.fullPackets <$> Gen.list (Range.linear 0 100) genPackets)
-    (C.exposeClockResetEnable id)
-    (C.exposeClockResetEnable ckt)
-    (===)
- where
-  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = packetBufferC d12
 
 tests :: TestTree
 tests =
