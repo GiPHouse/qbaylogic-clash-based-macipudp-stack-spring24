@@ -45,13 +45,10 @@ packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
     header = toHeader (_meta (L.head ps))
 
     prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
-    prependHdr fragments = hdr L.++  L.map (\f -> f { _meta =  metaOut}) fragments
-    
-    bytes :: [BitVector 8]
-    bytes = toList $ unpack $ pack header
+    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta =  metaOut}) fragments
 
     hdr :: [PacketStreamM2S 1 metaOut]
-    hdr = L.map go bytes
+    hdr = L.map go (toList $ unpack $ pack header)
       where
         go byte = PacketStreamM2S {
           _data = byte :> Nil,

@@ -95,6 +95,8 @@ library
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.MacPacketizer
+    Clash.Cores.Ethernet.Packetizer
     Clash.Cores.Ethernet.PacketArbiter
     Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketDispatcher

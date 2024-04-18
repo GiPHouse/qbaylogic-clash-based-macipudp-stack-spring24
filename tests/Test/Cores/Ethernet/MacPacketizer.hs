@@ -26,15 +26,23 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
---import Clash.Cores.Ethernet.MacPacketizer ( EthernetHeader, macDepacketizerC )
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.Ethernet.MacPacketizer
+import Clash.Cores.Ethernet.PacketStream
 
 import Test.Cores.Ethernet.Packetizer ( packetizerModel )
 import Test.Cores.Ethernet.Util
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
+
+genMeta :: forall (meta :: Type) (metaBytes :: Nat)
+   . KnownNat metaBytes
+  => 1 <= metaBytes
+  => BitPack meta
+  => BitSize meta ~ metaBytes * 8
+  => Gen meta
+genMeta = fmap (unpack . pack) (genVec Gen.enumBounded :: Gen (Vec metaBytes (BitVector 8)))
 
 macPacketizerPropertyGenerator
   :: forall (dataWidth :: Nat).
@@ -51,14 +59,13 @@ macPacketizerPropertyGenerator _ =
     (C.exposeClockResetEnable @C.System macPacketizerC)
     (===)
     where
-      macPacketizerC = errorX "not implemented error" -- TODO create circuit
       model :: [PacketStreamM2S dataWidth EthernetHeader] -> [PacketStreamM2S dataWidth ()]
-      model = packetizerModel (const ()) const
+      model = packetizerModel (const ()) id
       genPackets =
           PacketStreamM2S <$>
           genVec Gen.enumBounded <*>
           Gen.maybe Gen.enumBounded <*>
-          Gen.enumBounded <*>
+          genMeta <*>
           Gen.enumBounded
 
 -- | n mod dataWidth ~ 1
