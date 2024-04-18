@@ -50,6 +50,7 @@ common common-options
     -fplugin GHC.TypeLits.Extra.Solver
     -fplugin GHC.TypeLits.Normalise
     -fplugin GHC.TypeLits.KnownNat.Solver
+    -fconstraint-solver-iterations=10
 
     -- Clash needs access to the source code in compiled modules
     -fexpose-all-unfoldings
@@ -90,6 +91,9 @@ library
   hs-source-dirs: src
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Cores.Ethernet.Depacketizer
+    Clash.Cores.Ethernet.EthernetTypes
+    Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketArbiter
     Clash.Cores.Ethernet.PacketBuffer
@@ -113,6 +117,7 @@ library
     clash-cores,
     deepseq,
     hashable,
+    constraints,
     -- For debugging
     pretty-show
 
@@ -136,6 +141,8 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Ethernet.Depacketizer
+    Test.Cores.Ethernet.MacDepacketizer
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
