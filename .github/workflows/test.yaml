@@ -22,7 +22,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          image: clockbox:latest
+          image: baublesaurus/clockbox:latest
           options: -v ${{ github.workspace }}:/work -e ABC=123
           run: | 
             echo "hello world"
