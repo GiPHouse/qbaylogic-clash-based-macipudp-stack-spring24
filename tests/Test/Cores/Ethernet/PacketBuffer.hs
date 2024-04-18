@@ -70,7 +70,8 @@ prop_packetBuffer_id =
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
   ckt = packetBufferC d12
 
-  -- test for id and proper dropping of aborted packets
+  -- test for id and proper dropping of aborted packets, with a small buffer to ensure
+  -- backpressure is tested
 prop_packetBuffer_id_small_buffer :: Property
 prop_packetBuffer_id_small_buffer =
   idWithModelSingleDomain
@@ -86,6 +87,7 @@ prop_packetBuffer_id_small_buffer =
   gen :: Gen [PacketStreamM2S 4 ()]
   gen = Prelude.concat <$> Gen.list (Range.linear 0 10) (genCleanPacket (Range.linear 0 31))
 
+-- | test to check if there are no gaps inside of packets
 prop_packetBuffer_no_gaps :: Property
 prop_packetBuffer_no_gaps = property $ do
   let packetBufferSize = d12
@@ -108,8 +110,8 @@ prop_packetBuffer_no_gaps = property $ do
     noGaps _ = True
 
 -- | test for id and proper dropping of aborted packets
-prop_csignal_packetBuffer_id :: Property
-prop_csignal_packetBuffer_id =
+prop_overflowDropPacketBufferC_id :: Property
+prop_overflowDropPacketBufferC_id =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
@@ -121,8 +123,10 @@ prop_csignal_packetBuffer_id =
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
   ckt = fromPacketStream |> overflowDropPacketBufferC d12
 
-prop_csignal_packetBuffer_drop :: Property
-prop_csignal_packetBuffer_drop =
+
+-- | test for proper dropping when full
+prop_overflowDropPacketBufferC_drop :: Property
+prop_overflowDropPacketBufferC_drop =
   propWithModelSingleDomain
     @C.System
     (ExpectOptions 50 (Just 1_000) 30 False)

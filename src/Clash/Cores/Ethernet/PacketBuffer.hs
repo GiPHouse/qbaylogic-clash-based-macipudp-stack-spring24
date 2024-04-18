@@ -81,6 +81,9 @@ abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle
   where
     go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
 
+-- | Packet buffer, a circuit which stores words in a buffer until the packet is complete
+-- once a packet is complete it will send the entire packet out at once without gaps.
+-- If a packet is larger than 2^sizeBits, the packetBuffer will have a deadlock, this should be avoided!
 packetBufferC
   :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat).
   HiddenClockResetEnable dom
@@ -93,6 +96,7 @@ packetBufferC
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
 
+-- | A packet buffer that drops packets when it is full, instead of giving backpressure
 overflowDropPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
     => KnownNat dataWidth
