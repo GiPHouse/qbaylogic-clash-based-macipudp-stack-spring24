@@ -26,7 +26,7 @@ import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketBuffer ( cSignalPacketBufferC, packetBufferC )
+import Clash.Cores.Ethernet.PacketBuffer ( overflowDropPacketBufferC, packetBufferC )
 import Clash.Cores.Ethernet.PacketStream
 import Test.Cores.Ethernet.Util as U
 
@@ -119,7 +119,7 @@ prop_csignal_packetBuffer_id =
     (===)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = fromPacketStream |> cSignalPacketBufferC d12
+  ckt = fromPacketStream |> overflowDropPacketBufferC d12
 
 prop_csignal_packetBuffer_drop :: Property
 prop_csignal_packetBuffer_drop =
@@ -135,7 +135,7 @@ prop_csignal_packetBuffer_drop =
   bufferSize = d5
 
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = fromPacketStream |> cSignalPacketBufferC bufferSize
+  ckt = fromPacketStream |> overflowDropPacketBufferC bufferSize
 
   model :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
   model packets = Prelude.concat $ take 1 packetChunk ++ drop 2 packetChunk

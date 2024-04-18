@@ -2,7 +2,7 @@
 
 module Clash.Cores.Ethernet.PacketBuffer
     ( packetBufferC
-    , cSignalPacketBufferC
+    , overflowDropPacketBufferC
     ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -93,7 +93,7 @@ packetBufferC
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
 
-cSignalPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
+overflowDropPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
     => KnownNat dataWidth
     => NFDataX metaType
@@ -102,7 +102,7 @@ cSignalPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: T
     => SNat sizeBits
     -- ^ Depth of the packet buffer 2^sizeBits
     -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
-cSignalPacketBufferC size =  backPressureC |> fromSignals (packetBuffer size)
+overflowDropPacketBufferC size =  backPressureC |> fromSignals (packetBuffer size)
   where
     backPressureC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
     backPressureC = fromSignals abortOnBackPressure
