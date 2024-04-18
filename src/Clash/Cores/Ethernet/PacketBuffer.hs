@@ -14,7 +14,7 @@ import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Internal ( CSignal(..) )
 
 packetBuffer
-  :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+  :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
   => KnownNat dataWidth
   => KnownNat sizeBits
@@ -64,28 +64,25 @@ packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMayb
     abortIn = maybe False _abort <$> fwdIn
 
 abortOnBackPressure
-  :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type).
+  :: forall  (dom :: Domain) (dataWidth :: Nat) (metaType :: Type).
   HiddenClockResetEnable dom
   => KnownNat dataWidth
   => NFDataX metaType
   -- ^ Depth of the packet buffer 2^sizeBits
-  => ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+  => ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
   -- ^ Input packetStream
-  -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+  -> ( CSignal dom ()
+     , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     )
   -- ^ Does not give backpressure, sends an abort forward instead
-abortOnBackPressure (fwdIn, bwdIn) = package <$> aborting <*> fwdIn
+abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle (fwdInS, bwdInS))
   where
-    aborting = not . _ready <$> bwdIn
-
-    package :: Bool -> Maybe (PacketStreamM2S dataWidth metaType) -> Maybe (PacketStreamM2S dataWidth metaType)
-    package _     Nothing         = Nothing
-    package True  (Just message)  = Just $ message { _abort = True }
-    package False message         = message
+    go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
 
 packetBufferC
-  :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth
     => KnownNat sizeBits
@@ -96,22 +93,16 @@ packetBufferC
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
 
-cSignalPacketBufferC :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+cSignalPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
     => KnownNat dataWidth
-    => KnownNat sizeBits
     => NFDataX metaType
+    => KnownNat sizeBits
     => 1 <= sizeBits
     => SNat sizeBits
     -- ^ Depth of the packet buffer 2^sizeBits
     -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
-cSignalPacketBufferC size = abortC |> fromSignals (packetBuffer size)
+cSignalPacketBufferC size =  backPressureC |> fromSignals (packetBuffer size)
   where
-    abortC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType ))) (PacketStream dom dataWidth metaType)
-    abortC = fromSignals wrapAbortOnBackPressure
-
-    wrapAbortOnBackPressure:: ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType)),
-                Signal dom PacketStreamS2M
-            )
-        -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
-    wrapAbortOnBackPressure (CSignal fwdIn, bwdIn)  = (CSignal (pure ()), abortOnBackPressure (fwdIn, bwdIn))
+    backPressureC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
+    backPressureC = fromSignals abortOnBackPressure
