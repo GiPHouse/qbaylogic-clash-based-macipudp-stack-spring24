@@ -14,16 +14,6 @@ import Data.Maybe
 import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Internal ( CSignal(..) )
 
-isLast :: Maybe (PacketStreamM2S dataWidth metaType) -> Bool
-isLast word = case word of
-    Just (PacketStreamM2S { _last = Just _ }) -> True
-    _ -> False
-
-abortEnabled :: Maybe (PacketStreamM2S dataWidth metaType) -> Bool
-abortEnabled word = case word of
-    Just (PacketStreamM2S { _abort = True }) -> True
-    _ -> False
-
 packetBuffer
   :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
@@ -77,8 +67,8 @@ packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M <$> backPressure, toMaybe <$
     --The status signals
     fullBuffer = (wordAddr + 1) .==. readAddr
     writeRequest = isJust <$> fwdIn
-    lastWordIn = isLast <$> fwdIn
-    abortIn = abortEnabled <$> fwdIn
+    lastWordIn = maybe False (isJust . _last) <$> fwdIn
+    abortIn = maybe False _abort <$> fwdIn
 
 
 abortOnBackPressure
