@@ -9,26 +9,14 @@ module Clash.Cores.Ethernet.FcsInserter (
 ) where
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
-import Control.Monad qualified as M
-
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util
 import Clash.Prelude
-import Clash.Prelude.Mealy ( mealy )
-import Clash.Sized.Vector ( unsafeFromList )
-import Data.Char ( ord )
-import Data.Data ( Proxy(Proxy) )
-import Data.List ( group )
-import Data.List qualified as List
 import Data.Maybe
 import Protocols
+import Data.Data (Proxy(Proxy))
 
-
-bv2fragment
-  :: Vec 4 (BitVector 8)
-  -> PacketStreamM2S 4 ()
-bv2fragment vector = PacketStreamM2S vector (Just 4) () False
 
 fragment2bv
     :: PacketStreamM2S 4 () -> (Index 4, Vec 4 (BitVector 8))
