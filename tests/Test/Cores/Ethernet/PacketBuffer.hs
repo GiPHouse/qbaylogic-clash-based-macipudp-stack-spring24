@@ -26,18 +26,18 @@ import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketBuffer
+import Clash.Cores.Ethernet.PacketBuffer ( cSignalPacketBufferC, packetBufferC )
 import Clash.Cores.Ethernet.PacketStream
 import Test.Cores.Ethernet.Util as U
 
-
-genClean :: Gen (PacketStreamM2S 4 ())
-genClean =  PacketStreamM2S <$>
+-- | generate a "clean" packet: a packet without an abort
+genCleanPacket :: Range Int -> Gen [PacketStreamM2S 4 ()]
+genCleanPacket range = fmap fullPackets $
+    Gen.list range $ PacketStreamM2S <$>
     genVec Gen.enumBounded <*>
     pure Nothing <*>
     Gen.enumBounded <*>
     pure False
-
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -73,18 +73,18 @@ prop_packetBuffer_id =
   -- test for id and proper dropping of aborted packets
 prop_packetBuffer_id_small_buffer :: Property
 prop_packetBuffer_id_small_buffer =
-  propWithModelSingleDomain
+  idWithModelSingleDomain
     @C.System
     defExpectOptions
-    (Prelude.concat <$> (fmap U.fullPackets <$> genListofLists))
+    gen
     (C.exposeClockResetEnable dropAbortedPackets)
     (C.exposeClockResetEnable ckt)
-    (===)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
   ckt = packetBufferC d5
 
-  genListofLists = Gen.list (Range.linear 0 10) $ Gen.list (Range.linear 0 31) genClean
+  gen :: Gen [PacketStreamM2S 4 ()]
+  gen = Prelude.concat <$> Gen.list (Range.linear 0 10) (genCleanPacket (Range.linear 0 31))
 
 prop_packetBuffer_no_gaps :: Property
 prop_packetBuffer_no_gaps = property $ do
@@ -95,7 +95,7 @@ prop_packetBuffer_no_gaps = property $ do
 
   packets :: [PacketStreamM2S 4 ()] <- H.forAll gen
 
-  let packetSize = 2 Prelude.^ snatToNum packetBufferSize
+  let packetSize = 2 Prelude.^ snatToInteger packetBufferSize
       cfg = SimulationConfig 1 (2 * packetSize) False
       cktResult = simulateC ckt cfg (Just <$> packets)
 
@@ -126,6 +126,7 @@ prop_csignal_packetBuffer_drop =
   propWithModelSingleDomain
     @C.System
     (ExpectOptions 50 (Just 1_000) 30 False)
+    -- make sure the timeout is long as the packetbuffer can be quiet for a while while dropping
     (liftA3 (\a b c -> a ++ b ++ c)  genSmall genBig genSmall)
     (C.exposeClockResetEnable model)
     (C.exposeClockResetEnable ckt)
@@ -141,8 +142,8 @@ prop_csignal_packetBuffer_drop =
     where
       packetChunk = chunkByPacket packets
 
-  genSmall = U.fullPackets <$> Gen.list (Range.linear 1 5) genClean
-  genBig = U.fullPackets <$> Gen.list (Range.linear 33 50) genClean
+  genSmall = genCleanPacket (Range.linear 1 5)
+  genBig = genCleanPacket (Range.linear 33 50)
 
 tests :: TestTree
 tests =
