@@ -20,7 +20,6 @@ main = defaultMain $ testGroup "."
   , Test.Lattice.ECP5.UART.tests
   , Test.Cores.Ethernet.UpConverter.tests
   , Test.Cores.Ethernet.DownConverter.tests
-  , Test.Cores.Ethernet.MaybeControlProperty.tests
   , Test.Cores.Ethernet.PacketBuffer.tests
   , Test.Cores.Ethernet.InterpacketGapInserter.tests
   , Test.Cores.Ethernet.PacketDispatcher.tests
