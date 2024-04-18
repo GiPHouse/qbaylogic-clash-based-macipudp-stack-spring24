@@ -19,14 +19,14 @@ jobs:
         uses: actions/checkout@v4 
       - name: run docker image
         uses: addnab/docker-run-action@v3
-          with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-            image: ${{github.workspace }}/clockbox:latest
-            options: -v ${{ github.workspace }}:/work -e ABC=123
-            run: | 
-              echo "hello world"
-              cat build-ci-image.nix
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: ${{github.workspace }}/clockbox:latest
+          options: -v ${{ github.workspace }}:/work -e ABC=123
+          run: | 
+            echo "hello world"
+            cat build-ci-image.nix
 
   # build_and_synthesize:
   #   runs-on: ubuntu-latest
