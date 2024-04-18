@@ -67,6 +67,7 @@ chopPacket PacketStreamM2S {..} = packets where
 fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 fullPackets [] = []
 fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
+<<<<<<< HEAD
                         in  init fragments ++ [lastFragment]
 
 -- drops packets if one of the words in the packet has the abort flag set
@@ -87,3 +88,6 @@ cleanPackets = map cleanPacket
       Just i  -> pkt {_data = M.fromJust $ Vec.fromList datas}
         where
           datas = take (1 + fromIntegral i) (C.toList _data) ++ replicate ((C.natToNum @n) - 1 - fromIntegral i) 0
+=======
+                        in  init fragments ++ [lastFragment]
+>>>>>>> 0965981 (tests pass!)

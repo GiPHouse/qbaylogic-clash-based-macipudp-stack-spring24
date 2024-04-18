@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 import Prelude
 
 import Test.Tasty
@@ -21,7 +22,8 @@ import qualified Test.Cores.Ethernet.MaybeControlProperty
 import qualified Test.Cores.Ethernet.FcsInserter
 import Clash.Cores.Crc (HardwareCrc, deriveHardwareCrc)
 import Clash.Cores.Crc.Catalog (Crc32_ethernet)
-
+import Data.Proxy
+import Clash.Prelude
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 

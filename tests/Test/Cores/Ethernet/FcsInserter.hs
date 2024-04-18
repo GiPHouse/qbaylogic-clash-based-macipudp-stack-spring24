@@ -64,14 +64,14 @@ insertCrc packet = L.init packet ++ [filled, trailing]
     crcBytes = C.v2bv <$> (C.toList . C.reverse . C.unconcat C.d8 . C.bv2v . digest $ L.foldl' feed softwareCrc $ packetToCrcInp packet)
     lastValid = fromEnum . fromJust . _last $ lastFragment
     lastData = C.toList . _data $ lastFragment
-    (filledData, trailingData) = splitAt 4 $ take (lastValid + 1) $ lastData L.++ crcBytes
+    (filledData, trailingData) = splitAt 4 $ take (lastValid +1 ) lastData L.++ crcBytes
 
     filled = lastFragment {
-        _data = foldl (C.<<+) (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) filledData
+        _data = foldr (C.+>>) (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) filledData
       , _last = Nothing
     }
     trailing = PacketStreamM2S {
-        _data = foldl (C.<<+) (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) trailingData
+        _data = foldr (C.+>>) (0 C.:> 0 C.:> 0 C.:> 0 C.:> C.Nil) trailingData
       , _last = _last lastFragment
       , _meta = ()
       , _abort = False
@@ -79,18 +79,18 @@ insertCrc packet = L.init packet ++ [filled, trailing]
 
 
 -- | Test the fcsinserter
-fcsinserterTest 
+fcsinserterTest
   :: HardwareCrc Crc32_ethernet 8 4 => Property
 fcsinserterTest =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (Gen.list (Range.linear 0 100) genPackets)                  -- Input packets
-    (C.exposeClockResetEnable model)                            -- Desired behaviour of FcsInserter
+    (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets))                   -- Input packets
+    (C.exposeClockResetEnable model)             -- Desired behaviour of FcsInserter
     (C.exposeClockResetEnable ckt)               -- Implementation of FcsInserter
-    (===)                                                       -- Property to test
+    (===)                                        -- Property to test
   where
-    ckt 
+    ckt
       :: forall (dom :: C.Domain)
       .  C.KnownDomain dom
       => C.HiddenClockResetEnable dom
@@ -108,9 +108,9 @@ fcsinserterTest =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_fcsinserter_d4 
+prop_fcsinserter_d4
   :: HardwareCrc Crc32_ethernet 8 4 => Property
-prop_fcsinserter_d4 = fcsinserterTest 
+prop_fcsinserter_d4 = fcsinserterTest
 
 tests :: HardwareCrc Crc32_ethernet 8 4 => TestTree
 tests =
