@@ -7,7 +7,7 @@ Description : Functions and types to connect an RGMII PHY to a packet stream int
 To keep this module generic users will have to provide their own "primitive" functions:
 1. delay functions set to the proper amount of delay (which can be different for RX and TX)
 2. iddr function to turn a single DDR (Double Data Rate) signal into 2 non-DDR signals
-2. oddr function to turn two non-DDR signals into a single DDR signal
+3. oddr function to turn two non-DDR signals into a single DDR signal
 
 Note that Clash models a DDR signal as being twice as fast, thus both facilitating
 and requiring type-level separation between the two "clock domains".
