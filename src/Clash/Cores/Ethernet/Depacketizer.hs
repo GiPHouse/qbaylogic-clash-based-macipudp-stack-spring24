@@ -22,11 +22,11 @@ import Clash.Cores.Ethernet.PacketStream
 -- Ex. We parse a header of 19 bytes and our @dataWidth@ is 4 bytes.
 --
 -- That means:
---   full dataWidth increments we need: DivRU 19 4 = 5
+--   full dataWidth increments we need: 19 `DivRU` 4 = 5
 --   Now bring it back up to @dataWidth@ increments: 5 * 4 = 20
 --   But we only need to store one less in the shift register: 20 - 4 = 16
 type ParseBufSize (headerBytes :: Nat) (dataWidth :: Nat)
-  = dataWidth * ((DivRU headerBytes dataWidth)) - dataWidth
+  = dataWidth * (headerBytes `DivRU` dataWidth) - dataWidth
 
 -- Since the header might be unaligned compared to the datawidth
 -- we need to store a partial fragment when forwarding.
@@ -36,7 +36,7 @@ type ParseBufSize (headerBytes :: Nat) (dataWidth :: Nat)
 -- That means at the end of the header we can have upto 3 bytes left
 -- in the fragment which we may need to forward.
 type ForwardBufSize (headerBytes :: Nat) (dataWidth :: Nat)
-  = Mod (dataWidth - (Mod headerBytes dataWidth)) dataWidth
+  = (dataWidth - (headerBytes `Mod` dataWidth)) `Mod` dataWidth
 
 -- Postulates that our parseBuffer size with an additional @dataWidth@
 -- bytes is the sames as @headerBytes@ plus the forward buffer size.
@@ -53,8 +53,8 @@ equivalentBufSizes ::
 equivalentBufSizes = unsafeCoerce (Dict :: Dict (0 ~ 0))
 
 type DepacketizerCt (headerBytes :: Nat) (dataWidth :: Nat)
-  = ( 1 <= DivRU headerBytes dataWidth
-    , Mod headerBytes dataWidth <= dataWidth
+  = ( 1 <= headerBytes `DivRU` dataWidth
+    , headerBytes `Mod` dataWidth <= dataWidth
     , KnownNat dataWidth
     , 1 <= dataWidth
     , KnownNat headerBytes
@@ -64,7 +64,7 @@ data DepacketizerState (metaOut :: Type) (headerBytes :: Nat)  (dataWidth :: Nat
   = Parse
       { _aborted :: Bool
       , _parseBuf :: Vec (ParseBufSize headerBytes dataWidth) (BitVector 8)
-      , _counter :: Index (DivRU headerBytes dataWidth)
+      , _counter :: Index (headerBytes `DivRU` dataWidth)
       }
   | Forward
       { _aborted :: Bool
@@ -115,14 +115,14 @@ depacketizerT toMetaOut st@Parse {..} (Just pkt@PacketStreamM2S {..}, bwdIn) = (
     dataOut = forwardBytes ++ (repeat defaultByte :: Vec (dataWidth - ForwardBufSize headerBytes dataWidth) (BitVector 8))
 
     prematureEnd idx
-      = case compareSNat (SNat @(Mod headerBytes dataWidth)) d0 of
+      = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
           SNatLE -> True
-          SNatGT -> idx < (natToNum @(Mod headerBytes dataWidth))
+          SNatGT -> idx < (natToNum @(headerBytes `Mod` dataWidth))
 
     outPkt = pkt { _abort = nextAborted
                  , _data = dataOut
                  , _meta = metaOut
-                 , _last = fmap (\i -> i - natToNum @(Mod headerBytes dataWidth)) _last
+                 , _last = fmap (\i -> i - natToNum @(headerBytes `Mod` dataWidth)) _last
                  }
 
     (nextSt, fwdOut)
@@ -156,11 +156,11 @@ depacketizerT _ st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = (nextStO
     adjustLast :: Index dataWidth -> Either (Index dataWidth) (Index dataWidth)
     adjustLast idx = if outputNow then Left nowIdx else Right nextIdx
       where
-        outputNow = case compareSNat (SNat @(Mod headerBytes dataWidth)) d0 of
+        outputNow = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
           SNatLE -> True
-          SNatGT -> idx < natToNum @(Mod headerBytes dataWidth)
+          SNatGT -> idx < natToNum @(headerBytes `Mod` dataWidth)
         nowIdx = idx + natToNum @(ForwardBufSize headerBytes dataWidth)
-        nextIdx = idx - natToNum @(Mod headerBytes dataWidth)
+        nextIdx = idx - natToNum @(headerBytes `Mod` dataWidth)
 
     newLast = fmap adjustLast _last
     outPkt = pkt { _abort = nextAborted
@@ -187,20 +187,20 @@ depacketizerC
             (metaIn :: Type)
             (metaOut :: Type)
             (header :: Type)
-            (headerBytes :: Nat)
-   . HiddenClockResetEnable dom
-  => NFDataX metaOut
-  => BitPack header
-  => BitSize header ~ headerBytes * 8
-  => KnownNat headerBytes
-  => 1 <= dataWidth
-  => KnownNat dataWidth
+            (headerBytes :: Nat) .
+  ( HiddenClockResetEnable dom
+  , NFDataX metaOut
+  , BitPack header
+  , BitSize header ~ headerBytes * 8
+  , KnownNat headerBytes
+  , 1 <= dataWidth
+  , KnownNat dataWidth)
   => (header -> metaIn -> metaOut)
   -> Circuit (PacketStream dom dataWidth metaIn) (PacketStream dom dataWidth metaOut)
 depacketizerC toMetaOut = forceResetSanity |> fromSignals outCircuit
   where
-    divProof = compareSNat d1 (SNat @(DivRU headerBytes dataWidth))
-    modProof = compareSNat (SNat @(Mod headerBytes dataWidth)) (SNat @dataWidth)
+    divProof = compareSNat d1 (SNat @(headerBytes `DivRU` dataWidth))
+    modProof = compareSNat (SNat @(headerBytes `Mod` dataWidth)) (SNat @dataWidth)
 
     outCircuit
       = case (divProof, modProof) of

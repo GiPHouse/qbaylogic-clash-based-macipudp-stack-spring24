@@ -57,7 +57,7 @@ depacketizerModel toMetaOut ps = concat dataWidthPackets
 
     bytePackets :: [[PacketStreamM2S 1 metaIn]]
     bytePackets = L.filter (\fs -> L.length fs > hdrbytes)
-                    $ L.concat . fmap chopPacket . smearAbort <$> chunkByPacket ps
+                    $ L.concatMap chopPacket . smearAbort <$> chunkByPacket ps
 
     parsedPackets :: [[PacketStreamM2S 1 metaOut]]
     parsedPackets = parseHdr . L.splitAt hdrbytes <$> bytePackets
@@ -71,11 +71,11 @@ prop_equivalentBufSizes :: Property
 prop_equivalentBufSizes = property $ do
   let divRU n d = div (n + (d - 1)) d
 
-  (headerBytes :: Integer) <- forAll $ Gen.integral $ Range.linear 0 100000
-  (dataWidth :: Integer) <- forAll $ Gen.integral $ Range.linear 1 100000
+  (headerBytes :: Integer) <- forAll $ Gen.integral $ Range.linear 0 100_000
+  (dataWidth :: Integer) <- forAll $ Gen.integral $ Range.linear 1 100_000
 
-  let parseBufSize = dataWidth * (divRU headerBytes dataWidth) - dataWidth + dataWidth
-  let forwardBufSize = headerBytes + (mod (dataWidth - (mod headerBytes dataWidth)) dataWidth)
+  let parseBufSize = dataWidth * headerBytes `divRU` dataWidth - dataWidth + dataWidth
+  let forwardBufSize = headerBytes + (dataWidth - (headerBytes `mod` dataWidth)) `mod` dataWidth
 
   footnote $ "headerBytes: " L.++ show headerBytes
   footnote $ "dataWidth: " L.++ show dataWidth

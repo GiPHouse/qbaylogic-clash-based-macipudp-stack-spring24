@@ -92,6 +92,7 @@ library
   exposed-modules:
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.Depacketizer
+    Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.PacketBuffer
