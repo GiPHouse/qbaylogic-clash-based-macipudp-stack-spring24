@@ -1,8 +1,7 @@
 {-# language FlexibleContexts #-}
 
 module Clash.Cores.Ethernet.PacketBuffer
-    ( packetBuffer
-    , packetBufferC
+    ( packetBufferC
     , cSignalPacketBufferC
     ) where
 
@@ -28,22 +27,16 @@ packetBuffer
      )
   -- ^ Input packetStream
   -> (  Signal dom PacketStreamS2M
-    , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
-    )
+     , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     )
   -- ^ Output CSignal s
-packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M <$> backPressure, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
+packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
 
       -- write command
-    writeCommand = func <$> writeEnable <*> fwdIn <*> wordAddr
-      where
-        func False _          _     = Nothing
-        func _     Nothing    _     = Nothing
-        func _     (Just dat) wa = Just (wa, dat)
-
-    backPressure = not <$> fullBuffer
+    writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, fromJustX <$> fwdIn)
 
     -- Registers : pointers
     wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
@@ -70,7 +63,6 @@ packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M <$> backPressure, toMaybe <$
     lastWordIn = maybe False (isJust . _last) <$> fwdIn
     abortIn = maybe False _abort <$> fwdIn
 
-
 abortOnBackPressure
   :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
@@ -82,7 +74,7 @@ abortOnBackPressure
      )
   -- ^ Input packetStream
   -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
--- ^ Does not give backpressure, sends an abort forward instead
+  -- ^ Does not give backpressure, sends an abort forward instead
 abortOnBackPressure (fwdIn, bwdIn) = package <$> aborting <*> fwdIn
   where
     aborting = not . _ready <$> bwdIn
@@ -92,7 +84,6 @@ abortOnBackPressure (fwdIn, bwdIn) = package <$> aborting <*> fwdIn
     package True  (Just message)  = Just $ message { _abort = True }
     package False message         = message
 
-
 packetBufferC
   :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
@@ -100,12 +91,10 @@ packetBufferC
     => KnownNat sizeBits
     => NFDataX metaType
     => 1 <= sizeBits
-    -- ^ Depth of the packet buffer 2^sizeBits
     => SNat sizeBits
-    -- ^ Packet buffer circuit
+    -- ^ Depth of the packet buffer, this is equal to 2^sizeBits
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
-
 
 cSignalPacketBufferC :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
@@ -113,11 +102,9 @@ cSignalPacketBufferC :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Doma
     => KnownNat sizeBits
     => NFDataX metaType
     => 1 <= sizeBits
-    -- ^ Depth of the packet buffer 2^sizeBits
     => SNat sizeBits
-    -- ^ Packet buffer circuit
+    -- ^ Depth of the packet buffer 2^sizeBits
     -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
-
 cSignalPacketBufferC size = abortC |> fromSignals (packetBuffer size)
   where
     abortC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType ))) (PacketStream dom dataWidth metaType)
