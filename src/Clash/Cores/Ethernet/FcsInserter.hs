@@ -179,35 +179,4 @@ fcsHelperT
              then FcsCopy _cachedFwd
              else currSt
 
--- manual testing. Should be replaced with functions defined in Test.Cores.Ethernet.PacketBuffer at some point.
-
--- charToBv :: Char -> Integer
--- charToBv = fromIntegral . ord
-
--- chopBy :: Int -> [a] -> [[a]]
--- chopBy _ [] = []
--- chopBy n xs = as : chopBy n bs where (as,bs) = List.splitAt n xs
-
-
--- fwdIn :: [Maybe (PacketStreamM2S 4 ())]
--- fwdIn = [ Nothing,
---     Just (PacketStreamM2S (unsafeFromList $ [0,0,0,0]) Nothing () False)
---   , Just (PacketStreamM2S (unsafeFromList $ [1,0,0,0]) (Just 0) () False)]
---   List.++ [ Just (PacketStreamM2S (unsafeFromList $ [i,0,0,0]) Nothing () False) | i <- [2..10]]
---   List.++ [ Just (PacketStreamM2S (unsafeFromList $ [11,0,0,0]) (Just 3) () False)]
---   List.++ [ Just (PacketStreamM2S (unsafeFromList $ [i,0,0,0]) Nothing () False) | i <- [12..15]]
---   List.++ [ Just (PacketStreamM2S (unsafeFromList $ [0,1,0,0]) (Just 2) () False)]
-
--- deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4
--- fcsInserter' = exposeClockResetEnable @System fcsInserter systemClockGen resetGen enableGen
--- fcsOut = fcsInserter' (fromList fwdIn, pure $ PacketStreamS2M True)
--- fcsFromHardware = sampleN 10000 $ snd fcsOut
-
--- crcEngine' = exposeClockResetEnable crcEngine systemClockGen resetGen enableGen
--- myEngine = crcEngine' $ Proxy @Crc32_ethernet
-
-
--- packets = List.groupBy (\x _ -> isJust x && (isJust . _last . fromJustX $ x)) fwdIn
--- expectedOut = M.join [sampleN (List.length packet + 1) $ myEngine (fromList $ True : List.repeat False) (fromList $ fmap fragment2bv <$> packet) | packet <- packets]
-
-
+-
