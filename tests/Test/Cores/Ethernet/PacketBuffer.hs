@@ -7,9 +7,8 @@ module Test.Cores.Ethernet.PacketBuffer where
 -- base
 import Prelude
 -- clash-prelude
-import qualified Clash.Prelude as C
-import Clash.Prelude hiding (undefined, (++), drop, take)
-import Clash.Prelude hiding (undefined, (++), drop, take)
+import Clash.Prelude hiding ( drop, take, undefined, (++) )
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog as H
@@ -29,7 +28,6 @@ import Protocols.Hedgehog
 -- Me
 import Clash.Cores.Ethernet.PacketBuffer
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.PacketBuffer
 import Test.Cores.Ethernet.Util as U
 
 

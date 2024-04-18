@@ -19,8 +19,8 @@ import Clash.Cores.Ethernet.PacketStream
 
 -- hedgehog
 import Hedgehog as H
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
@@ -77,6 +77,6 @@ fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
 -- drops packets if one of the words in the packet has the abort flag set
 dropAbortedPackets :: [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 dropAbortedPackets packets = concat $ filter noAbort (chunkByPacket packets)
-  where 
+  where
     noAbort x = not (any _abort x)
-    
+
