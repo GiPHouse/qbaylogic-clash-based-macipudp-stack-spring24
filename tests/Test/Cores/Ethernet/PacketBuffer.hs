@@ -9,6 +9,7 @@ import Prelude
 -- clash-prelude
 import qualified Clash.Prelude as C
 import Clash.Prelude hiding (undefined, (++), drop, take)
+import Clash.Prelude hiding (undefined, (++), drop, take)
 
 -- hedgehog
 import Hedgehog as H
@@ -28,6 +29,7 @@ import Protocols.Hedgehog
 -- Me
 import Clash.Cores.Ethernet.PacketBuffer
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.PacketBuffer
 import Test.Cores.Ethernet.Util as U
 
 
@@ -37,6 +39,7 @@ genClean =  PacketStreamM2S <$>
     pure Nothing <*>
     Gen.enumBounded <*>
     pure False
+
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -85,7 +88,6 @@ prop_packetBuffer_id_small_buffer =
 
   genListofLists = Gen.list (Range.linear 0 10) $ Gen.list (Range.linear 0 31) genClean
 
-
 prop_packetBuffer_no_gaps :: Property
 prop_packetBuffer_no_gaps = property $ do
   let packetBufferSize = d12
@@ -107,6 +109,7 @@ prop_packetBuffer_no_gaps = property $ do
     noGaps (_:xs) = noGaps xs
     noGaps _ = True
 
+-- | test for id and proper dropping of aborted packets
 prop_csignal_packetBuffer_id :: Property
 prop_csignal_packetBuffer_id =
   propWithModelSingleDomain
@@ -142,8 +145,6 @@ prop_csignal_packetBuffer_drop =
 
   genSmall = U.fullPackets <$> Gen.list (Range.linear 1 5) genClean
   genBig = U.fullPackets <$> Gen.list (Range.linear 33 50) genClean
-
-
 
 tests :: TestTree
 tests =
