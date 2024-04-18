@@ -26,6 +26,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work -e ABC=123
           run: | 
             echo "hello world"
+            nix --version
             cat work/build-ci-image.nix
 
   # build_and_synthesize:
