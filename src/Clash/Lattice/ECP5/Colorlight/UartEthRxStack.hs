@@ -29,6 +29,7 @@ import Clash.Cores.Ethernet.AsyncFIFO
 import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.Internal ( CSignal(CSignal) )
 
+-- | Processes ethernet frames and turns it into a UART signal
 uartEthRxStack
   :: forall dom domEth domDDREth.
   ( KnownDomain dom

@@ -11,7 +11,15 @@ Description : Primitives for the Lattice ECP5
 All of the primitives in this module are taken from the Lattice ECP5
 Library reference: https://www.latticesemi.com/-/media/LatticeSemi/Documents/UserManuals/EI2/fpga_library_D311SP3.ashx?document_id=52656
 -}
-module Clash.Lattice.ECP5.Prims where
+module Clash.Lattice.ECP5.Prims
+  ( bb
+  , ofs1p3bx
+  , ifs1p3bx
+  , oddrx1f
+  , iddrx1f
+  , delayf
+  , delayg
+  ) where
 
 import Clash.Annotations.Primitive
 import Clash.Explicit.DDR ( ddrIn, ddrOut )

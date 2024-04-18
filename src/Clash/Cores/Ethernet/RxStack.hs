@@ -13,7 +13,7 @@ import Clash.Cores.Ethernet.UpConverter ( upConverterC )
 import Clash.Prelude
 import Protocols
 
-
+-- | Processes received ethernet frames
 rxStack
   :: forall
   (dataWidth :: Nat)
