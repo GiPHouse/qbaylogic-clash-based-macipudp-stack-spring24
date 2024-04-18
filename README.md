@@ -5,7 +5,8 @@ TODO: Describe features
 <!-- omit in toc -->
 # Table of Contents
 - [Working with this project](#working-with-this-project)
-- [REPL](#repl)
+  - [Running Python tests](#running-python-tests)
+  - [Generating Docker image](#generating-docker-image)
 
 # Working with this project
 It's required to have the [nix package manager](https://nixos.org/download.html) working.
@@ -52,3 +53,6 @@ namspace with `sudo ip netns exec colorlight sudo wireshark`.
 The test suite can then be ran as normal.
 Alternatively, Python files can be ran manually with
 `sudo ip netns exec colorlight sudo ./<filename>`.
+
+## Generating Docker image
+Run: "nix-build build-ci-image.nix"
