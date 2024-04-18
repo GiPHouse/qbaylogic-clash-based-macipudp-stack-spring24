@@ -1,5 +1,9 @@
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.TxStack
+Description : Provides the entire transmit stack as a circuit
+-}
 module Clash.Cores.Ethernet.TxStack
   ( txStack
   ) where

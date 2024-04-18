@@ -2,6 +2,10 @@
 {-# language MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.Colorlight.UartEthTxStack
+Description : Complete receive stack from a UART signal to an ethernet tx channel for debugging the transmit stack from the ethernet core
+-}
 module Clash.Lattice.ECP5.Colorlight.UartEthTxStack
   ( uartEthTxStack
   ) where

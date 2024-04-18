@@ -1,5 +1,9 @@
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.InterpacketGapInserter
+Description : Circuit for inserting the interpacket gap between ethernet frames
+-}
 module Clash.Cores.Ethernet.InterpacketGapInserter
   (interpacketGapInserterC) where
 

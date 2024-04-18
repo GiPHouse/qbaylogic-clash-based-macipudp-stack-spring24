@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.RxStack
+Description : Provides the entire receive stack as a circuit
+-}
 module Clash.Cores.Ethernet.RxStack
 ( rxStack
 ) where

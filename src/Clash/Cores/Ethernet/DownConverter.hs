@@ -1,8 +1,11 @@
 {-# language RecordWildCards #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.DownConverter
+Description : Provides a down converter, for changing the data width of packet streams
+-}
 module Clash.Cores.Ethernet.DownConverter
-  ( downConverter
-  , downConverterC
+  ( downConverterC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -103,6 +106,7 @@ downConverter = mealyB go s0
         bwdOut = PacketStreamS2M outReady
         fwdOut = toMaybePacketStreamM2S st
 
+-- | Converts packet streams of arbitrary data widths to packet streams of single bytes
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

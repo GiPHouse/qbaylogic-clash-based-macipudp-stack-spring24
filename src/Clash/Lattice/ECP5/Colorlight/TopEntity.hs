@@ -2,6 +2,10 @@
 {-# language NoMonomorphismRestriction #-}
 {-# language NumericUnderscores #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.Colorlight.TopEntity
+Description : Contains the top entity
+-}
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
 import Clash.Annotations.TH
@@ -41,6 +45,7 @@ data HubOut domain = HubOut
     hub_data :: "data" ::: Signal domain (BitVector 48)
   }
 
+-- | The top entity
 topEntity
   :: "clk25" ::: Clock Dom25
   -> "uart_rx" ::: Signal Dom50 Bit

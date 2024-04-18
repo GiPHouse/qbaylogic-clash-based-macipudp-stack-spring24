@@ -1,6 +1,10 @@
 {-# language FlexibleContexts #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-} -- Orphhan Hashable instances
+{-# OPTIONS_GHC -fno-warn-orphans #-} -- Orphan Hashable instances
 
+{-|
+Module      : Clash.Cores.Ethernet.PacketStream
+Description : Definitions and instances of the packet stream protocol used in the rest of the ethernet core
+-}
 module Clash.Cores.Ethernet.PacketStream
   ( PacketStreamM2S(..)
   , PacketStreamS2M(..)
@@ -27,31 +31,31 @@ import Protocols.Internal
 import Data.Coerce ( coerce )
 
 -- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
---   with metadata that can only change on packet delineation.
---   We bundled _tdest, _tuser and _tid into one big _meta field which holds metadata.
---   We don't have null or position bytes so _tstrb is replaced by a last indicator
---   that includes how many bytes are valid from the front of the vector.
---   _tvalid is modeled via wrapping this in a `Maybe`
+-- with metadata that can only change on packet delineation.
+-- _tdest, _tuser and _tid are bundled into one big _meta field which holds metadata.
+-- There are no null or position bytes so _tstrb is replaced by a last indicator
+-- that indicates the index of the last valid byte in the _data vector.
+-- _tvalid is modeled via wrapping this in a `Maybe`.
 data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
   = PacketStreamM2S {
   _data :: Vec dataWidth (BitVector 8),
   -- ^ The bytes to be transmitted
   _last :: Maybe (Index dataWidth),
-  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
+  -- ^ If Nothing, we are not yet at the last byte, otherwise index of last valid byte of _data
   _meta :: metaType,
-  -- ^ the metaData of a packet, `_meta` must be constant during a packet.
+  -- ^ the metadata of a packet. Must be constant during a packet.
   _abort :: Bool
-  -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
+  -- ^ If True, the current transfer is aborted and the subordinate should ignore the current transfer
 } deriving (Generic, ShowX, Show, NFData, Bundle)
 
 -- | Data sent from the subordinate to the manager
--- The only information transmitted is whether the slave is ready to receive data
+-- The only information transmitted is whether the subordinate is ready to receive data
 newtype PacketStreamS2M = PacketStreamS2M {
   _ready :: Bool
-  -- ^ Iff True, the slave is ready to receive data
+  -- ^ Iff True, the subordinate is ready to receive data
 } deriving (Generic, ShowX, Show, NFData, Bundle, Eq, NFDataX)
 
--- This data type is used for communication between components
+-- | The packet stream protocol for communication between components
 data PacketStream (dom :: Domain) (dataWidth :: Nat) (metaType :: Type)
 
 deriving instance
@@ -168,11 +172,11 @@ instance
     = expectN (Proxy @(Df.Df dom _)) options nExpected
     $ Df.maybeToData <$> sampled
 
--- | Converts a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
+-- | Circuit to convert a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
 unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
 unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
 
--- | Converts a packetStream into a CSignal.
+-- | Converts a PacketStream into a CSignal.
 fromPacketStream :: forall dom n meta. HiddenClockResetEnable dom
   => Circuit (PacketStream dom n meta) (CSignal dom (Maybe (PacketStreamM2S n meta)))
 fromPacketStream = forceResetSanity |> Circuit (\(inFwd, _) -> (pure (PacketStreamS2M True), CSignal inFwd))

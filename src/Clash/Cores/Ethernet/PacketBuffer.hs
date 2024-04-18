@@ -1,5 +1,9 @@
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.PacketBuffer
+Description : FIFO-like circuit for packet streams
+-}
 module Clash.Cores.Ethernet.PacketBuffer
     ( packetBufferC
     , overflowDropPacketBufferC

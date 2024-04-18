@@ -1,6 +1,10 @@
 {-# language FlexibleContexts #-}
 {-# language NamedFieldPuns #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.UART
+Description : Wrappers of the Clash UART core into the packet stream protocol
+-}
 module Clash.Lattice.ECP5.UART
   ( uartTxC
   , uartTxNoBaudGenC
@@ -20,6 +24,7 @@ import Protocols.Internal
 convertToTx :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
 convertToTx = fmap $ fmap (head . _data)
 
+-- | UART transmitter circuit
 uartTxC
   :: forall (dom :: Domain)
             (baud :: Nat)
@@ -31,6 +36,10 @@ uartTxC
   -- ^ This component receives a PacketStream and converts it to the UART transmitter input while relaying backpressure from the UART
 uartTxC baud = uartTxNoBaudGenC (baudGenerator baud)
 
+-- | UART transmitter circuit
+--
+-- This version requires the baud generator to be passed in. Create one
+-- using `Clash.Cores.UART.baudGenerator`.
 uartTxNoBaudGenC
   :: HiddenClockResetEnable dom
   => BaudGenerator dom
@@ -102,7 +111,7 @@ uartRxNoBaudGenC baudGen = fromSignals ckt
     convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
     convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
 
--- | UART receiver circuit interpreting packets. See also `toPacketsC`.
+-- | UART receiver circuit interpreting packets with `toPacketsC`.
 uartRxC'
   :: HiddenClockResetEnable dom
   => ValidBaud dom baud
@@ -110,7 +119,7 @@ uartRxC'
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
 uartRxC' baud =  uartRxC baud |> toPacketsC
 
--- | UART receiver circuit interpreting packets. See also `toPacketsC`.
+-- | UART receiver circuit interpreting packets with `toPacketsC`.
 --
 -- This version requires the baud generator to be passed in. Create one
 -- using `Clash.Cores.UART.baudGenerator`.

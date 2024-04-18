@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.PacketDispatcher
+Description : Provides a packet dispatcher, for splitting packet streams
+-}
 module Clash.Cores.Ethernet.PacketDispatcher
   ( packetDispatcherC
   ) where

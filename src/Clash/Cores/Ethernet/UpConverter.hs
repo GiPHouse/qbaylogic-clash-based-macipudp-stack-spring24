@@ -1,17 +1,17 @@
 {-# language RecordWildCards #-}
+
+{-|
+Module      : Clash.Cores.Ethernet.UpConverter
+Description : Provides an up converter, for changing the data width of packet streams
+-}
 module Clash.Cores.Ethernet.UpConverter
-  ( upConverter
-  , upConverterC
+  ( upConverterC
   ) where
 
 import Clash.Prelude
 import Data.Maybe ( isJust, isNothing )
-
 import Clash.Cores.Ethernet.PacketStream
-
 import Protocols ( Circuit(..), fromSignals, (|>) )
-
-
 
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
@@ -111,6 +111,7 @@ upConverter = mealyB go s0
         where
           outReady = not _ucFlush || (_ready bwdIn)
 
+-- | Converts packet streams of single bytes to packet streams of a higher data widths
 upConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

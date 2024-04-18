@@ -4,6 +4,13 @@
 {-# language QuasiQuotes #-}
 {-# language ViewPatterns #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.Prims
+Description : Primitives for the Lattice ECP5
+
+All of the primitives in this module are taken from the Lattice ECP5
+Library reference: https://www.latticesemi.com/-/media/LatticeSemi/Documents/UserManuals/EI2/fpga_library_D311SP3.ashx?document_id=52656
+-}
 module Clash.Lattice.ECP5.Prims where
 
 import Clash.Annotations.Primitive
@@ -15,10 +22,6 @@ import Data.String.Interpolate.Util ( unindent )
 import GHC.Stack ( HasCallStack )
 
 import Data.Kind ( Type )
-
--- | All of the primitives in this module are taken from the Lattice ECP5
---   Library reference:
---   https://www.latticesemi.com/-/media/LatticeSemi/Documents/UserManuals/EI2/fpga_library_D311SP3.ashx?document_id=52656
 
 -- | Bidirectional buffer primitive
 bb

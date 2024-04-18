@@ -2,6 +2,10 @@
 {-# language QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.Colorlight.CRG
+Description : Provides a clock and reset generator for the Colorlight ECP5 board
+-}
 module Clash.Lattice.ECP5.Colorlight.CRG where
 
 import Clash.Annotations.Primitive

@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.AsyncFIFO
+Description : Provides @asyncFifoC@ for crossing clock domains in the packet stream protocol
+-}
 module Clash.Cores.Ethernet.AsyncFIFO
   (asyncFifoC) where
 
