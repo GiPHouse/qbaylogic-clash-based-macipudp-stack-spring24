@@ -27,7 +27,6 @@ jobs:
           run: | 
             echo "hello world"
             nix --version
-            cat work/build-ci-image.nix
 
   # build_and_synthesize:
   #   runs-on: ubuntu-latest
