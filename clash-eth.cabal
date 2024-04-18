@@ -107,6 +107,7 @@ library
     Clash.Cores.Ethernet.TxStack
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
+    Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
     Clash.Cores.Ethernet.FcsInserter
@@ -164,6 +165,8 @@ test-suite test-library
     Test.Cores.Ethernet.FcsInserter
     Test.Cores.Ethernet.AsyncFIFO
     Test.Cores.Ethernet.InternetChecksum
+    Test.Cores.Ethernet.Packetizer
+    Test.Cores.Ethernet.MacPacketizer
   build-depends:
     clash-eth,
     QuickCheck,

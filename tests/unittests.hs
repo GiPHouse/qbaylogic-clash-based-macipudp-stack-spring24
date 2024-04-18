@@ -9,6 +9,7 @@ import Test.Cores.Ethernet.FcsInserter qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
 import Test.Cores.Ethernet.MacDepacketizer qualified
+import Test.Cores.Ethernet.MacPacketizer qualified
 import Test.Cores.Ethernet.PacketArbiter qualified
 import Test.Cores.Ethernet.PacketBuffer qualified
 import Test.Cores.Ethernet.PacketDispatcher qualified
@@ -33,6 +34,7 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.InterpacketGapInserter.tests
     , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
+    , Test.Cores.Ethernet.MacPacketizer.tests
     , Test.Cores.Ethernet.InternetChecksum.tests
     , Test.Cores.Ethernet.FcsInserter.tests
   ]
