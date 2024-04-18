@@ -2,11 +2,10 @@
 {-# language MultiParamTypeClasses #-}
 {-# language RecordWildCards #-}
 {-# language ScopedTypeVariables #-}
-{-# language TemplateHaskell#-}
-module Clash.Cores.Ethernet.FcsInserter
-( fcsInserter
-, fcsInserterC
-, x
+
+module Clash.Cores.Ethernet.FcsInserter (
+  fcsInserter
+  , fcsInserterC
 ) where
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
@@ -51,6 +50,7 @@ takeLe SNat vs = leToPlus @n @m $ takeI vs
 appendVec
   :: forall n m a
    . KnownNat n
+  => Num a
   => Index n
   -> Vec n a
   -> Vec m a
@@ -62,11 +62,9 @@ appendVec valid xs ys = results !! valid
                   SNatLE -> takeLe (addSNat l d1) xs ++ ys ++ extra
                    where
                      extra :: Vec (n - (l + 1)) a
-                     extra = repeat undefined
+                     extra = repeat 0 
                   _ -> error "appendVec: Absurd"
     results = smap (\s _ -> go s) xs
-
-x = appendVec 2 ('c' :> 'l' :> 'a' :> undefined :> Nil) ('s' :> 'h' :> Nil)
 
 data FcsInserterState
   = FcsCopy
@@ -113,7 +111,7 @@ fcsInserterC
   => Circuit
     (PacketStream dom 4 ())
     (PacketStream dom 4 ())
-fcsInserterC = fromSignals fcsInserter
+fcsInserterC = forceResetSanity |> fromSignals fcsInserter
 
 fcsHelper
   :: HiddenClockResetEnable dom
@@ -143,7 +141,7 @@ fcsHelperT
   = (FcsCopy fwdIn, (Nothing, True))
 
 fcsHelperT
-  currSt@(FcsCopy (Just maybeCache@(PacketStreamM2S{..})))
+  currSt@(FcsCopy (Just cache@(PacketStreamM2S{..})))
   ( ethCrcBytes
   , fwdIn
   , PacketStreamS2M readyIn
@@ -151,17 +149,15 @@ fcsHelperT
   = (nextSt, (dataOut, readyOut))
   where
     validIdx = fromMaybe 3 _last
-    (combined, leftover) = splitAt d4 $ appendVec (fromJust $ _last) _data ethCrcBytes
+    (combined, leftover) = splitAt d4 $ appendVec (fromJust _last) _data ethCrcBytes
 
     dataOut = Just $
       if isJust _last
-      then PacketStreamM2S {
+      then cache {
           _data = combined
-        , _meta = ()
-        , _last = toMaybe (validIdx == 0) validIdx
-        , _abort= False
+        , _last = Nothing
         }
-      else maybeCache
+      else cache
 
     readyOut = readyIn
 
@@ -169,7 +165,7 @@ fcsHelperT
       (False, _) -> currSt
       (True, Just _) ->
         FcsInsert {
-            _cachedFwd = fwdIn
+            _cachedFwd = fwdIn 
           , _bytesRemaining = validIdx
           , _crc = leftover
          }
@@ -182,7 +178,7 @@ fcsHelperT
   , _
   , PacketStreamS2M readyIn
   )
-  = (nextSt, (dataOut, readyOut))
+  = (nextSt, (dataOut, False))
   where
     dataOut =
       Just PacketStreamM2S {
@@ -191,13 +187,13 @@ fcsHelperT
       , _meta=()
       , _abort = False
       }
-    readyOut = False
     nextSt = if readyIn
              then FcsCopy _cachedFwd
              else currSt
 
 -- manual testing. Should be replaced with functions defined in Test.Cores.Ethernet.PacketBuffer at some point.
 
+-- charToBv :: Char -> Integer
 -- charToBv = fromIntegral . ord
 
 -- chopBy :: Int -> [a] -> [[a]]
@@ -206,7 +202,7 @@ fcsHelperT
 
 
 -- fwdIn :: [Maybe (PacketStreamM2S 4 ())]
--- fwdIn = [
+-- fwdIn = [ Nothing,
 --     Just (PacketStreamM2S (unsafeFromList $ [0,0,0,0]) Nothing () False)
 --   , Just (PacketStreamM2S (unsafeFromList $ [1,0,0,0]) (Just 0) () False)]
 --   List.++ [ Just (PacketStreamM2S (unsafeFromList $ [i,0,0,0]) Nothing () False) | i <- [2..10]]
@@ -216,14 +212,14 @@ fcsHelperT
 
 -- deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4
 -- fcsInserter' = exposeClockResetEnable @System fcsInserter systemClockGen resetGen enableGen
--- fcsOut = fcsInserter' (fromList $ fwdIn, pure $ PacketStreamS2M True)
--- fcsFromHardware = fmap sampleN (10000 + List.length fwdIn) $ snd fcsOut
+-- fcsOut = fcsInserter' (fromList fwdIn, pure $ PacketStreamS2M True)
+-- fcsFromHardware = sampleN 10000 $ snd fcsOut
 
 -- crcEngine' = exposeClockResetEnable crcEngine systemClockGen resetGen enableGen
 -- myEngine = crcEngine' $ Proxy @Crc32_ethernet
 
 
 -- packets = List.groupBy (\x _ -> isJust x && (isJust . _last . fromJustX $ x)) fwdIn
--- expectedOut = M.join [sampleN (List.length packet + 1) $ myEngine (fromList $ True : List.repeat False) (fromList $ fmap packetStreamM2SToBv <$> packet) | packet <- packets]
+-- expectedOut = M.join [sampleN (List.length packet + 1) $ myEngine (fromList $ True : List.repeat False) (fromList $ fmap fragment2bv <$> packet) | packet <- packets]
 
 
