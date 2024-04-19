@@ -30,8 +30,8 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.PadPacket
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.PadPacket
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -42,11 +42,12 @@ model
   => C.KnownNat dataWidth
   => [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concat $ map padPacket $ chunkByPacket fragments
+model fragments = concatMap (fixLast . map (\x -> x {_last = Nothing}) . padPacket) (chunkByPacket fragments)
   where
     padPacket pkt = pkt ++ replicate (neededPadding pkt) padding
     neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
+    fixLast pkt = init pkt ++ [(last pkt) {_last = Just 0}]
 
 -- | Test the padding inserter
 padpacketTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -54,10 +55,10 @@ padpacketTest C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets))                  -- Input packets
-    (C.exposeClockResetEnable model)                            -- Desired behaviour of PadPacket
-    (C.exposeClockResetEnable @C.System (ckt @n))               -- Implementation of PadPacket
-    (===)                                                       -- Property to test
+    (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets))
+    (C.exposeClockResetEnable model)
+    (C.exposeClockResetEnable @C.System (ckt @n))
+    (===)
   where
     ckt :: forall (dataWidth :: C.Nat) (dom :: C.Domain).
       C.HiddenClockResetEnable dom
