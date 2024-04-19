@@ -47,7 +47,9 @@ model fragments = concatMap (fixLast . map (\x -> x {_last = Nothing}) . padPack
     padPacket pkt = pkt ++ replicate (neededPadding pkt) padding
     neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
-    fixLast pkt = init pkt ++ [(last pkt) {_last = Just 0}]
+    lastIndex :: C.Index 64
+    lastIndex = mod (63 - C.natToNum @dataWidth) (C.natToNum @dataWidth)
+    fixLast pkt = init pkt ++ [(last pkt) {_last = Just (C.resize lastIndex)}]
 
 -- | Test the padding inserter
 padpacketTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -78,7 +80,7 @@ padpacketTest C.SNat =
 prop_padpacket_d1, prop_padpacket_d2, prop_padpacket_d4 :: Property
 prop_padpacket_d1 = padpacketTest (C.SNat @1)
 prop_padpacket_d2 = padpacketTest (C.SNat @2)
-prop_padpacket_d4 = padpacketTest (C.SNat @4)
+prop_padpacket_d4 = padpacketTest (C.SNat @5)
 
 tests :: TestTree
 tests =
