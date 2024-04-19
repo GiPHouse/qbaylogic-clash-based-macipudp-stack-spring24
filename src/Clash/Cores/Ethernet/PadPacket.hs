@@ -9,10 +9,13 @@ import Data.List qualified as L
 import Data.Maybe
 import Protocols ( Circuit, fromSignals )
 
-data PadPacketState
-  = Filling { cycles :: Index 64}
+-- | State of the padPacket circuit.
+-- Counts up to ceil(64/dataWidth) packets, which is the required
+-- amount to fulfill the minimum ethernet frame size of 64.
+data PadPacketState (dataWidth :: Nat)
+  = Filling { cycles :: Index (Div (63 + dataWidth) dataWidth)}
   | Full
-  | Padding { cycles :: Index 64}
+  | Padding { cycles :: Index (Div (63 + dataWidth) dataWidth)}
   deriving (Eq, Show, Generic, NFDataX)
 
 padPacket
@@ -33,11 +36,9 @@ padPacket = mealyB go s0
   where
     s0 = Filling 0
     go
-      :: PadPacketState
+      :: PadPacketState dataWidth
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
-      -> ( PadPacketState
-         , (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ()))
-         )
+      -> (PadPacketState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
     go st (fwdIn, PacketStreamS2M inReady)
       = (st', (bwdOut, fwdOut))
       where
@@ -46,36 +47,41 @@ padPacket = mealyB go s0
           -- If _last is Nothing and we fill the 64 bytes, then go to Full state, otherwise keep filling
           -- If _last is Just, then go to Padding state if not full, otherwise go to s0
           (Filling n, Just PacketStreamM2S {..}) -> case _last of
-            Nothing -> if n <= maxBound - (natToNum @dataWidth) then Filling (n + (natToNum @dataWidth)) else Full
-            Just _  -> if n <= maxBound - (natToNum @dataWidth) then Padding (maxBound - n - (natToNum @dataWidth) + 1) else s0
+            Nothing -> if n < maxBound then Filling (n + 1) else Full
+            Just _  -> if n < maxBound then Padding (n + 1) else s0
           -- If we are filling and don't receive any input, we keep filling
           (Filling _, Nothing) -> st
           -- If we are full, then we stay in Full state until _last is Just
           (Full, Just PacketStreamM2S {..}) -> case _last of
             Nothing -> st
-            Just _ -> s0
+            Just _  -> s0
           -- If we are full and don't receive any input, stay full
           (Full, Nothing) -> st
           -- While padding, it does not matter if we receive input
-          (Padding n, _) -> if n > (natToNum @dataWidth) then Padding (n - (natToNum @dataWidth)) else s0
+          (Padding n, _) -> if n < maxBound then Padding (n + 1) else s0
 
         readyOut = case st of
           Padding _ -> False
           _         -> isJust fwdOut && inReady
-
         bwdOut = PacketStreamS2M {_ready = readyOut}
 
-        lastOut = case (st, fwdIn) of
-          (Filling n, Just PacketStreamM2S {..}) -> if st' == s0 then Just (resize (maxBound - n)) else Nothing
-          (Full, Just PacketStreamM2S {..}) -> if st' == s0 then _last else Nothing
-          (Padding n, _) -> if st' == s0 then Just (resize (n-1)) else Nothing
-          _ -> Nothing
-
-        fwdOut = case (st, fwdIn) of
-          (Filling _, Just PacketStreamM2S {..}) -> Just PacketStreamM2S{_data = _data, _last = lastOut, _meta = _meta, _abort = _abort}
-          (Full, Just PacketStreamM2S {..}) -> Just PacketStreamM2S{_data = _data, _last = lastOut, _meta = _meta, _abort = _abort}
-          (Padding _, _) -> Just PacketStreamM2S{_data = repeat 0, _last = lastOut, _meta = (), _abort = False}
-          _ -> Nothing
+        lastOut = case st of
+          Filling n -> if n == maxBound && st' == s0 then Just (resize (mod (63 :: Index 64) (natToNum @dataWidth))) else Nothing
+          Full      -> _last =<< fwdIn
+          Padding n -> if n == maxBound && st' == s0 then Just (resize (mod (63 :: Index 64) (natToNum @dataWidth))) else Nothing
+        -- lastOut = case (st, fwdIn) of
+        --   (Filling n, Just PacketStreamM2S {..}) -> if st' == s0 then Just (resize (maxBound - n)) else Nothing
+        --   (Full, Just PacketStreamM2S {..}) -> if st' == s0 then _last else Nothing
+        --   (Padding n, _) -> if st' == s0 then Just (resize (n-1)) else Nothing
+        --   _ -> Nothing
+        fwdOut = case st of
+          Padding _ -> Just PacketStreamM2S{_data = repeat 0, _last = lastOut, _meta = (), _abort = False}
+          _         -> if isJust fwdIn then Just (fromJust fwdIn){_last = lastOut} else fwdIn
+        -- fwdOut = case (st, fwdIn) of
+        --   (Filling _, Just PacketStreamM2S {..}) -> Just PacketStreamM2S{_data = _data, _last = lastOut, _meta = _meta, _abort = _abort}
+        --   (Full, Just PacketStreamM2S {..}) -> Just PacketStreamM2S{_data = _data, _last = lastOut, _meta = _meta, _abort = _abort}
+        --   (Padding _, _) -> Just PacketStreamM2S{_data = repeat 0, _last = lastOut, _meta = (), _abort = False}
+        -- _ -> Nothing
 
         -- fwdOut (Filling n) (Just PacketStreamM2S {..}) _ = if st' == s0 then Nothing else Nothing
         -- fwdOut (Filling n) Nothing _ = Nothing
