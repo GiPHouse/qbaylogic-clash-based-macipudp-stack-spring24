@@ -65,10 +65,11 @@ padPacket = mealyB go s0
           _         -> isJust fwdOut && inReady
         bwdOut = PacketStreamS2M {_ready = readyOut}
 
+        calcMod = mod (63 :: Index 64) (natToNum @dataWidth)
         lastOut = case st of
-          Filling n -> if n == maxBound && st' == s0 then Just (resize (mod (63 :: Index 64) (natToNum @dataWidth))) else Nothing
+          Filling n -> if n == maxBound && st' == s0 then Just (max (fromMaybe 0 (_last (fromJust fwdIn))) (resize calcMod)) else Nothing
           Full      -> _last =<< fwdIn
-          Padding n -> if n == maxBound && st' == s0 then Just (resize (mod (63 :: Index 64) (natToNum @dataWidth))) else Nothing
+          Padding n -> if n == maxBound && st' == s0 then Just (resize calcMod) else Nothing
         -- lastOut = case (st, fwdIn) of
         --   (Filling n, Just PacketStreamM2S {..}) -> if st' == s0 then Just (resize (maxBound - n)) else Nothing
         --   (Full, Just PacketStreamM2S {..}) -> if st' == s0 then _last else Nothing

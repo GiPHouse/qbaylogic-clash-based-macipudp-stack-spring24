@@ -28,6 +28,7 @@ import Protocols.Hedgehog
 
 -- util module
 import Test.Cores.Ethernet.Util
+import Data.Maybe
 
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
@@ -42,14 +43,15 @@ model
   => C.KnownNat dataWidth
   => [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concatMap (fixLast . map (\x -> x {_last = Nothing}) . padPacket) (chunkByPacket fragments)
+model fragments = concatMap (setLasts . padPacket) (chunkByPacket fragments)
   where
     padPacket pkt = pkt ++ replicate (neededPadding pkt) padding
     neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
-    lastIndex :: C.Index 64
-    lastIndex = mod (63 - C.natToNum @dataWidth) (C.natToNum @dataWidth)
-    fixLast pkt = init pkt ++ [(last pkt) {_last = Just (C.resize lastIndex)}]
+    lastIndex = C.resize (mod (63 :: C.Index 64) (C.natToNum @dataWidth))
+    setLasts pkt = map (\x -> x{_last = Nothing}) (init pkt) ++ if neededPadding (init pkt) == 0
+      then [last pkt]
+      else [(last pkt) {_last = Just (max (fromMaybe 0 (_last (last pkt))) lastIndex)}]
 
 -- | Test the padding inserter
 padpacketTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -77,10 +79,11 @@ padpacketTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_padpacket_d1, prop_padpacket_d2, prop_padpacket_d4 :: Property
+prop_padpacket_d1, prop_padpacket_d2, prop_padpacket_d5, prop_padpacket_d13 :: Property
 prop_padpacket_d1 = padpacketTest (C.SNat @1)
-prop_padpacket_d2 = padpacketTest (C.SNat @2)
-prop_padpacket_d4 = padpacketTest (C.SNat @5)
+prop_padpacket_d2 = padpacketTest (C.SNat @4)
+prop_padpacket_d5 = padpacketTest (C.SNat @13)
+prop_padpacket_d13 = padpacketTest (C.SNat @37)
 
 tests :: TestTree
 tests =
