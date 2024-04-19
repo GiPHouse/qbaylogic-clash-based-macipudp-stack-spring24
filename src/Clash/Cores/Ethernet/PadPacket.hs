@@ -7,7 +7,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Prelude
 import Data.List qualified as L
 import Data.Maybe
-import Protocols
+import Protocols ( Circuit, fromSignals )
 
 data PadPacketState
   = Filling { cycles :: Index 64}
@@ -41,13 +41,13 @@ padPacket = mealyB go s0
     go st (fwdIn, PacketStreamS2M inReady)
       = (st', (bwdOut, fwdOut))
       where
-        st' = if not inReady then st else case (st, fwdIn) of
+        st' = if isJust fwdOut && not inReady then st else case (st, fwdIn) of
           -- If we are filling, then the next state depends on _last
           -- If _last is Nothing and we fill the 64 bytes, then go to Full state, otherwise keep filling
           -- If _last is Just, then go to Padding state if not full, otherwise go to s0
           (Filling n, Just PacketStreamM2S {..}) -> case _last of
-            Nothing -> if n < maxBound - (natToNum @dataWidth) then Filling (n + (natToNum @dataWidth)) else Full
-            Just i  -> if n < maxBound - (natToNum @dataWidth) then Padding (maxBound - n - (natToNum @dataWidth) + 1) else s0
+            Nothing -> if n <= maxBound - (natToNum @dataWidth) then Filling (n + (natToNum @dataWidth)) else Full
+            Just _  -> if n <= maxBound - (natToNum @dataWidth) then Padding (maxBound - n - (natToNum @dataWidth) + 1) else s0
           -- If we are filling and don't receive any input, we keep filling
           (Filling _, Nothing) -> st
           -- If we are full, then we stay in Full state until _last is Just
@@ -59,14 +59,14 @@ padPacket = mealyB go s0
           -- While padding, it does not matter if we receive input
           (Padding n, _) -> if n > (natToNum @dataWidth) then Padding (n - (natToNum @dataWidth)) else s0
 
-        readyOut = inReady && case st of
+        readyOut = case st of
           Padding _ -> False
-          _         -> isNothing fwdIn && inReady
+          _         -> isJust fwdOut && inReady
 
         bwdOut = PacketStreamS2M {_ready = readyOut}
 
         lastOut = case (st, fwdIn) of
-          (Filling _, Just PacketStreamM2S {..}) -> if st' == s0 then _last else Nothing
+          (Filling n, Just PacketStreamM2S {..}) -> if st' == s0 then Just (resize (maxBound - n)) else Nothing
           (Full, Just PacketStreamM2S {..}) -> if st' == s0 then _last else Nothing
           (Padding n, _) -> if st' == s0 then Just (resize (n-1)) else Nothing
           _ -> Nothing
@@ -92,17 +92,17 @@ padPacketC = fromSignals padPacket
 payloadInp :: [Maybe (PacketStreamM2S 4 ())]
 payloadInp = [
   Nothing
-  , Just (PacketStreamM2S (0x01 :> 0x02 :> 0x03 :> 0x04 :> Nil) (Just 0) () False)
-  , Nothing
-  , Nothing
-  , Nothing
+  , Just (PacketStreamM2S (0x01 :> 0x02 :> 0x03 :> 0x04 :> Nil) (Just 1) () False)
   , Nothing
   -- , Nothing
   -- , Nothing
-  , Just (PacketStreamM2S (0xAA :> 0xFF :> 0xFF :> 0xFF :> Nil) (Just 0) () False)
   -- , Nothing
   -- , Nothing
-  -- , Just (PacketStreamM2S (0xDE :> 0xAD :> 0x00 :> 0x00 :> Nil) (Just 1) () True)
+  -- , Nothing
+  , Just (PacketStreamM2S (0xAA :> 0xFF :> 0xFF :> 0xFF :> Nil) (Nothing) () False)
+  -- , Nothing
+  -- , Nothing
+  , Just (PacketStreamM2S (0xDE :> 0xAD :> 0x00 :> 0x00 :> Nil) (Just 0) () True)
   -- , Just (PacketStreamM2S (0xDE :> 0xAD :> 0x00 :> 0x00 :> Nil) (Just 1) () True)
   -- , Nothing
   -- , Nothing

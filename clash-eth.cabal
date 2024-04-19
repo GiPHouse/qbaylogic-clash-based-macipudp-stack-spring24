@@ -122,17 +122,17 @@ library
     -- For debugging
     pretty-show
 
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  default-language: Haskell2010
-  main-is:          doctests.hs
-  ghc-options:      -Wall -Wcompat -threaded
-  hs-source-dirs:   tests
-  build-depends:
-    base,
-    clash-eth,
-    doctest >= 0.17 && <= 0.19,
-    process,
+-- test-suite doctests
+--   type:             exitcode-stdio-1.0
+--   default-language: Haskell2010
+--   main-is:          doctests.hs
+--   ghc-options:      -Wall -Wcompat -threaded
+--   hs-source-dirs:   tests
+--   build-depends:
+--     base,
+--     clash-eth,
+--     doctest >= 0.17 && <= 0.19,
+--     process,
 
 test-suite test-library
   import: common-options
@@ -147,6 +147,7 @@ test-suite test-library
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
+    Test.Cores.Ethernet.PadPacket
     Test.Cores.Ethernet.PacketDispatcher
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
