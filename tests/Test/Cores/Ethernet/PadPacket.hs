@@ -42,7 +42,11 @@ model
   => C.KnownNat dataWidth
   => [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concat $ chunkByPacket fragments
+model fragments = concat $ map padPacket $ chunkByPacket fragments
+  where
+    padPacket pkt = pkt ++ replicate (neededPadding pkt) padding
+    neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
+    padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
 
 -- | Test the padding inserter
 padpacketTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -50,7 +54,7 @@ padpacketTest C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (Gen.list (Range.linear 0 100) genPackets)                  -- Input packets
+    (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets))                  -- Input packets
     (C.exposeClockResetEnable model)                            -- Desired behaviour of PadPacket
     (C.exposeClockResetEnable @C.System (ckt @n))               -- Implementation of PadPacket
     (===)                                                       -- Property to test
