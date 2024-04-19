@@ -28,11 +28,12 @@ import Protocols.Hedgehog
 
 -- util module
 import Test.Cores.Ethernet.Util
-import Data.Maybe
 
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PadPacket
+
+import Data.Maybe
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -79,11 +80,11 @@ padpacketTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_padpacket_d1, prop_padpacket_d2, prop_padpacket_d5, prop_padpacket_d13 :: Property
+prop_padpacket_d1, prop_padpacket_d4, prop_padpacket_d13, prop_padpacket_d37 :: Property
 prop_padpacket_d1 = padpacketTest (C.SNat @1)
-prop_padpacket_d2 = padpacketTest (C.SNat @4)
-prop_padpacket_d5 = padpacketTest (C.SNat @13)
-prop_padpacket_d13 = padpacketTest (C.SNat @37)
+prop_padpacket_d4 = padpacketTest (C.SNat @4)
+prop_padpacket_d13 = padpacketTest (C.SNat @13)
+prop_padpacket_d37 = padpacketTest (C.SNat @37)
 
 tests :: TestTree
 tests =

@@ -1,4 +1,8 @@
 {-# language RecordWildCards #-}
+{-|
+Module      : Clash.Cores.Ethernet.PadPacket
+Description : Provides padPacketC for padding ethernet frames to the minimum of 64 bytes
+-}
 module Clash.Cores.Ethernet.PadPacket
   ( padPacketC
   ) where
@@ -12,9 +16,9 @@ import Protocols ( Circuit, fromSignals )
 -- Counts up to ceil(64/dataWidth) packets, which is the required
 -- amount to fulfill the minimum ethernet frame size of 64.
 data PadPacketState (dataWidth :: Nat)
-  = Filling { cycles :: Index (Div (63 + dataWidth) dataWidth)}
+  = Filling { count :: Index (Div (63 + dataWidth) dataWidth)}
   | Full
-  | Padding { cycles :: Index (Div (63 + dataWidth) dataWidth)}
+  | Padding { count :: Index (Div (63 + dataWidth) dataWidth)}
   deriving (Eq, Show, Generic, NFDataX)
 
 padPacket
@@ -42,38 +46,44 @@ padPacket = mealyB go s0
       = (st', (bwdOut, fwdOut))
       where
         st' = if isJust fwdOut && not inReady then st else case (st, fwdIn) of
-          -- If we are filling, then the next state depends on _last
+          -- If we are filling and receive input, then the next state depends on _last
           -- If _last is Nothing and we fill the 64 bytes, then go to Full state, otherwise keep filling
           -- If _last is Just, then go to Padding state if not full, otherwise go to s0
           (Filling n, Just PacketStreamM2S {..}) -> case _last of
             Nothing -> if n < maxBound then Filling (n + 1) else Full
             Just _  -> if n < maxBound then Padding (n + 1) else s0
-          -- If we are filling and don't receive any input, we keep filling
-          (Filling _, Nothing) -> st
-          -- If we are full, then we stay in Full state until _last is Just
+          -- If we are full and receive input, then we stay in Full state until _last is Just
           (Full, Just PacketStreamM2S {..}) -> case _last of
             Nothing -> st
             Just _  -> s0
-          -- If we are full and don't receive any input, stay full
-          (Full, Nothing) -> st
           -- While padding, it does not matter if we receive input
           (Padding n, _) -> if n < maxBound then Padding (n + 1) else s0
+          -- Remaning cases: state is Filling or Full and no input
+          _ -> st
 
         readyOut = case st of
           Padding _ -> False
           _         -> isJust fwdOut && inReady
+
         bwdOut = PacketStreamS2M {_ready = readyOut}
 
-        calcMod = mod (63 :: Index 64) (natToNum @dataWidth)
+        -- Calculate the index of _last needed after padding
+        calcMod = mod (63 :: Index (Max 64 dataWidth)) (natToNum @dataWidth)
+
         lastOut = case st of
-          Filling n -> if n == maxBound && st' == s0 then Just (max (fromMaybe 0 (_last (fromJust fwdIn))) (resize calcMod)) else Nothing
+          Filling n -> if n == maxBound && st' == s0
+            -- If _last is bigger than calcMod, then don't add padding
+            -- Otherwise, pad to calcMod
+            then Just (max (fromMaybe 0 (_last (fromJust fwdIn))) (resize calcMod))
+            else Nothing
           Full      -> _last =<< fwdIn
-          Padding n -> if n == maxBound && st' == s0 then Just (resize calcMod) else Nothing
+          Padding _ -> if st' == s0 then Just (resize calcMod) else Nothing
 
         fwdOut = case st of
           Padding _ -> Just PacketStreamM2S{_data = repeat 0, _last = lastOut, _meta = (), _abort = False}
           _         -> if isJust fwdIn then Just (fromJust fwdIn){_last = lastOut} else fwdIn
 
+-- | Pads ethernet frames to the minimum of 64 bytes
 padPacketC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
