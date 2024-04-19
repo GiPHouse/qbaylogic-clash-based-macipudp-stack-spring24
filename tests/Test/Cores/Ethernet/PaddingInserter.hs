@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.PadPacket where
+module Test.Cores.Ethernet.PaddingInserter where
 
 -- base
 import Prelude
@@ -31,7 +31,7 @@ import Test.Cores.Ethernet.Util
 
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.PadPacket
+import Clash.Cores.Ethernet.PaddingInserter
 
 import Data.Maybe
 
@@ -44,9 +44,9 @@ model
   => C.KnownNat dataWidth
   => [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concatMap (setLasts . padPacket) (chunkByPacket fragments)
+model fragments = concatMap (setLasts . paddingInserter) (chunkByPacket fragments)
   where
-    padPacket pkt = pkt ++ replicate (neededPadding pkt) padding
+    paddingInserter pkt = pkt ++ replicate (neededPadding pkt) padding
     neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
     lastIndex = C.resize (mod (63 :: C.Index 64) (C.natToNum @dataWidth))
@@ -55,8 +55,8 @@ model fragments = concatMap (setLasts . padPacket) (chunkByPacket fragments)
       else [(last pkt) {_last = Just (max (fromMaybe 0 (_last (last pkt))) lastIndex)}]
 
 -- | Test the padding inserter
-padpacketTest :: forall n. 1 <= n => C.SNat n -> Property
-padpacketTest C.SNat =
+paddingInserterTest :: forall n. 1 <= n => C.SNat n -> Property
+paddingInserterTest C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
@@ -70,7 +70,7 @@ padpacketTest C.SNat =
       => 1 <= dataWidth
       => C.KnownNat dataWidth
       => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-    ckt = padPacketC
+    ckt = paddingInserterC
 
     -- This generates the packets
     genPackets =
@@ -80,11 +80,11 @@ padpacketTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_padpacket_d1, prop_padpacket_d4, prop_padpacket_d13, prop_padpacket_d37 :: Property
-prop_padpacket_d1 = padpacketTest (C.SNat @1)
-prop_padpacket_d4 = padpacketTest (C.SNat @4)
-prop_padpacket_d13 = padpacketTest (C.SNat @13)
-prop_padpacket_d37 = padpacketTest (C.SNat @37)
+prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d13, prop_paddinginserter_d37 :: Property
+prop_paddinginserter_d1  = paddingInserterTest (C.SNat @1)
+prop_paddinginserter_d4  = paddingInserterTest (C.SNat @4)
+prop_paddinginserter_d13 = paddingInserterTest (C.SNat @13)
+prop_paddinginserter_d37 = paddingInserterTest (C.SNat @37)
 
 tests :: TestTree
 tests =

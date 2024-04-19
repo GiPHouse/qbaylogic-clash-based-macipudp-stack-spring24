@@ -1,10 +1,10 @@
 {-# language RecordWildCards #-}
 {-|
-Module      : Clash.Cores.Ethernet.PadPacket
-Description : Provides padPacketC for padding ethernet frames to the minimum of 64 bytes
+Module      : Clash.Cores.Ethernet.PaddingInserter
+Description : Provides paddingInserterC for padding ethernet frames to the minimum of 64 bytes
 -}
-module Clash.Cores.Ethernet.PadPacket
-  ( padPacketC
+module Clash.Cores.Ethernet.PaddingInserter
+  ( paddingInserterC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -12,16 +12,16 @@ import Clash.Prelude
 import Data.Maybe
 import Protocols ( Circuit, fromSignals )
 
--- | State of the padPacket circuit.
+-- | State of the paddingInserter circuit.
 -- Counts up to ceil(64/dataWidth) packets, which is the required
 -- amount to fulfill the minimum ethernet frame size of 64.
-data PadPacketState (dataWidth :: Nat)
+data PaddingInserterState (dataWidth :: Nat)
   = Filling { count :: Index (Div (63 + dataWidth) dataWidth)}
   | Full
   | Padding { count :: Index (Div (63 + dataWidth) dataWidth)}
   deriving (Eq, Show, Generic, NFDataX)
 
-padPacket
+paddingInserter
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
   => 1 <= dataWidth
@@ -35,13 +35,13 @@ padPacket
      )
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
-padPacket = mealyB go s0
+paddingInserter = mealyB go s0
   where
     s0 = Filling 0
     go
-      :: PadPacketState dataWidth
+      :: PaddingInserterState dataWidth
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
-      -> (PadPacketState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
+      -> (PaddingInserterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
     go st (fwdIn, PacketStreamS2M inReady)
       = (st', (bwdOut, fwdOut))
       where
@@ -84,10 +84,10 @@ padPacket = mealyB go s0
           _         -> if isJust fwdIn then Just (fromJust fwdIn){_last = lastOut} else fwdIn
 
 -- | Pads ethernet frames to the minimum of 64 bytes
-padPacketC
+paddingInserterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
   => 1 <= dataWidth
   => KnownNat dataWidth
   => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-padPacketC = fromSignals padPacket
+paddingInserterC = fromSignals paddingInserter
