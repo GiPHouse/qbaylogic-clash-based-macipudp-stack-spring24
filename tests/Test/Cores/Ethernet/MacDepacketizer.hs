@@ -69,9 +69,9 @@ prop_mac_depacketizer_d1 = macDepacketizerPropertyGenerator d1
 prop_mac_depacketizer_d3 :: Property
 prop_mac_depacketizer_d3 = macDepacketizerPropertyGenerator d3
 
--- | n mod dataWidth ~ 1
+-- | n mod dataWidth ~ 0
 prop_mac_depacketizer_d7 :: Property
-prop_mac_depacketizer_d7 = macDepacketizerPropertyGenerator d3
+prop_mac_depacketizer_d7 = macDepacketizerPropertyGenerator d7
 
 -- | dataWidth < header byte size
 prop_mac_depacketizer_d9 :: Property

@@ -1,5 +1,5 @@
 module Clash.Cores.Ethernet.EthernetTypes
-  (MacAddress, EthernetHeader, Preamble) where
+  (MacAddress, EthernetHeader, Preamble, startFrameDelimiter) where
 
 import Clash.Prelude
 
@@ -16,3 +16,6 @@ data EthernetHeader = EthernetHeader {
 } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
 type Preamble = Vec 8 (BitVector 8)
+
+startFrameDelimiter :: BitVector 8
+startFrameDelimiter = 0xD5

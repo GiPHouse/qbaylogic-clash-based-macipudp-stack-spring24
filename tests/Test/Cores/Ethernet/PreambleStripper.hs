@@ -27,8 +27,8 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.PreambleStripper
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.PreambleStripper
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
@@ -40,10 +40,9 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 preambleStripperPropertyGenerator
-  :: forall (dataWidth :: Nat).
+  :: forall (dataWidth :: Nat) .
   ( KnownNat dataWidth
-  , 1 <= dataWidth
-  )
+  , 1 <= dataWidth)
   => SNat dataWidth
   -> Property
 preambleStripperPropertyGenerator _ =
@@ -55,20 +54,15 @@ preambleStripperPropertyGenerator _ =
     (C.exposeClockResetEnable @C.System preambleStripperC)
     (===)
     where
-      model ps = model2 (model1 ps)
-      model1 :: [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth Preamble]
-      model1 = depacketizerModel const
-      model2 :: [PacketStreamM2S dataWidth Preamble] -> [PacketStreamM2S dataWidth ()]
-      model2 ps = L.concatMap validatePreamble (chunkByPacket ps)
+      model ps = validateAll (depacketizerModel const ps)
 
-      startFrameDelimiter :: BitVector 8
-      startFrameDelimiter = 0xD5
+      validateAll :: [PacketStreamM2S dataWidth Preamble] -> [PacketStreamM2S dataWidth ()]
+      validateAll ps = L.concatMap validatePreamble (chunkByPacket ps)
 
       validatePreamble :: [PacketStreamM2S dataWidth Preamble] -> [PacketStreamM2S dataWidth ()]
-      validatePreamble ps = if (C.last $ _meta $ Prelude.head ps) == startFrameDelimiter
+      validatePreamble ps = if C.last (_meta $ Prelude.head ps) == startFrameDelimiter
                             then L.map (\p -> p {_meta = ()}) ps
-                            else []--L.map (\p -> p {_meta = ()}) ps
-
+                            else []
       genPackets =
           PacketStreamM2S <$>
           genVec Gen.enumBounded <*>
@@ -81,24 +75,24 @@ prop_preamble_stripper_d1 :: Property
 prop_preamble_stripper_d1 = preambleStripperPropertyGenerator d1
 
 -- | n mod dataWidth ~ 3
-prop_preamble_stripper_d3 :: Property
-prop_preamble_stripper_d3 = preambleStripperPropertyGenerator d3
+prop_preamble_stripper_d5 :: Property
+prop_preamble_stripper_d5 = preambleStripperPropertyGenerator d5
 
--- | n mod dataWidth ~ 1
-prop_preamble_stripper_d7 :: Property
-prop_preamble_stripper_d7 = preambleStripperPropertyGenerator d3
+-- | n mod dataWidth ~ 0
+prop_preamble_stripper_d4 :: Property
+prop_preamble_stripper_d4 = preambleStripperPropertyGenerator d4
 
 -- | dataWidth < header byte size
-prop_preamble_stripper_d9 :: Property
-prop_preamble_stripper_d9 = preambleStripperPropertyGenerator d9
+prop_preamble_stripper_d7 :: Property
+prop_preamble_stripper_d7 = preambleStripperPropertyGenerator d7
 
 -- | dataWidth ~ header byte size
-prop_preamble_stripper_d14 :: Property
-prop_preamble_stripper_d14 = preambleStripperPropertyGenerator d14
+prop_preamble_stripper_d8 :: Property
+prop_preamble_stripper_d8 = preambleStripperPropertyGenerator d8
 
 -- | dataWidth > header byte size
-prop_preamble_stripper_d15 :: Property
-prop_preamble_stripper_d15 = preambleStripperPropertyGenerator d15
+prop_preamble_stripper_d9 :: Property
+prop_preamble_stripper_d9 = preambleStripperPropertyGenerator d9
 
 tests :: TestTree
 tests =

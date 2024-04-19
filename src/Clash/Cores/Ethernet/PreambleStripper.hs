@@ -4,16 +4,16 @@ import Clash.Prelude
 
 import Protocols
 
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Depacketizer
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Util
 
+import Data.Maybe ( isNothing )
 
-startFrameDelimiter :: BitVector 8
-startFrameDelimiter = 0xD5
 
 -- | Strips the incoming PacketStream of the preamble and SFD. Drops a packet only if the SFD is not correct,
---   it does not check if the preamble itself matches for efficiency reasons.
+--   the circuit does not check if the preamble itself matches for efficiency reasons.
 preambleStripperC :: forall (dom :: Domain) (dataWidth :: Nat).
   ( KnownDomain dom
   , HiddenClockResetEnable dom
@@ -21,18 +21,19 @@ preambleStripperC :: forall (dom :: Domain) (dataWidth :: Nat).
   , 1 <= dataWidth
   )
   => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-preambleStripperC = depacketizePreamble |> forceResetSanity |> fromSignals ckt
+preambleStripperC = depacketizePreamble |> fromSignals ckt
   where
-    depacketizePreamble :: Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth Preamble)
-    depacketizePreamble = depacketizerC const
+    -- Removes the preamble from the packet stream.
+    -- Only puts the SFD in the metadata for efficiency reasons.
+    depacketizePreamble :: Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth (BitVector 8))
+    depacketizePreamble = depacketizerC (\p _ -> last (p :: Preamble))
 
     ckt (fwdIn, bwdIn) = (bwdOut, fwdOut)
       where
-        bwdOut = bwdIn
-        fwdOut = fmap go fwdIn
-        go f = case f of
-          Nothing -> Nothing
-          Just p -> if last (_meta p) == startFrameDelimiter
-                    then Just (p {_meta = ()})
-                    -- Drop the packet
-                    else Nothing
+        -- It's illegal to look at bwdIn when you are sending out a Nothing
+        -- since the test framework drives undefined acks randomly if fwdOut
+        -- is Nothing. So if we drive a Nothing force a True on bwdOut.
+        bwdOut = PacketStreamS2M <$> ((isNothing <$> fwdOut) .||. _ready <$> bwdIn)
+        -- We send Nothing if the SFD is not 0xD5. That is, we drop the packet.
+        dropBadSfd p = toMaybe (_meta p == startFrameDelimiter) (p { _meta = () })
+        fwdOut = (dropBadSfd =<<) <$> fwdIn
