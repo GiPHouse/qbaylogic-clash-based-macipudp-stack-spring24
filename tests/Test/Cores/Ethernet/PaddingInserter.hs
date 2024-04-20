@@ -51,7 +51,7 @@ model fragments = concatMap (setLast . removeLasts . paddingInserter) (chunkByPa
     neededPadding pkt = max 0 (div (63 + (C.natToNum @dataWidth)) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
     paddingInserter pkt = pkt ++ replicate (neededPadding pkt) padding
-    
+
     --Set the _last of every stream to Nothing except for the last stream
     removeLasts pkt = map (\x -> x{_last = Nothing}) (init pkt) ++ [last pkt]
 
