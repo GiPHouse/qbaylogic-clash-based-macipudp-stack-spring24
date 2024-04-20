@@ -1,0 +1,52 @@
+@startuml
+PreambleInsert : Implement preamble inserter
+PaddingInsert : Implement padding inserter
+PreambleStrip : Implement preamble check + strip
+MacDepack : Implement MAC depacketizer
+MacPack : Implement MAC packetizer
+FCSValidate : Implement Frame check sequence validation
+FCSInsert : Implement Frame check sequence insert
+Review : Handle client review
+CI : Big fix: CI takes too loong
+Haddock : Fixup haddock documentation
+Isolate : Isolate network interfaces from other processes for testing
+IpChecksum : Implement internet checksum generator/validator
+DropPacketBuffer : Implement dropping support in packet buffer
+
+IPDepack : Implement IP depacketizer
+IPPack : Implement IP packetizer
+IPTransform : Implement IP to Ethernet\nstream transformer using\nfixed destination MAC address
+
+ARPRx : Implement ARP receiver
+ARPTx : Implement ARP transmitter
+ARPTable1 : Implement one-entry ARP table
+
+Demo : Spint review 3 demo: IP loopback
+
+[*] -up-> PreambleInsert
+[*] -up-> PaddingInsert
+[*] -up-> PreambleStrip
+[*] --> MacDepack
+[*] --> MacPack
+[*] -up-> FCSValidate
+[*] --> FCSInsert
+[*] --> Review
+[*] -up-> CI
+[*] -up-> Haddock
+[*] -up-> Isolate
+[*] --> IpChecksum
+[*] --> DropPacketBuffer
+[*] --> ARPTable1
+
+IPPack -up-> MacPack
+IPDepack -up-> MacDepack
+IPTransform -up-> MacPack
+IPTransform -up-> FCSInsert
+
+ARPTx -up-> MacPack
+ARPRx -up-> MacDepack
+
+Demo -up-> IPTransform
+Demo -up-> IPPack
+Demo -up-> IPDepack
+@enduml2
