@@ -44,15 +44,25 @@ model
   => C.KnownNat dataWidth
   => [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concatMap (setLasts . paddingInserter) (chunkByPacket fragments)
+model fragments = concatMap (setLast . removeLasts . paddingInserter) (chunkByPacket fragments)
   where
-    paddingInserter pkt = pkt ++ replicate (neededPadding pkt) padding
-    neededPadding pkt = max 0 (div (64 + (C.natToNum @dataWidth) - 1) (C.natToNum @dataWidth) - length pkt)
+    -- Calculate ceil(64/dataWidth) packets, which is the required
+    -- amount to fulfill the minimum ethernet frame size of 64
+    neededPadding pkt = max 0 (div (63 + (C.natToNum @dataWidth)) (C.natToNum @dataWidth) - length pkt)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
-    lastIndex = C.resize (mod (63 :: C.Index 64) (C.natToNum @dataWidth))
-    setLasts pkt = map (\x -> x{_last = Nothing}) (init pkt) ++ if neededPadding (init pkt) == 0
-      then [last pkt]
-      else [(last pkt) {_last = Just (max (fromMaybe 0 (_last (last pkt))) lastIndex)}]
+    paddingInserter pkt = pkt ++ replicate (neededPadding pkt) padding
+    
+    --Set the _last of every stream to Nothing except for the last stream
+    removeLasts pkt = map (\x -> x{_last = Nothing}) (init pkt) ++ [last pkt]
+
+    -- Calculate the index of _last needed after padding
+    calcMod = mod (63 :: C.Index 64) (C.natToNum @dataWidth)
+    -- Calculate the actual index of _last of the last stream
+    calcLast pkt = max (fromMaybe (0 :: C.Index dataWidth) (_last (last pkt))) (C.resize calcMod)
+    setLast pkt
+      -- If no padding was added, then we can keep the existing _last
+      | neededPadding (init pkt) == 0 = pkt
+      | otherwise                     = init pkt ++ [(last pkt) {_last = Just (calcLast pkt)}]
 
 -- | Test the padding inserter
 paddingInserterTest :: forall n. 1 <= n => C.SNat n -> Property
@@ -80,6 +90,10 @@ paddingInserterTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
+-- We test the edge case dataWidth = 1,
+-- a case where dataWidth divides 64,
+-- a case where dataWidth does not divide 64 and is less than 22 (= ceil(64/3)), and
+-- a case where dataWidth is more than 22, which seems to be the most fragile
 prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d13, prop_paddinginserter_d37 :: Property
 prop_paddinginserter_d1  = paddingInserterTest (C.SNat @1)
 prop_paddinginserter_d4  = paddingInserterTest (C.SNat @4)
