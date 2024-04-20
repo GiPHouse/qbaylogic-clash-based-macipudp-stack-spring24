@@ -92,14 +92,15 @@ paddingInserterTest C.SNat =
 
 -- We test the edge case dataWidth = 1,
 -- a case where dataWidth divides 64,
--- a case where dataWidth does not divide 64 and is less than 22 (= ceil(64/3)), and
--- a case where dataWidth is more than 22, which seems to be the most fragile
+-- a case where dataWidth does not divide 64 and is less than 22 (= ceil(64/3)),
+-- a case where dataWidth is more than 22, which seems to be the most fragile, and
+-- a case where dataWidth is more than 64.
 prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d13, prop_paddinginserter_d37, prop_paddinginserter_d70 :: Property
-prop_paddinginserter_d1  = paddingInserterTest (C.SNat @1)
-prop_paddinginserter_d4  = paddingInserterTest (C.SNat @4)
-prop_paddinginserter_d13 = paddingInserterTest (C.SNat @13)
-prop_paddinginserter_d37 = paddingInserterTest (C.SNat @37)
-prop_paddinginserter_d70 = paddingInserterTest (C.SNat @70)
+prop_paddinginserter_d1  = paddingInserterTest C.d1
+prop_paddinginserter_d4  = paddingInserterTest C.d4
+prop_paddinginserter_d13 = paddingInserterTest C.d13
+prop_paddinginserter_d37 = paddingInserterTest C.d37
+prop_paddinginserter_d70 = paddingInserterTest C.d70
 
 tests :: TestTree
 tests =
