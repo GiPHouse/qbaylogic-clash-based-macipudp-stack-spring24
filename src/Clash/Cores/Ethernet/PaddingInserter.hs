@@ -68,7 +68,7 @@ paddingInserter = mealyB go s0
         bwdOut = PacketStreamS2M {_ready = readyOut}
 
         -- Calculate the index of _last needed after padding
-        calcMod = mod (63 :: Index (Max 64 dataWidth)) (natToNum @dataWidth)
+        calcMod = mod (63 :: Index (Max 64 (dataWidth + 1))) (natToNum @dataWidth)
 
         lastOut = case st of
           Filling n -> if n == maxBound && st' == s0

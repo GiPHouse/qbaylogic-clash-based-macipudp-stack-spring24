@@ -56,7 +56,7 @@ model fragments = concatMap (setLast . removeLasts . paddingInserter) (chunkByPa
     removeLasts pkt = map (\x -> x{_last = Nothing}) (init pkt) ++ [last pkt]
 
     -- Calculate the index of _last needed after padding
-    calcMod = mod (63 :: C.Index 64) (C.natToNum @dataWidth)
+    calcMod = mod (63 :: C.Index (C.Max 64 (dataWidth C.+ 1))) (C.natToNum @dataWidth)
     -- Calculate the actual index of _last of the last stream
     calcLast pkt = max (fromMaybe (0 :: C.Index dataWidth) (_last (last pkt))) (C.resize calcMod)
     setLast pkt
@@ -94,11 +94,12 @@ paddingInserterTest C.SNat =
 -- a case where dataWidth divides 64,
 -- a case where dataWidth does not divide 64 and is less than 22 (= ceil(64/3)), and
 -- a case where dataWidth is more than 22, which seems to be the most fragile
-prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d13, prop_paddinginserter_d37 :: Property
+prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d13, prop_paddinginserter_d37, prop_paddinginserter_d70 :: Property
 prop_paddinginserter_d1  = paddingInserterTest (C.SNat @1)
 prop_paddinginserter_d4  = paddingInserterTest (C.SNat @4)
 prop_paddinginserter_d13 = paddingInserterTest (C.SNat @13)
 prop_paddinginserter_d37 = paddingInserterTest (C.SNat @37)
+prop_paddinginserter_d70 = paddingInserterTest (C.SNat @70)
 
 tests :: TestTree
 tests =
