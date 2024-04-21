@@ -1,4 +1,3 @@
-{-# language RecordWildCards #-}
 {-|
 Module      : Clash.Cores.Ethernet.PaddingInserter
 Description : Provides paddingInserterC for padding ethernet frames to the minimum of 64 bytes
@@ -8,21 +7,24 @@ module Clash.Cores.Ethernet.PaddingInserter
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Util ( toMaybe )
 import Clash.Prelude
-import Data.Maybe
+import Control.Monad ( guard )
+import Data.Maybe ( isJust )
 import Protocols ( Circuit, fromSignals )
+
 
 -- | State of the paddingInserter circuit.
 -- Counts up to ceil(64/dataWidth) packets, which is the required
 -- amount to fulfill the minimum ethernet frame size of 64.
 data PaddingInserterState (dataWidth :: Nat)
-  = Filling { count :: Index (Div (63 + dataWidth) dataWidth)}
+  = Filling { count :: Index (DivRU 64 dataWidth)}
   | Full
-  | Padding { count :: Index (Div (63 + dataWidth) dataWidth)}
+  | Padding { count :: Index (DivRU 64 dataWidth)}
   deriving (Eq, Show, Generic, NFDataX)
 
 paddingInserter
-  :: forall (dataWidth :: Nat) (dom :: Domain).
+  :: forall (dataWidth :: Nat) (dom :: Domain) .
   HiddenClockResetEnable dom
   => 1 <= dataWidth
   => KnownNat dataWidth
@@ -35,55 +37,41 @@ paddingInserter
      )
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
-paddingInserter = mealyB go s0
+paddingInserter = mealyB go (Filling 0)
   where
-    s0 = Filling 0
+    padding = PacketStreamM2S {_data = repeat 0, _last = Nothing, _meta = (), _abort = False}
+    lastIdx = natToNum @(63 `Mod` dataWidth)
     go
       :: PaddingInserterState dataWidth
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
       -> (PaddingInserterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
-    go st (fwdIn, PacketStreamS2M inReady)
-      = (st', (bwdOut, fwdOut))
+    -- If state is Full, forward the input from sink
+    go Full (Nothing, bwd) = (Full, (bwd, Nothing))
+    go Full (Just fwd, PacketStreamS2M inReady) = (if inReady && isJust (_last fwd) then Filling 0 else Full, (PacketStreamS2M inReady, Just fwd))
+
+    -- If state is Padding, send out zero-bytes to source and backpressure to sink
+    go st@(Padding i) (_, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M False, Just fwdOut))
       where
-        st' = if isJust fwdOut && not inReady then st else case (st, fwdIn) of
-          -- If we are filling and receive input, then the next state depends on _last
-          -- If _last is Nothing and we fill the 64 bytes, then go to Full state, otherwise keep filling
-          -- If _last is Just, then go to Padding state if not full, otherwise go to s0
-          (Filling n, Just PacketStreamM2S {..}) -> case _last of
-            Nothing -> if n < maxBound then Filling (n + 1) else Full
-            Just _  -> if n < maxBound then Padding (n + 1) else s0
-          -- If we are full and receive input, then we stay in Full state until _last is Just
-          (Full, Just PacketStreamM2S {..}) -> case _last of
-            Nothing -> st
-            Just _  -> s0
-          -- While padding, it does not matter if we receive input
-          (Padding n, _) -> if n < maxBound then Padding (n + 1) else s0
-          -- Remaning cases: state is Filling or Full and no input
-          _ -> st
+        st' = if i == maxBound then Filling 0 else Padding (i + 1)
+        fwdOut = padding {_last = toMaybe (i == maxBound) lastIdx}
 
-        readyOut = case st of
-          Padding _ -> False
-          _         -> isJust fwdOut && inReady
+    -- If state is Filling, forward the input from sink with updated _last
+    go (Filling i) (Nothing, bwd) = (Filling i, (bwd, Nothing))
+    go st@(Filling i) (Just fwdIn, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M inReady, Just fwdOut))
+      where
+        st' = case (i == maxBound, _last fwdIn) of
+          (True, Nothing) -> Full
+          (True, Just _) -> Filling 0
+          (False, Nothing) -> Filling (i + 1)
+          (False, Just _) -> Padding (i + 1)
+        -- If i < maxBound, then set _last to Nothing
+        -- Otherwise, set _last to the maximum of the
+        -- index that would reach the minimum frame size,
+        -- and the _last of fwdIn
+        fwdOut = fwdIn {_last = guard (i == maxBound) >> max lastIdx <$> _last fwdIn}
 
-        bwdOut = PacketStreamS2M {_ready = readyOut}
-
-        -- Calculate the index of _last needed after padding
-        calcMod = mod (63 :: Index (Max 64 (dataWidth + 1))) (natToNum @dataWidth)
-
-        lastOut = case st of
-          Filling n -> if n == maxBound && st' == s0
-            -- If _last is bigger than calcMod, then don't add padding
-            -- Otherwise, pad to calcMod
-            then Just (max (fromMaybe 0 (_last (fromJust fwdIn))) (resize calcMod))
-            else Nothing
-          Full      -> _last =<< fwdIn
-          Padding _ -> if st' == s0 then Just (resize calcMod) else Nothing
-
-        fwdOut = case st of
-          Padding _ -> Just PacketStreamM2S{_data = repeat 0, _last = lastOut, _meta = (), _abort = False}
-          _         -> if isJust fwdIn then Just (fromJust fwdIn){_last = lastOut} else fwdIn
-
--- | Pads ethernet frames to the minimum of 64 bytes
+-- | Pads ethernet frames to the minimum of 64 bytes.
+-- Assumes that all invalid bytes are set to 0.
 paddingInserterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
