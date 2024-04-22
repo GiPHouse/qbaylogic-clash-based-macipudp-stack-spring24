@@ -7,15 +7,26 @@ module Clash.Cores.Ethernet.FcsInserter (
   fcsInserter
   , fcsInserterC
 ) where
+
+-- crc
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 
+-- ethernet
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util
+
+-- prelude
 import Clash.Prelude
+
+-- proxy
+import Data.Data ( Proxy(Proxy) )
+
+-- maybe
 import Data.Maybe
+
+-- protocols
 import Protocols
-import Data.Data (Proxy(Proxy))
 
 
 fragment2bv
@@ -64,7 +75,7 @@ data FcsInserterState dataWidth
   | FcsInsert
       { _aborted :: Bool
       , _cachedFwd :: Maybe (PacketStreamM2S dataWidth ())
-      , _bytesRemaining :: Index 4
+      , _valid :: Index 4
       -- ^ how many bytes of _cachedCrc are valid
       , _cachedCrc :: Vec 4 (BitVector 8)
       }
@@ -114,7 +125,7 @@ fcsHelper
   :: forall (dom :: Domain) (dataWidth :: Nat)
   .  HiddenClockResetEnable dom
   => KnownNat dataWidth
-  => ( "crc_32" ::: Signal dom (Vec 4 (BitVector 8))
+  => ( Signal dom (Vec 4 (BitVector 8))
      , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
      , Signal dom PacketStreamS2M)
   -> ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
@@ -131,25 +142,13 @@ fcsHelperT
      , PacketStreamS2M)
   -> ( FcsInserterState dataWidth
      , ( Maybe (PacketStreamM2S dataWidth ())
-       , Bool
-       ))
-fcsHelperT
-  (FcsCopy Nothing)
-  ( _
-  , fwdIn
-  , _
-  )
-  = (FcsCopy fwdIn, (Nothing, True))
+       , Bool))
+fcsHelperT (FcsCopy Nothing) ( _, fwdIn, _) = (FcsCopy fwdIn, (Nothing, True))
 
-
-----------------------------------------------------------------------------
 fcsHelperT
   currSt@(FcsCopy (Just cache@(PacketStreamM2S{..})))
-  ( ethCrcBytes
-  , fwdIn
-  , PacketStreamS2M readyIn
-  )
-  = (nextSt, (dataOut, readyOut))
+  (ethCrcBytes, fwdIn, PacketStreamS2M readyIn)
+  = (nextSt, (dataOut, readyIn))
   where
     validIdx = fromMaybe maxBound _last
     (combined, leftover) = splitAt (SNat @dataWidth) $ appendVec (fromJust _last) _data ethCrcBytes
@@ -170,20 +169,19 @@ fcsHelperT
             })
       else cache
 
-    readyOut = readyIn
+    nextSt =
+      if readyIn
+      then (if insertAtOnce || isNothing _last
+            then FcsCopy fwdIn
+            else
+              FcsInsert {
+                  _aborted = _abort
+                , _cachedFwd = fwdIn
+                , _valid = toEnum $ 3 - fromEnum (maxBound - validIdx)
+                , _cachedCrc = leftover
+              })
+      else currSt
 
-    nextSt = case (readyOut, _last) of
-      (False, _) -> currSt
-      (True, Just _) -> if insertAtOnce then FcsCopy fwdIn else
-        FcsInsert {
-            _aborted = _abort
-          , _cachedFwd = fwdIn
-          , _bytesRemaining = toEnum $ 3 - fromEnum (maxBound - validIdx)
-          , _cachedCrc = leftover
-         }
-      (True, Nothing) -> FcsCopy fwdIn
-
------------------------------------------------------------------
 fcsHelperT
   currSt@(FcsInsert{..})
   ( _
@@ -192,15 +190,27 @@ fcsHelperT
   )
   = (nextSt, (dataOut, False))
   where
-    (dataOut, nextStIfReady) = if fromEnum _bytesRemaining + 1 <=natToNum @dataWidth then (
-                                   Just $ PacketStreamM2S {_data= fst $ shiftInAt0 (repeat 0) _cachedCrc, _last= Just $ resize _bytesRemaining, _meta=(), _abort=_aborted}
-                                 , FcsCopy _cachedFwd
-                                 ) else (
-                                   Just $ PacketStreamM2S {_data= fst $ shiftInAt0 (repeat 0) _cachedCrc, _last= Nothing, _meta=(), _abort=_aborted}
-                                 , currSt {_bytesRemaining= _bytesRemaining - natToNum @dataWidth, _cachedCrc = fst $ shiftInAtN _cachedCrc (repeat 0 :: Vec dataWidth (BitVector 8))  }
-                                 )
+    (dataOut, nextStIfReady) =
+      if fromEnum _valid + 1 <=natToNum @dataWidth
+      then (
+        Just $ PacketStreamM2S
+          { _data= fst $ shiftInAt0 (repeat 0) _cachedCrc
+          , _last= Just $ resize _valid
+          , _meta=(), _abort=_aborted
+          }, FcsCopy _cachedFwd)
+      else (
+        Just $ PacketStreamM2S
+          {_data= fst $ shiftInAt0 (repeat 0) _cachedCrc
+          , _last= Nothing
+          , _meta=()
+          , _abort=_aborted}
+        , currSt
+          {_valid= _valid - natToNum @dataWidth
+          , _cachedCrc = fst $ shiftInAtN @dataWidth _cachedCrc (repeat 0)
+          })
 
-    nextSt = if readyIn
-             then nextStIfReady
-             else currSt
+    nextSt =
+      if readyIn
+      then nextStIfReady
+      else currSt
 

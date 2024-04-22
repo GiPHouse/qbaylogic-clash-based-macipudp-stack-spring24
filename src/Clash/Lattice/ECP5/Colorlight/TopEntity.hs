@@ -1,17 +1,17 @@
+{-# language NoMonomorphismRestriction #-}
 {-# language NumericUnderscores #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
 
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
 import Clash.Annotations.TH
 import Clash.Cores.Ethernet.RGMII
     ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
+import Clash.Cores.UART ( baudGenerator )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
-import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
-import Clash.Cores.UART (baudGenerator)
-import Clash.Prelude (exposeClockResetEnable)
+import Clash.Lattice.ECP5.Prims
+import Clash.Prelude ( exposeClockResetEnable )
 data SDRAMOut domain = SDRAMOut
   {
     sdram_clock :: "clk" :::Clock domain,

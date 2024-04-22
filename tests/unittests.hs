@@ -28,12 +28,12 @@ $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d8)
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-   [ -- Test.Cores.Ethernet.PacketStream.tests
-  --   , Test.Lattice.ECP5.UART.tests
-  --   , Test.Cores.Ethernet.UpConverter.tests
-  --   , Test.Cores.Ethernet.DownConverter.tests
-  --   , Test.Cores.Ethernet.MaybeControlProperty.tests
-  --   , Test.Cores.Ethernet.PacketBuffer.tests
-  --   , Test.Cores.Ethernet.InterpacketGapInserter.tests
-    Test.Cores.Ethernet.FcsInserter.tests
+   [ Test.Cores.Ethernet.PacketStream.tests
+   , Test.Lattice.ECP5.UART.tests
+   , Test.Cores.Ethernet.UpConverter.tests
+   , Test.Cores.Ethernet.DownConverter.tests
+   , Test.Cores.Ethernet.MaybeControlProperty.tests
+   , Test.Cores.Ethernet.PacketBuffer.tests
+   , Test.Cores.Ethernet.InterpacketGapInserter.tests
+   , Test.Cores.Ethernet.FcsInserter.tests
   ]

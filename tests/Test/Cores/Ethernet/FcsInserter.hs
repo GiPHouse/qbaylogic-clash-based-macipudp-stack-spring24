@@ -37,13 +37,17 @@ import Data.Maybe
 
 -- crc module
 import Clash.Cores.Crc
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Crc.Catalog
-import Data.Proxy
-import Data.Coerce
+
+-- fcs inserter
 import Clash.Cores.Ethernet.FcsInserter
-import Clash.Explicit.Prelude (listToVecTH)
-import Clash.Cores.Ethernet.Util (toMaybe)
+
+-- packetstream
+import Clash.Cores.Ethernet.PacketStream
+
+-- proxy
+import Data.Proxy
+
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -78,10 +82,10 @@ insertCrc packet = L.init packet ++ extraLastPackets
     lastValids = replicate (length lastFragments - 1) Nothing ++ [Just $ fromIntegral (length (last lastFragments) - 1)]
     extraLastPackets = L.zipWith toPacket lastFragments lastValids 
 
-    toPacket d v = lastFragment {
-          _data = foldr (C.+>>) (C.repeat 0) d
-        , _last = v
-      }
+    toPacket d v = lastFragment { 
+        _data = foldr (C.+>>) (C.repeat 0) d
+      , _last = v
+    }
 
 
 

@@ -24,7 +24,7 @@ import Protocols.DfConv hiding ( pure )
 import Protocols.Hedgehog.Internal
 import Protocols.Internal
 
-import Data.Coerce (coerce)
+import Data.Coerce ( coerce )
 
 -- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
 --   with metadata that can only change on packet delineation.

@@ -69,7 +69,7 @@ packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
         _ -> False
 
 -- | PacketBuffer Circuit, does not generate backpressure on the RHS, but instead drops packets
--- Respects backpressure on the LHS 
+-- Respects backpressure on the LHS
 packetBufferC
   :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
   HiddenClockResetEnable dom
