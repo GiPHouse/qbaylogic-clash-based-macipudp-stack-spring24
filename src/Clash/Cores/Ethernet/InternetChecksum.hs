@@ -6,8 +6,8 @@ module Clash.Cores.Ethernet.InternetChecksum
   ) where
 
 import Clash.Prelude
-import Data.Maybe (fromMaybe)
 import Clash.Sized.Internal.BitVector ( complement# )
+import Data.Maybe ( fromMaybe )
 
 -- | computes the internet checksum of a stream of 16-bit words according to https://datatracker.ietf.org/doc/html/rfc1071
 internetChecksum

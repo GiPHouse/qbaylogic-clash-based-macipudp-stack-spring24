@@ -5,6 +5,7 @@ import Test.Tasty
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
+import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
 import Test.Cores.Ethernet.MacDepacketizer qualified
 import Test.Cores.Ethernet.MaybeControlProperty qualified
@@ -28,4 +29,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.InterpacketGapInserter.tests
     , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
+    , Test.Cores.Ethernet.InternetChecksum.tests
   ]
