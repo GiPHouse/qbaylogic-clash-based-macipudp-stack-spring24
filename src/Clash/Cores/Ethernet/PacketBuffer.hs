@@ -1,8 +1,8 @@
 {-# language FlexibleContexts #-}
 
 module Clash.Cores.Ethernet.PacketBuffer
-    ( packetBuffer
-    , packetBufferC
+    ( packetBufferC
+    , overflowDropPacketBufferC
     ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -14,7 +14,7 @@ import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Internal ( CSignal(..) )
 
 packetBuffer
-  :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+  :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
   => KnownNat dataWidth
   => KnownNat sizeBits
@@ -26,65 +26,88 @@ packetBuffer
      , Signal dom PacketStreamS2M
      )
   -- ^ Input packetStream
-  -> Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+  -> (  Signal dom PacketStreamS2M
+     , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     )
   -- ^ Output CSignal s
-packetBuffer SNat (fwdIn, bwdIn) = toMaybe <$> notEmpty <*> ramOut
+packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
   where
     --The backing ram
     ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
 
       -- write command
-    writeCommand = func <$> writeEnable <*> fwdIn <*> wordAddr
-      where
-        func False _          _     = Nothing
-        func _     Nothing    _     = Nothing
-        func _     (Just dat) wordAddr = Just (wordAddr, dat)
+    writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, fromJustX <$> fwdIn)
 
     -- Registers : pointers
     wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
-    wordAddr = register 0 $ mux dropping packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
-    packetAddr = register 0 $ mux (lastWord .&&. writeEnable) (wordAddr + 1) packetAddr
+    wordAddr = register 0 $ mux dropping' packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
+    packetAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (wordAddr + 1) packetAddr
     readAddr' = mux readEnable (readAddr + 1) readAddr
     readAddr = register 0 readAddr'
 
     -- Registers : status
-    dropping, emptyBuffer :: Signal dom (Bool)
-    dropping = register False $ (fullBuffer .&&. writeRequest) .||. (dropping .&&. (not <$> lastWord))
-    emptyBuffer  = (register 0 packetAddr) .==. readAddr
+    dropping', dropping, emptyBuffer :: Signal dom Bool
+    -- start dropping packet on abort
+    dropping' = abortIn .||. dropping
+    dropping = register False $ dropping' .&&. (not <$> lastWordIn)
+    emptyBuffer  = register 0 packetAddr .==. readAddr
 
-    -- Only write if there is space
-    writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping)
+    -- Only write if there is space and we're not dropping
+    writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping')
     -- Read when the word has been received
-    readEnable = notEmpty .&&. (_ready <$> bwdIn)
-    notEmpty = not <$> emptyBuffer
+    readEnable = (not <$> emptyBuffer) .&&. (_ready <$> bwdIn)
 
     --The status signals
-    fullBuffer = (wordAddr + 1)  .==. readAddr
+    fullBuffer = (wordAddr + 1) .==. readAddr
     writeRequest = isJust <$> fwdIn
-    lastWord = isLast <$> fwdIn
+    lastWordIn = maybe False (isJust . _last) <$> fwdIn
+    abortIn = maybe False _abort <$> fwdIn
 
-    isLast :: Maybe (PacketStreamM2S dataWidth metaType) -> Bool
-    isLast word = case word of
-        Just (PacketStreamM2S { _last = Just _ }) -> True
-        _ -> False
+abortOnBackPressure
+  :: forall  (dom :: Domain) (dataWidth :: Nat) (metaType :: Type).
+  HiddenClockResetEnable dom
+  => KnownNat dataWidth
+  => NFDataX metaType
+  -- ^ Depth of the packet buffer 2^sizeBits
+  => ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     , Signal dom PacketStreamS2M
+     )
+  -- ^ Input packetStream
+  -> ( CSignal dom ()
+     , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
+     )
+  -- ^ Does not give backpressure, sends an abort forward instead
+abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle (fwdInS, bwdInS))
+  where
+    go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
 
--- | PacketBuffer Circuit, does not generate backpressure on the RHS, but instead drops packets
--- Respects backpressure on the LHS
+-- | Packet buffer, a circuit which stores words in a buffer until the packet is complete
+-- once a packet is complete it will send the entire packet out at once without stalls.
+-- If a word in a packet has _abort set to true, the packetBuffer will drop the entire packet.
+-- If a packet is larger than 2^sizeBits, the packetBuffer will have a deadlock, this should be avoided!
 packetBufferC
-  :: forall (dataWidth :: Nat) (sizeBits :: Nat) (dom :: Domain) (metaType :: Type).
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth
     => KnownNat sizeBits
     => NFDataX metaType
     => 1 <= sizeBits
-    -- ^ Depth of the packet buffer 2^sizeBits
     => SNat sizeBits
-    -- ^ Packet buffer circuit
+    -- ^ Depth of the packet buffer, this is equal to 2^sizeBits
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
-packetBufferC sizeBits = forceResetSanity |> fromPacketStream |> fromSignals wrap
+packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
+
+-- | A packet buffer that drops packets when it is full, instead of giving backpressure
+overflowDropPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
+  HiddenClockResetEnable dom
+    => KnownNat dataWidth
+    => NFDataX metaType
+    => KnownNat sizeBits
+    => 1 <= sizeBits
+    => SNat sizeBits
+    -- ^ Depth of the packet buffer 2^sizeBits
+    -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
+overflowDropPacketBufferC size =  backPressureC |> fromSignals (packetBuffer size)
   where
-    wrap:: ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType)),
-                Signal dom PacketStreamS2M
-            )
-        -> (CSignal dom (), Signal dom (Maybe (PacketStreamM2S dataWidth metaType)))
-    wrap (CSignal fwdIn, bwdIn)  = (CSignal (pure ()), packetBuffer sizeBits (fwdIn, bwdIn))
+    backPressureC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
+    backPressureC = fromSignals abortOnBackPressure

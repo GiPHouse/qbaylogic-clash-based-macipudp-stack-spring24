@@ -17,7 +17,6 @@ import Clash.Prelude qualified as C
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
 
-
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
 chunkBy _ [] = []
 chunkBy predicate list = L.filter (not . null) $ chunkByHelper predicate list []
@@ -68,3 +67,7 @@ fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n 
 fullPackets [] = []
 fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
                         in  init fragments ++ [lastFragment]
+
+-- drops packets if one of the words in the packet has the abort flag set
+dropAbortedPackets :: [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
+dropAbortedPackets packets = concat $ filter (not . any _abort) (chunkByPacket packets)
