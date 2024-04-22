@@ -6,7 +6,7 @@ module Test.Cores.Ethernet.InternetChecksum where
 
 -- base
 import Data.Maybe
-import Data.Proxy
+import Numeric ( showHex )
 import Prelude
 
 -- clash-prelude
@@ -24,48 +24,98 @@ import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
--- clash-protocols
-import Protocols
-import Protocols.DfConv qualified as DfConv
-import Protocols.Hedgehog
-
--- Me
-import Clash.Cores.Ethernet.PacketStream
-import Test.Cores.Ethernet.MaybeControl ( propWithModelMaybeControlSingleDomain )
+-- clash-cores
+import Clash.Cores.Ethernet.InternetChecksum
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-lastTrue :: [(PacketStreamM2S 4 (), Bool)] -> [(PacketStreamM2S 4 (), Bool)]
-lastTrue [] = []
-lastTrue fragments = init fragments ++ [(fst . last $ fragments, True)]
+genWord :: Gen (C.BitVector 16)
+genWord = C.pack <$> genVec Gen.bool
 
-genWord :: Gen (PacketStreamM2S 4 ())
-genWord = PacketStreamM2S <$>
-          genVec Gen.enumBounded <*>
-          Gen.maybe Gen.enumBounded <*>
-          Gen.enumBounded <*>
-          Gen.enumBounded
-
-genTuple :: Gen (PacketStreamM2S 4 (), Bool)
-genTuple = (,) <$> genWord <*> Gen.bool
-
-genInputList :: Range Int -> Gen [(PacketStreamM2S 4 (), Bool)]
-genInputList range = Gen.list range genInput
+-- functions used to print the intermediate state for debugging
+showAsHex :: [C.BitVector 16] -> [String]
+showAsHex = fmap (showSToString . Numeric.showHex . toInteger)
   where
-    genInput = (,) <$> genWord <*> pure False
+    showSToString showS = showS ""
 
+showComplementAsHex :: [C.BitVector 16] -> [String]
+showComplementAsHex = showAsHex . fmap C.complement
 
-prop_checksum :: Property
-prop_checksum =
+-- Checks whether the checksum succeeds
+prop_checksum_succeed :: Property
+prop_checksum_succeed =
   property $ do
-    -- input <- forAll $ genInputList (Range.linear 0 100)
+    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWord <*> pure False)
 
-    -- result <- runSim $ do
-    --   let input' = C.fromList input internetChecksum input
+    input <- forAll $ genInputList (Range.linear 1 100)
+    let size = length input
 
-    success
+    let checkSum = last $ take size $ C.simulate @C.System internetChecksum input
+        input' = input ++ [Just (checkSum, False)]
+        checkSum' = last $ take (size + 1) $ C.simulate @C.System internetChecksum input'
 
+    checkSum' === 0x0000
+
+-- | Flips a random bit and checks whether the checksum actually fails
+prop_checksum_fail :: Property
+prop_checksum_fail =
+  property $ do
+    let genInputList range = Gen.list range (Just <$> ((,) <$> genWord <*> pure False))
+
+    input <- forAll $ genInputList (Range.linear 1 100)
+    let size = length input
+
+    randomIndex <- forAll $ Gen.int (Range.linear 0 (size - 1))
+    randomBitIndex <- forAll $ Gen.int (Range.linear 0 (16 - 1))
+
+    let checkSum = last $ take size $ C.simulate @C.System internetChecksum input
+        input' = flipBit randomIndex randomBitIndex $ input ++ [Just (checkSum, False)]
+        checkSum' = last $ take (size + 1) $ C.simulate @C.System internetChecksum input'
+
+    checkSum' /== 0x0000
+      where
+        flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
+        flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
+          where
+            replaceAtIndex :: Int -> a -> [a] -> [a]
+            replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
+
+            newWord =fb (bitList !! listIndex)
+
+            fb Nothing = Nothing
+            fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
+
+-- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
+prop_checksum_specific_values :: Property
+prop_checksum_specific_values =
+  property $ do
+    let input = Just . (, False) <$> [0x4500, 0x0073, 0x0000, 0x4000, 0x4011, 0x0000, 0xc0a8, 0x0001, 0xc0a8, 0x00c7]
+        size = length input
+        result = take size $ C.simulate @C.System internetChecksum input
+        checkSum = last result
+
+    footnoteShow $ showComplementAsHex result
+    checkSum === 0xb861
+
+prop_checksum_reset :: Property
+prop_checksum_reset =
+  property $ do
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWord <*> Gen.bool)
+
+    input <- forAll genInputList
+    let size = length input
+        result = take size $ C.simulate @C.System internetChecksum input
+
+    footnoteShow $ showComplementAsHex result
+    assert $ checkCurValueAfterReset input result False
+      where
+        checkCurValueAfterReset [] _ _ = True
+        checkCurValueAfterReset _ [] _ = True
+        checkCurValueAfterReset (Nothing:xs) (_:ys) lastReset = checkCurValueAfterReset xs ys lastReset
+        checkCurValueAfterReset (Just (x, reset):xs) (y:ys) True =
+          (x == C.complement y) && checkCurValueAfterReset xs ys reset
+        checkCurValueAfterReset (Just (_, reset):xs) (_:ys) False = checkCurValueAfterReset xs ys reset
 
 tests :: TestTree
 tests =

@@ -106,6 +106,7 @@ library
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
     Clash.Cores.Ethernet.AsyncFIFO
+    Clash.Cores.Ethernet.InternetChecksum
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -155,6 +156,7 @@ test-suite test-library
     Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.AsyncFIFO
+    Test.Cores.Ethernet.InternetChecksum
   build-depends:
     clash-eth,
     QuickCheck,
