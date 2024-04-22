@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 {-# language FlexibleContexts #-}
+=======
+>>>>>>> db34e04 (nicer code, make format, remove redundant imports, uncomment tests)
 {-# language NoMonomorphismRestriction #-}
 {-# language NumericUnderscores #-}
 
@@ -11,10 +14,15 @@ import Clash.Cores.UART ( baudGenerator )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
+<<<<<<< HEAD
 import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
 import Clash.Lattice.ECP5.Prims
 import Clash.Prelude ( exposeClockResetEnable )
 
+=======
+import Clash.Lattice.ECP5.Prims
+import Clash.Prelude ( exposeClockResetEnable )
+>>>>>>> db34e04 (nicer code, make format, remove redundant imports, uncomment tests)
 data SDRAMOut domain = SDRAMOut
   {
     sdram_clock :: "clk" :::Clock domain,
