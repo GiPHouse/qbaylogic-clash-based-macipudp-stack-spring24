@@ -19,7 +19,11 @@ import Clash.Cores.Crc.Catalog (Crc32_ethernet)
 import Data.Proxy
 import Clash.Prelude
 
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d1)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d8)
 
 
 main :: IO ()
