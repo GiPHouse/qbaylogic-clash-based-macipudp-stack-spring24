@@ -1,12 +1,35 @@
 { sources ? import ./sources.nix }:
 
 let
-  overlay = _: pkgs: {
+  overlay = _: pkgs:
+
+  let
+    abc-verifier = pkgs.callPackage ./abc-verifier.nix { };
+    yosys = pkgs.callPackage ./yosys.nix {
+      abc-verifier = abc-verifier;
+    };
+    yosys-ecp5-infer-outreg = pkgs.callPackage ./yosys-ecp5-infer-outreg.nix {
+      yosys = yosys;
+    };
+    trellis = pkgs.callPackage ./trellis.nix { };
+    nextpnr = pkgs.callPackage ./nextpnr.nix {
+      trellis = trellis;
+    };
+  in {
 
     # Nix tooling
     niv = (import sources.niv {}).niv;
     gitignore = import sources.gitignore { inherit (pkgs) lib; };
+
+    # Flashing utilitity
     ecpprog = pkgs.callPackage ./ecpprog.nix { };
+
+    # uptodate FPGA tooling
+    abc-verifier = abc-verifier;
+    yosys = yosys;
+    yosys-ecp5-infer-outreg = yosys-ecp5-infer-outreg;
+    trellis = trellis;
+    nextpnr = nextpnr;
 
     # Haskell overrides
     haskellPackages = pkgs.haskellPackages.override {

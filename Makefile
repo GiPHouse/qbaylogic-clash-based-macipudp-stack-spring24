@@ -57,7 +57,12 @@ verilog: $(verilog)
 
 ${netlist}: ${verilog}
 	mkdir -p netlist
-	yosys -p "synth_ecp5 -dff -abc2 -top topEntity -json ${netlist};" verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+	yosys \
+		-m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
+		-p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
+		-p "ecp5_infer_bram_outreg" \
+		-p "write_json ${netlist}" \
+		verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
 
 .PHONY: netlist
 netlist: $(netlist)

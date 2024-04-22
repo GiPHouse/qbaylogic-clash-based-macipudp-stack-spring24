@@ -43,15 +43,15 @@ chopBy :: Int -> [a] -> [[a]]
 chopBy _ [] = []
 chopBy n xs = as : chopBy n bs where (as,bs) = splitAt n xs
 
-chunkToPacket :: C.KnownNat n => [PacketStreamM2S 1 ()] -> PacketStreamM2S n ()
+chunkToPacket :: C.KnownNat n => [PacketStreamM2S 1 meta] -> PacketStreamM2S n meta
 chunkToPacket l = PacketStreamM2S {
     _last = if M.isJust $ _last $ L.last l then M.Just (fromIntegral $ L.length l - 1) else Nothing
   , _abort = or $ fmap _abort l
-  , _meta = ()
+  , _meta = _meta $ L.head l
   , _data = L.foldr (C.+>>) (C.repeat 0) $ fmap (C.head . _data) l
 }
 
-chopPacket :: forall n. 1 C.<= n => C.KnownNat n => PacketStreamM2S n () -> [PacketStreamM2S 1 ()]
+chopPacket :: forall n meta. 1 C.<= n => C.KnownNat n => PacketStreamM2S n meta -> [PacketStreamM2S 1 meta]
 chopPacket PacketStreamM2S {..} = packets where
   lasts = case _last of
     Nothing  -> repeat Nothing
@@ -61,7 +61,7 @@ chopPacket PacketStreamM2S {..} = packets where
     Nothing -> C.toList _data
     Just in' -> take (fromIntegral in' + 1) $ C.toList _data
 
-  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx () _abort) <$> zip lasts datas
+  packets = (\(idx,  dat) -> PacketStreamM2S (pure dat) idx _meta _abort) <$> zip lasts datas
 
 fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 fullPackets [] = []
