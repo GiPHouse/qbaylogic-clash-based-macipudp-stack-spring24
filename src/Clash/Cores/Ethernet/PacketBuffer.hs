@@ -82,7 +82,8 @@ abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle
     go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
 
 -- | Packet buffer, a circuit which stores words in a buffer until the packet is complete
--- once a packet is complete it will send the entire packet out at once without gaps.
+-- once a packet is complete it will send the entire packet out at once without stalls.
+-- If a word in a packet has _abort set to true, the packetBuffer will drop the entire packet.
 -- If a packet is larger than 2^sizeBits, the packetBuffer will have a deadlock, this should be avoided!
 packetBufferC
   :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat).
