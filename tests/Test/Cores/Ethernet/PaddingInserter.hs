@@ -38,26 +38,28 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 model
-  :: forall (dataWidth :: C.Nat).
-  1 <= dataWidth
+  :: forall (dataWidth :: C.Nat)
+   . 1 <= dataWidth
   => C.KnownNat dataWidth
-  => [PacketStreamM2S dataWidth ()]
+  => Int
   -> [PacketStreamM2S dataWidth ()]
-model fragments = concatMap (mergePackets . setLasts . insertPadding) $ chunkByPacket $ splitPackets fragments
+  -> [PacketStreamM2S dataWidth ()]
+model padBytes fragments = concatMap (mergePackets . setLasts . insertPadding) $ chunkByPacket $ splitPackets fragments
   where
     insertPadding pkts = pkts ++ replicate (paddingNeeded pkts) padding
-    paddingNeeded pkts = max 0 (64 - length pkts)
+    paddingNeeded pkts = max 0 (padBytes - length pkts)
     padding = PacketStreamM2S {_data = C.repeat 0, _last = Nothing, _meta = (), _abort = False}
     setLasts pkts = map (\pkt -> pkt{_last = Nothing}) (init pkts) ++ [(last pkts){_last = Just 0}]
 
--- | Test the padding inserter
-paddingInserterTest :: forall n. 1 <= n => C.SNat n -> Property
-paddingInserterTest C.SNat =
+-- | Test the padding inserter.
+paddingInserterTest
+  :: forall n p. C.KnownNat n => C.KnownNat p => 1 <= n => 1 <= p => C.SNat n -> C.SNat p -> Property
+paddingInserterTest _ padBytes =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
     (fmap (cleanPackets . fullPackets) (Gen.list (Range.linear 0 100) genPackets))
-    (C.exposeClockResetEnable model)
+    (C.exposeClockResetEnable (model $ C.natToNum @p))
     (C.exposeClockResetEnable @C.System (ckt @n))
     (===)
   where
@@ -66,7 +68,7 @@ paddingInserterTest C.SNat =
       => 1 <= dataWidth
       => C.KnownNat dataWidth
       => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-    ckt = paddingInserterC C.d64
+    ckt = paddingInserterC padBytes
 
     -- This generates the packets
     genPackets =
@@ -76,15 +78,15 @@ paddingInserterTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
--- We test the edge case dataWidth = 1,
--- a case where dataWidth divides 64,
--- a case where dataWidth does not divide 64, and
--- a case where dataWidth is more than 64.
-prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d37, prop_paddinginserter_d70 :: Property
-prop_paddinginserter_d1  = paddingInserterTest C.d1
-prop_paddinginserter_d4  = paddingInserterTest C.d4
-prop_paddinginserter_d37 = paddingInserterTest C.d37
-prop_paddinginserter_d70 = paddingInserterTest C.d70
+-- We test the edge case dataWidth = padBytes = 1,
+-- a case where dataWidth divides padBytes,
+-- a case where dataWidth does not divide padBytes, and
+-- a case where dataWidth is more than padBytes.
+prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d5, prop_paddinginserter_d50 :: Property
+prop_paddinginserter_d1  = paddingInserterTest C.d1 C.d1
+prop_paddinginserter_d4  = paddingInserterTest C.d4 C.d46
+prop_paddinginserter_d5 = paddingInserterTest C.d5 C.d46
+prop_paddinginserter_d50 = paddingInserterTest C.d50 C.d46
 
 tests :: TestTree
 tests =

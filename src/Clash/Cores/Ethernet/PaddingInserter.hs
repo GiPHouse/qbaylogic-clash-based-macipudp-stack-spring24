@@ -15,7 +15,8 @@ import Protocols ( Circuit, fromSignals )
 
 
 -- | State of the paddingInserter circuit.
--- Counts up to ceil(`padBytes`/`dataWidth`) packets.
+-- Counts up to ceil(`padBytes`/`dataWidth`) packets, which is
+-- the amount of packets needed to fill `padBytes` bytes.
 data PaddingInserterState (dataWidth :: Nat) (padBytes :: Nat)
   = Filling { count :: Index (DivRU padBytes dataWidth)}
   | Full
