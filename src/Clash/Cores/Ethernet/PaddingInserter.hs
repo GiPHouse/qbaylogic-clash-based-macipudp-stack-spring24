@@ -1,6 +1,6 @@
 {-|
 Module      : Clash.Cores.Ethernet.PaddingInserter
-Description : Provides paddingInserterC for padding ethernet frames to the minimum of 64 bytes
+Description : Provides paddingInserterC for padding ethernet frames to a customizable amount of bytes.
 -}
 module Clash.Cores.Ethernet.PaddingInserter
   ( paddingInserterC
@@ -15,20 +15,22 @@ import Protocols ( Circuit, fromSignals )
 
 
 -- | State of the paddingInserter circuit.
--- Counts up to ceil(64/dataWidth) packets, which is the required
--- amount to fulfill the minimum ethernet frame size of 64.
-data PaddingInserterState (dataWidth :: Nat)
-  = Filling { count :: Index (DivRU 64 dataWidth)}
+-- Counts up to ceil(`padBytes`/`dataWidth`) packets.
+data PaddingInserterState (dataWidth :: Nat) (padBytes :: Nat)
+  = Filling { count :: Index (DivRU padBytes dataWidth)}
   | Full
-  | Padding { count :: Index (DivRU 64 dataWidth)}
+  | Padding { count :: Index (DivRU padBytes dataWidth)}
   deriving (Eq, Show, Generic, NFDataX)
 
 paddingInserter
-  :: forall (dataWidth :: Nat) (dom :: Domain) .
+  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain) .
   HiddenClockResetEnable dom
   => 1 <= dataWidth
+  => 1 <= padBytes
   => KnownNat dataWidth
-  => ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+  => KnownNat padBytes
+  => SNat padBytes
+  -> ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
      , Signal dom PacketStreamS2M)
   -- ^ Input packet stream from the source
   --   Input backpressure from the sink
@@ -37,14 +39,14 @@ paddingInserter
      )
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
-paddingInserter = mealyB go (Filling 0)
+paddingInserter _ = mealyB go (Filling 0)
   where
     padding = PacketStreamM2S {_data = repeat 0, _last = Nothing, _meta = (), _abort = False}
-    lastIdx = natToNum @(63 `Mod` dataWidth)
+    lastIdx = natToNum @((padBytes - 1) `Mod` dataWidth)
     go
-      :: PaddingInserterState dataWidth
+      :: PaddingInserterState dataWidth padBytes
       -> (Maybe (PacketStreamM2S dataWidth ()), PacketStreamS2M)
-      -> (PaddingInserterState dataWidth, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
+      -> (PaddingInserterState dataWidth padBytes, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
     -- If state is Full, forward the input from sink
     go Full (Nothing, bwd) = (Full, (bwd, Nothing))
     go Full (Just fwd, PacketStreamS2M inReady) = (if inReady && isJust (_last fwd) then Filling 0 else Full, (PacketStreamS2M inReady, Just fwd))
@@ -70,12 +72,15 @@ paddingInserter = mealyB go (Filling 0)
         -- and the _last of fwdIn
         fwdOut = fwdIn {_last = guard (i == maxBound) >> max lastIdx <$> _last fwdIn}
 
--- | Pads ethernet frames to the minimum of 64 bytes.
+-- | Pads ethernet frames to a minimum of `padBytes` bytes.
 -- Assumes that all invalid bytes are set to 0.
 paddingInserterC
-  :: forall (dataWidth :: Nat) (dom :: Domain).
+  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
   => 1 <= dataWidth
+  => 1 <= padBytes
   => KnownNat dataWidth
-  => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-paddingInserterC = fromSignals paddingInserter
+  => KnownNat padBytes
+  => SNat padBytes
+  -> Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
+paddingInserterC padBytes = fromSignals (paddingInserter padBytes)

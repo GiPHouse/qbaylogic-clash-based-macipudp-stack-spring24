@@ -66,7 +66,7 @@ paddingInserterTest C.SNat =
       => 1 <= dataWidth
       => C.KnownNat dataWidth
       => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-    ckt = paddingInserterC
+    ckt = paddingInserterC C.d64
 
     -- This generates the packets
     genPackets =
