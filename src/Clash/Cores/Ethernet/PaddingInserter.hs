@@ -50,7 +50,7 @@ paddingInserter _ = mealyB go (Filling 0)
       -> (PaddingInserterState dataWidth padBytes, (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth ())))
     -- If state is Full, forward the input from sink
     go Full (Nothing, bwd) = (Full, (bwd, Nothing))
-    go Full (Just fwd, PacketStreamS2M inReady) = (if inReady && isJust (_last fwd) then Filling 0 else Full, (PacketStreamS2M inReady, Just fwd))
+    go Full (Just fwd, bwd@(PacketStreamS2M inReady)) = (if inReady && isJust (_last fwd) then Filling 0 else Full, (bwd, Just fwd))
 
     -- If state is Padding, send out zero-bytes to source and backpressure to sink
     go st@(Padding i) (_, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M False, Just fwdOut))
@@ -60,7 +60,7 @@ paddingInserter _ = mealyB go (Filling 0)
 
     -- If state is Filling, forward the input from sink with updated _last
     go (Filling i) (Nothing, bwd) = (Filling i, (bwd, Nothing))
-    go st@(Filling i) (Just fwdIn, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M inReady, Just fwdOut))
+    go st@(Filling i) (Just fwdIn, bwd@(PacketStreamS2M inReady)) = (if inReady then st' else st, (bwd, Just fwdOut))
       where
         st' = case (i == maxBound, _last fwdIn) of
           (True, Nothing) -> Full
