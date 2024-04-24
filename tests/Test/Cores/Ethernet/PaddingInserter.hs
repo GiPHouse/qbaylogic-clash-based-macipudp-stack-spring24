@@ -82,9 +82,9 @@ paddingInserterTest _ padBytes =
 -- a case where dataWidth divides padBytes,
 -- a case where dataWidth does not divide padBytes, and
 -- a case where dataWidth is more than padBytes.
-prop_paddinginserter_d1, prop_paddinginserter_d4, prop_paddinginserter_d5, prop_paddinginserter_d50 :: Property
+prop_paddinginserter_d1, prop_paddinginserter_d2, prop_paddinginserter_d5, prop_paddinginserter_d50 :: Property
 prop_paddinginserter_d1  = paddingInserterTest C.d1 C.d1
-prop_paddinginserter_d4  = paddingInserterTest C.d4 C.d46
+prop_paddinginserter_d2  = paddingInserterTest C.d2 C.d46
 prop_paddinginserter_d5 = paddingInserterTest C.d5 C.d46
 prop_paddinginserter_d50 = paddingInserterTest C.d50 C.d46
 

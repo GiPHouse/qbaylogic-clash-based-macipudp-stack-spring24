@@ -52,7 +52,7 @@ paddingInserter _ = mealyB go (Filling 0)
     go Full (Nothing, bwd) = (Full, (bwd, Nothing))
     go Full (Just fwd, bwd@(PacketStreamS2M inReady)) = (if inReady && isJust (_last fwd) then Filling 0 else Full, (bwd, Just fwd))
 
-    -- If state is Padding, send out zero-bytes to source and backpressure to sink
+    -- If state is Padding, send out null-bytes to source and backpressure to sink
     go st@(Padding i) (_, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M False, Just fwdOut))
       where
         st' = if i == maxBound then Filling 0 else Padding (i + 1)
