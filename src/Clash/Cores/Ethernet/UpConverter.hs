@@ -14,7 +14,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util
 import Protocols ( Circuit(..), fromSignals, (|>) )
 
--- | Upconverter state, consisting of at most p @BitVector 8@s and a vector indicating which bytes are valid
+-- | Upconverter state, consisting of at most p `BitVector 8`s and a vector indicating which bytes are valid
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
     _ucBuf     :: Vec dataWidth (BitVector 8),
