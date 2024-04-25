@@ -106,7 +106,8 @@ downConverter = mealyB go s0
         bwdOut = PacketStreamS2M outReady
         fwdOut = toMaybePacketStreamM2S st
 
--- | Converts packet streams of arbitrary data widths to packet streams of single bytes
+-- | Converts packet streams of arbitrary data widths to packet streams of single bytes.
+-- Has one clock cycle of latency, but full throughput.
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

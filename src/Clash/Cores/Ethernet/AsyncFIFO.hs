@@ -1,6 +1,6 @@
 {-|
 Module      : Clash.Cores.Ethernet.AsyncFIFO
-Description : Provides @asyncFifoC@ for crossing clock domains in the packet stream protocol
+Description : Provides `asyncFifoC` for crossing clock domains in the packet stream protocol
 -}
 module Clash.Cores.Ethernet.AsyncFIFO
   (asyncFifoC) where
@@ -14,6 +14,7 @@ import Clash.Cores.Ethernet.PacketStream
 
 
 -- | Asynchronous FIFO circuit that can be used to safely cross clock domains.
+-- Uses `Clash.Explicit.Prelude.asyncFIFOSynchronizer` internally.
 asyncFifoC :: forall (depth     :: Nat)
                      (dataWidth :: Nat)
                      (wDom      :: Domain)
