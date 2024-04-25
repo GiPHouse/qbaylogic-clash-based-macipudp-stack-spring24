@@ -4,9 +4,11 @@ module Clash.Cores.Ethernet.RxStack
 
 import Clash.Cores.Ethernet.AsyncFIFO ( asyncFifoC )
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.PreambleStripper ( preambleStripperC )
 import Clash.Cores.Ethernet.UpConverter ( upConverterC )
 import Clash.Prelude
 import Protocols
+
 
 rxStack
   :: forall
@@ -25,3 +27,4 @@ rxStack ethClk = stack
     upConverterC' = exposeClockResetEnable upConverterC ethClk resetGen enableGen
     stack = upConverterC'
              |> asyncFifoC d4 ethClk resetGen enableGen hasClock hasReset hasEnable
+             |> preambleStripperC
