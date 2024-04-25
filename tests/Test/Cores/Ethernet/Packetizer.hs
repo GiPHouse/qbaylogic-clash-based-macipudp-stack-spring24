@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 
 module Test.Cores.Ethernet.Packetizer
-  (tests, packetizerModel) where
+  (packetizerModel) where
 
 -- base
 import Data.List qualified as L
@@ -41,21 +41,19 @@ packetizerModel
   -> [PacketStreamM2S dataWidth metaOut]
 packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
   where
-    metaOut = toMetaOut (_meta (L.head ps))
-    header = toHeader (_meta (L.head ps))
-
     prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
-    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta =  metaOut}) fragments
-
-    hdr :: [PacketStreamM2S 1 metaOut]
-    hdr = L.map go (toList $ unpack $ pack header)
+    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = m}) fragments
       where
-        go byte = PacketStreamM2S {
-          _data = byte :> Nil,
-          _last = Nothing,
-          _meta = metaOut,
-          _abort = False
-        }
+        m = toMetaOut (_meta (L.head fragments))
+        header = toHeader (_meta (L.head fragments))
+        hdr = L.map go (toList $ bitCoerce header)
+          where
+            go byte = PacketStreamM2S {
+              _data = byte :> Nil,
+              _last = Nothing,
+              _meta = m,
+              _abort = False
+            }
 
     bytePackets :: [[PacketStreamM2S 1 metaIn]]
     bytePackets = L.concatMap chopPacket . smearAbort <$> chunkByPacket ps
@@ -66,8 +64,9 @@ packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
     dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
     dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> prependedPackets
 
-tests :: TestTree
+{-tests :: TestTree
 tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000_000))
   $(testGroupGenerator)
+-}

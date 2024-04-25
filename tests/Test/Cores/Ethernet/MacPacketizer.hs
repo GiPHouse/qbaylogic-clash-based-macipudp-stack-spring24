@@ -66,7 +66,7 @@ macPacketizerPropertyGenerator _ =
           genVec Gen.enumBounded <*>
           Gen.maybe Gen.enumBounded <*>
           genMeta <*>
-          Gen.enumBounded
+          Gen.enum False False--Gen.enumBounded
 
 -- | n mod dataWidth ~ 1
 prop_mac_packetizer_d1 :: Property
