@@ -85,12 +85,12 @@ verifyChecksum
 verifyChecksum = Circuit $ mealyB go (0, 0)
   where
     go
-      :: (BitVector 16, Index (20 `DivRU` n))
+      :: (BitVector 16, Index (1 + 20 `Div` n))
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
-      -> ((BitVector 16, Index (20 `DivRU` n)), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
+      -> ((BitVector 16, Index (1 + 20 `Div` n)), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
     go s (Nothing, bwd) = (s, (bwd, Nothing))
     go s@(acc, i) (Just fwdIn, PacketStreamS2M inReady) = (if inReady then s' else s, (PacketStreamS2M inReady, Just fwdOut))
-      where 
+      where
         containsData = i == maxBound
         dataIdx = natToNum @(20 `Mod` n)
         header = imap (\j x -> if containsData && j >= dataIdx then 0 else x) $ _data fwdIn

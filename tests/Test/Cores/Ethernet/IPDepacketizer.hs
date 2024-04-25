@@ -40,7 +40,7 @@ genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 genPackets :: 1 C.<= n => C.KnownNat n => Gen a -> Gen (PacketStreamM2S n a)
-genPackets genMeta = 
+genPackets genMeta =
   PacketStreamM2S <$>
   genVec Gen.enumBounded <*>
   Gen.maybe Gen.enumBounded <*>
@@ -61,7 +61,7 @@ testIPPacketizerValid _ = idWithModelSingleDomain
   (upConvert <$> packetList)
   (C.exposeClockResetEnable model)
   (C.exposeClockResetEnable (ipDepacketizerC @C.System @dataWidth))
-  where 
+  where
     geb :: forall (a :: C.Type) . (Enum a, Bounded a) => Gen a
     geb = Gen.enumBounded
     randomHeader = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
@@ -87,8 +87,8 @@ testIPPacketizer _ = idWithModelSingleDomain
   (fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets (C.unpack <$> Gen.enumBounded))))
   (C.exposeClockResetEnable model)
   (C.exposeClockResetEnable (ipDepacketizerC @C.System @dataWidth))
-  where 
-    model ps = 
+  where
+    model ps =
      let
        ps' = depacketizerModel const ps
        ps'' = fmap toLite <$> ps'
