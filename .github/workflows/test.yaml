@@ -14,18 +14,17 @@ jobs:
 
   build_and_synthesize:
     runs-on: ubuntu-latest
-    container:
-      image: docker.io/baublesaurus/clockbox:latest
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-      volumes: 
-        - ${{ github.workspace }}:/work
     steps:
       - name: git checkout
         uses: actions/checkout@v4 
-      - name: run cabal tests 
-        run: |    
+      - name: run docker image
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work -e ABC=123
+          run: |
             mkdir sometempdir
             TMP=sometempdir
             ls -al
