@@ -28,9 +28,6 @@ jobs:
             echo "hello world"
             cd work 
             ls
-            make check_format
-            make clean_tests
-            make test
-            make verilog
-            make netlist
-            make pnr
+            cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
+	          echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
+	          stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
