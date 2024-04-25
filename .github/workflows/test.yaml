@@ -26,9 +26,6 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             mkdir /tmp
-            ls -al
-            cd work 
-            ls -al
             cabal test
             # cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
             # mkdir -p netlist
@@ -44,6 +41,6 @@ jobs:
             #   --speed 6 \w
             #   --package CABGA256 \
             #   --randomize-seed --timing-allow-fail
-            # rm -rf dist-newstyle
-            # rm -rf verilog
-            # rm -rf netlist
+            rm -rf dist-newstyle
+            rm -rf verilog
+            rm -rf netlist
