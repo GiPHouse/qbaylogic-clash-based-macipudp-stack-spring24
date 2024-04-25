@@ -26,6 +26,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work
           run: |
             mkdir /tmp
+            cd work
             cabal test
             # cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
             # mkdir -p netlist
