@@ -112,7 +112,7 @@ prop_checksum_reset =
         checkCurValueAfterReset _ [] _ = True
         checkCurValueAfterReset _ _ [] = True
         checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset False xs ys
-        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset reset xs ys 
+        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset reset xs ys
 
 tests :: TestTree
 tests =
