@@ -31,3 +31,22 @@ jobs:
             cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
             echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
             stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
+            rm ./.stylish-haskell-check.yaml
+            cabal test
+            cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+            mkdir -p netlist
+            yosys \
+              -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
+              -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
+              -p "ecp5_infer_bram_outreg" \
+              -p "write_json ${netlist}" \
+              verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+            nextpnr-ecp5 --json ${netlist} \
+              --lpf pinout.lpf \
+              --textcfg ${pnr} --25k \
+              --speed 6 \
+              --package CABGA256 \
+              --randomize-seed --timing-allow-fail
+            rm -rf dist-newstyle
+            rm -rf verilog
+            rm -rf netlist
