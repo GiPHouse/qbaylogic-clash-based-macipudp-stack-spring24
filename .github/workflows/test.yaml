@@ -24,10 +24,9 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           image: baublesaurus/clockbox:latest
           options: -v ${{ github.workspace }}:/work -e ABC=123
-          run: | 
-            echo "hello world"
-            cd work 
-            ls
-            cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
-	          echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
-	          stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
+          run: echo "hello world"
+          run: cd work 
+          run: ls
+          run: cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
+	        run: echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
+	        run: stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
