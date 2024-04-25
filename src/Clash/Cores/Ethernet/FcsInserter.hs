@@ -89,7 +89,7 @@ fcsInserterT st@(FcsCopy (Just cache@(PacketStreamM2S{..}))) (ethCrcBytes, fwdIn
 
 fcsInserterT st@(FcsInsert{..}) (_, _, PacketStreamS2M readyIn) = (nextSt, (Just dataOut, False))
   where
-    finished = _valid <= natToNum @(Min (dataWidth - 1) 3) 
+    finished = _valid <= natToNum @(Min (dataWidth - 1) 3)
     (outBytes, nextBytes) = splitAtI $ _cachedCrc ++ repeat 0
     dataOut = PacketStreamM2S
       { _data = outBytes

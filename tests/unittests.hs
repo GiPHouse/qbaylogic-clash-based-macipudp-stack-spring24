@@ -15,7 +15,7 @@ import qualified Test.Cores.Ethernet.PacketBuffer
 import qualified Test.Cores.Ethernet.PacketDispatcher 
 import qualified Test.Cores.Ethernet.PacketStream 
 import qualified Test.Cores.Ethernet.PaddingInserter 
-import qualified Test.Lattice.ECP5.UART 
+import qualified Test.Lattice.ECP5.UART
 import qualified Test.Cores.Ethernet.UpConverter
 import qualified Test.Cores.Ethernet.FcsInserter
 import Clash.Cores.Crc (deriveHardwareCrc)
