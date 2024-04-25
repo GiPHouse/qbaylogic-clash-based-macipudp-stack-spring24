@@ -4,8 +4,7 @@
 {-# language ScopedTypeVariables #-}
 
 module Clash.Cores.Ethernet.FcsInserter (
-  fcsInserter
-  , fcsInserterC
+  fcsInserterC
 ) where
 
 -- crc
