@@ -17,6 +17,7 @@ macPacketizerC
    . HiddenClockResetEnable dom
   => KnownDomain dom
   => 1 <= dataWidth
+  => Mod 14 dataWidth <= (dataWidth - 1)
   => KnownNat dataWidth
   => Circuit (PacketStream dom dataWidth EthernetHeader) (PacketStream dom dataWidth ())
 macPacketizerC = packetizerC (const ()) id

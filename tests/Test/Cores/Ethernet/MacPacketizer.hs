@@ -47,7 +47,8 @@ genMeta = fmap (unpack . pack) (genVec Gen.enumBounded :: Gen (Vec metaBytes (Bi
 macPacketizerPropertyGenerator
   :: forall (dataWidth :: Nat).
   ( KnownNat dataWidth
-  , 1 <= dataWidth)
+  , 1 <= dataWidth
+  , Mod 14 dataWidth <= (dataWidth - 1))
   => SNat dataWidth
   -> Property
 macPacketizerPropertyGenerator _ =
