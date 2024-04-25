@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -48,7 +49,6 @@ import Clash.Cores.Ethernet.PacketStream
 -- proxy
 import Data.Proxy
 
-
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
@@ -58,13 +58,11 @@ model
   => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
 model fragments = insertCrc =<< chunkByPacket  fragments
 
-
 packetToCrcInp
   :: C.KnownNat dataWidth
   => 1 C.<= dataWidth
   => [PacketStreamM2S dataWidth ()] -> [C.BitVector 8]
 packetToCrcInp packet = C.head . _data <$> (chopPacket =<< packet)
-
 
 insertCrc
   :: forall (dataWidth :: C.Nat)
@@ -86,8 +84,6 @@ insertCrc packet = L.init packet ++ extraLastPackets
         _data = foldr (C.+>>) (C.repeat 0) d
       , _last = v
     }
-
-
 
 -- | Test the fcsinserter
 fcsinserterTest
@@ -122,25 +118,18 @@ fcsinserterTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-prop_fcsinserter_d1
-  :: HardwareCrc Crc32_ethernet 8 1 => Property
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d1)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d2)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d4)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d8)
+
+prop_fcsinserter_d1, prop_fcsinserter_d2, prop_fcsinserter_d4, prop_fcsinserter_d8 :: Property
 prop_fcsinserter_d1 = fcsinserterTest C.d1
-prop_fcsinserter_d2
-  :: HardwareCrc Crc32_ethernet 8 2 => Property
 prop_fcsinserter_d2 = fcsinserterTest C.d2
-prop_fcsinserter_d4
-  :: HardwareCrc Crc32_ethernet 8 4 => Property
 prop_fcsinserter_d4 = fcsinserterTest C.d4
-prop_fcsinserter_d8
-  :: HardwareCrc Crc32_ethernet 8 8 => Property
 prop_fcsinserter_d8 = fcsinserterTest C.d8
 
-tests
-  :: HardwareCrc Crc32_ethernet 8 1
-  => HardwareCrc Crc32_ethernet 8 2
-  => HardwareCrc Crc32_ethernet 8 4
-  => HardwareCrc Crc32_ethernet 8 8
-  => TestTree
+tests :: TestTree
 tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))

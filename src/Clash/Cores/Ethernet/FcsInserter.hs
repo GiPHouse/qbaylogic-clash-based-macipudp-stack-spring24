@@ -37,7 +37,7 @@ toCRCInput
   -> (Index dataWidth, Vec dataWidth (BitVector 8))
 toCRCInput (PacketStreamM2S{..}) = (fromMaybe maxBound _last, _data)
 
-fcsHelperT
+fcsInserterT
   :: forall dataWidth
   . KnownNat dataWidth
   => 1 <= dataWidth
@@ -48,9 +48,9 @@ fcsHelperT
   -> ( FcsInserterState dataWidth
      , ( Maybe (PacketStreamM2S dataWidth ())
        , Bool))
-fcsHelperT (FcsCopy Nothing) ( _, fwdIn, _) = (FcsCopy fwdIn, (Nothing, True))
+fcsInserterT (FcsCopy Nothing) ( _, fwdIn, _) = (FcsCopy fwdIn, (Nothing, True))
 
-fcsHelperT st@(FcsCopy (Just cache@(PacketStreamM2S{..}))) (ethCrcBytes, fwdIn, PacketStreamS2M readyIn)
+fcsInserterT st@(FcsCopy (Just cache@(PacketStreamM2S{..}))) (ethCrcBytes, fwdIn, PacketStreamS2M readyIn)
   = (nextSt, (Just fwdOut, readyIn))
   where
     (combined, leftover) = splitAtI $ appendVec (fromJust _last) _data ethCrcBytes
@@ -87,7 +87,7 @@ fcsHelperT st@(FcsCopy (Just cache@(PacketStreamM2S{..}))) (ethCrcBytes, fwdIn, 
 
     nextSt = if readyIn then nextStIfReady else st
 
-fcsHelperT st@(FcsInsert{..}) (_, _, PacketStreamS2M readyIn) = (nextSt, (Just dataOut, False))
+fcsInserterT st@(FcsInsert{..}) (_, _, PacketStreamS2M readyIn) = (nextSt, (Just dataOut, False))
   where
     finished = _valid <= natToNum @(Min (dataWidth - 1) 3) 
     (outBytes, nextBytes) = splitAtI $ _cachedCrc ++ repeat 0
@@ -141,12 +141,12 @@ fcsInserter (fwdIn, bwdIn) = (bwdOut, fwdOut)
     crcIn = toMaybe <$> transferOccured <*> crcInX
 
     firstFragment = regEn True transferOccured $ isJust . _last <$> fwdInX
-    ethCrc = crcEngine @dom (Proxy @Crc32_ethernet) firstFragment crcIn
+    ethCrc = crcEngine (Proxy @Crc32_ethernet) firstFragment crcIn
     ethCrcBytes = reverse . unpack <$> ethCrc
 
     bwdOut = PacketStreamS2M <$> ready
 
-    (fwdOut, ready) = mealyB fcsHelperT (FcsCopy Nothing) (ethCrcBytes, fwdIn, bwdIn)
+    (fwdOut, ready) = mealyB fcsInserterT (FcsCopy Nothing) (ethCrcBytes, fwdIn, bwdIn)
 
 
 -- | fcsInserter circuit
