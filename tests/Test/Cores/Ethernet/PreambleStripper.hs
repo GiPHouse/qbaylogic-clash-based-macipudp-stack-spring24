@@ -41,11 +41,10 @@ genVec gen = sequence (C.repeat gen)
 
 preambleStripperPropertyGenerator
   :: forall (dataWidth :: Nat) .
-  ( KnownNat dataWidth
-  , 1 <= dataWidth)
+     1 <= dataWidth
   => SNat dataWidth
   -> Property
-preambleStripperPropertyGenerator _ =
+preambleStripperPropertyGenerator SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
