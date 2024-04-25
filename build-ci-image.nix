@@ -1,4 +1,4 @@
-with import ./nix/nixpkgs.nix {};
+with import ./nix/nixpkgs.nix { }; 
 
 let shell = (import ./shell.nix) { inherit pkgs; };
 
@@ -9,9 +9,8 @@ in dockerTools.buildImage {
   copyToRoot = pkgs.buildEnv {
     name = "image-root";
     paths = [ coreutils bash ]
-     ++ shell.nativeBuildInputs
      ++ shell.buildInputs;
 
     pathsToLink = [ "/bin" ];
   };
-}
+ }
