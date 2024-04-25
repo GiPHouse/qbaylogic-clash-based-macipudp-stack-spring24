@@ -40,6 +40,7 @@ toCRCInput (PacketStreamM2S{..}) = (fromMaybe maxBound _last, _data)
 fcsHelperT
   :: forall dataWidth
   . KnownNat dataWidth
+  => 1 <= dataWidth
   => FcsInserterState dataWidth
   -> ( Vec 4 (BitVector 8)
      , Maybe (PacketStreamM2S dataWidth ())
@@ -49,76 +50,63 @@ fcsHelperT
        , Bool))
 fcsHelperT (FcsCopy Nothing) ( _, fwdIn, _) = (FcsCopy fwdIn, (Nothing, True))
 
-fcsHelperT
-  currSt@(FcsCopy (Just cache@(PacketStreamM2S{..})))
-  (ethCrcBytes, fwdIn, PacketStreamS2M readyIn)
-  = (nextSt, (dataOut, readyIn))
+fcsHelperT st@(FcsCopy (Just cache@(PacketStreamM2S{..}))) (ethCrcBytes, fwdIn, PacketStreamS2M readyIn)
+  = (nextSt, (Just fwdOut, readyIn))
   where
-    validIdx = fromMaybe maxBound _last
-    (combined, leftover) = splitAt (SNat @dataWidth) $ appendVec (fromJust _last) _data ethCrcBytes
+    (combined, leftover) = splitAtI $ appendVec (fromJust _last) _data ethCrcBytes
 
-    insertAtOnce = case compareSNat d4 (SNat @dataWidth) of
-      SNatLE -> fromEnum validIdx + 4 <=fromEnum (maxBound @(Index dataWidth))
-      _ -> False
+    nextLast i = case compareSNat d5 (SNat @dataWidth) of
+      SNatLE -> toMaybe (i < natToNum @(dataWidth - 4)) $ i + 4
+      _ -> Nothing
 
+    insertCrc = nextLast <$> _last
 
-    dataOut = Just $
-      if isJust _last
-      then (if insertAtOnce then cache {
-              _data = combined
-            , _last =  Just $ validIdx + 4
-            } else cache {
-              _data = combined
-            , _last = Nothing
-            })
-      else cache
+    fwdOut = case insertCrc of
+      Just l -> cache { _data = combined, _last = l }
+      Nothing -> cache
 
-    nextSt =
-      if readyIn
-      then (if insertAtOnce || isNothing _last
-            then FcsCopy fwdIn
-            else
-              FcsInsert {
-                  _aborted = _abort
-                , _cachedFwd = fwdIn
-                , _valid = toEnum $ 3 - fromEnum (maxBound - validIdx)
-                , _cachedCrc = leftover
-              })
-      else currSt
+    nextStIfReady = if maybe True isJust insertCrc
+      then FcsCopy fwdIn
+      else FcsInsert
+        { _aborted = _abort
+        , _cachedFwd = fwdIn
+        -- Since we know we are in a case where we are not transmitting the entire CRC out
+        -- it's guaranteed that dataWidth - 4 <= lastIdx <= dataWidth - 1
+        -- This means we don't need to look at entire state space of the index.
+        -- Only the last 2 bits matter. But since dataWidth might not be 4 byte
+        -- aligned we need to wrapping subtract Mod dataWidth 4 to align the index.
+        -- Normally wrapping subtract is relatively expensive but since 4
+        -- is a power of two we get it for free. But it means we have to do
+        -- arithmetic with BitVector/Unsigned type and not index.
+        --
+        -- We could go even further beyond and just pass through the last 2 bits without
+        -- correction and handle that in `FcsInsert`.
+        , _valid = unpack $ resize (pack $ fromJustX _last) - natToNum @(Mod dataWidth 4)
+        , _cachedCrc = leftover
+        }
 
-fcsHelperT
-  currSt@(FcsInsert{..})
-  ( _
-  , _
-  , PacketStreamS2M readyIn
-  )
-  = (nextSt, (dataOut, False))
+    nextSt = if readyIn then nextStIfReady else st
+
+fcsHelperT st@(FcsInsert{..}) (_, _, PacketStreamS2M readyIn) = (nextSt, (Just dataOut, False))
   where
-    (dataOut, nextStIfReady) =
-      if fromEnum _valid + 1 <=natToNum @dataWidth
-      then (
-        Just $ PacketStreamM2S
-          { _data= fst $ shiftInAt0 (repeat 0) _cachedCrc
-          , _last= Just $ resize _valid
-          , _meta=(), _abort=_aborted
-          }, FcsCopy _cachedFwd)
-      else (
-        Just $ PacketStreamM2S
-          {_data= fst $ shiftInAt0 (repeat 0) _cachedCrc
-          , _last= Nothing
-          , _meta=()
-          , _abort=_aborted}
-        , currSt
-          {_valid= _valid - natToNum @dataWidth
-          , _cachedCrc = fst $ shiftInAtN @dataWidth _cachedCrc (repeat 0)
-          })
+    finished = _valid <= natToNum @(Min (dataWidth - 1) 3) 
+    (outBytes, nextBytes) = splitAtI $ _cachedCrc ++ repeat 0
+    dataOut = PacketStreamM2S
+      { _data = outBytes
+      , _last = toMaybe finished $ resize _valid
+      , _meta = ()
+      , _abort = _aborted
+      }
 
-    nextSt =
-      if readyIn
-      then nextStIfReady
-      else currSt
+    nextStIfReady =
+      if finished
+        then FcsCopy _cachedFwd
+        else st
+          { _valid =  _valid - natToNum @dataWidth
+          , _cachedCrc = nextBytes
+          }
 
-
+    nextSt = if readyIn then nextStIfReady else st
 
 -- | States of the FcsInserter
 data FcsInserterState dataWidth
