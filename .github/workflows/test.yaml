@@ -23,7 +23,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           image: baublesaurus/clockbox:latest
-          options: -v ${{ github.workspace }}:/work -e ABC=123
+          options: -v ${{ github.workspace }}:/work
           run: |
             mkdir sometempdir
             TMP=sometempdir
