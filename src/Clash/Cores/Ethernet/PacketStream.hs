@@ -12,6 +12,7 @@ module Clash.Cores.Ethernet.PacketStream
   , unsafeToPacketStream
   , fromPacketStream
   , forceResetSanity
+  , mapMeta
   ) where
 
 import Clash.Prelude hiding ( sample )
@@ -24,7 +25,7 @@ import Data.Proxy
 import Control.DeepSeq ( NFData )
 
 import Protocols.Df qualified as Df
-import Protocols.DfConv hiding ( pure )
+import Protocols.DfConv qualified as DfConv
 import Protocols.Hedgehog.Internal
 import Protocols.Internal
 
@@ -46,7 +47,7 @@ data PacketStreamM2S (dataWidth :: Nat) (metaType :: Type)
   -- ^ the metadata of a packet. Must be constant during a packet.
   _abort :: Bool
   -- ^ If True, the current transfer is aborted and the subordinate should ignore the current transfer
-} deriving (Generic, ShowX, Show, NFData, Bundle)
+} deriving (Generic, ShowX, Show, NFData, Bundle, Functor)
 
 -- | Data sent from the subordinate to the manager
 -- The only information transmitted is whether the subordinate is ready to receive data
@@ -109,7 +110,7 @@ instance Protocol (PacketStream dom dataWidth metaType) where
 instance Backpressure (PacketStream dom dataWidth metaType) where
   boolsToBwd _ = fromList_lazy . fmap PacketStreamS2M
 
-instance DfConv (PacketStream dom dataWidth metaType) where
+instance DfConv.DfConv (PacketStream dom dataWidth metaType) where
   type Dom (PacketStream dom dataWidth metaType) = dom
   type FwdPayload (PacketStream dom dataWidth metaType) = PacketStreamM2S dataWidth metaType
 
@@ -140,7 +141,7 @@ instance (KnownDomain dom) =>
 
   stallC conf (head -> (stallAck, stalls))
     = withClockResetEnable clockGen resetGen enableGen
-    $ stall Proxy Proxy conf stallAck stalls
+    $ DfConv.stall Proxy Proxy conf stallAck stalls
 
 instance (KnownDomain dom) =>
   Drivable (PacketStream dom dataWidth metaType) where
@@ -152,10 +153,10 @@ instance (KnownDomain dom) =>
 
   driveC conf vals
     = withClockResetEnable clockGen resetGen enableGen
-    $ drive Proxy conf vals
+    $ DfConv.drive Proxy conf vals
   sampleC conf ckt
     = withClockResetEnable clockGen resetGen enableGen
-    $ sample Proxy conf ckt
+    $ DfConv.sample Proxy conf ckt
 
 instance
   ( KnownNat dataWidth
@@ -189,3 +190,10 @@ forceResetSanity
   f (True,    _,   _) = (PacketStreamS2M False, Nothing)
   f (False, fwd, bwd) = (bwd, fwd)
   rstLow = unsafeToHighPolarity hasReset
+
+mapMeta
+  :: (a -> b)
+  -> Circuit (PacketStream dom dataWidth a) (PacketStream dom dataWidth b)
+mapMeta f = fromSignals go
+  where
+    go (fwdIn, bwdIn) = (bwdIn, fmap (fmap f) <$> fwdIn)

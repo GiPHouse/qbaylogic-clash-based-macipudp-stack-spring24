@@ -6,7 +6,7 @@
 {-# language ScopedTypeVariables #-}
 {-# language TemplateHaskell #-}
 
-module Test.Cores.Ethernet.FcsInserter where
+module Test.Cores.Ethernet.FrameCheckSequence where
 
 -- base
 import Prelude
@@ -32,37 +32,36 @@ import Protocols.Hedgehog
 -- util module
 import Test.Cores.Ethernet.Util
 
--- upconverter model
-import Test.Cores.Ethernet.UpConverter qualified as UC
-
--- downconverter model
-import Test.Cores.Ethernet.DownConverter qualified as DC
-
 -- data module
 import Data.List qualified as L
-import Data.Maybe
 
 -- crc module
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 
 -- fcs inserter
-import Clash.Cores.Ethernet.FcsInserter
+import Clash.Cores.Ethernet.FrameCheckSequence
 
 -- packetstream
 import Clash.Cores.Ethernet.PacketStream
 
 -- proxy
+import Control.Monad
 import Data.Proxy
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d1)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d2)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d4)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d8)
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-model
+modelInsert
   :: C.KnownNat dataWidth
   => 1 C.<= dataWidth
   => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
-model fragments = insertCrc =<< chunkByPacket fragments
+modelInsert fragments = insertCrc =<< chunkByPacket fragments
 
 packetToCrcInp
   :: C.KnownNat dataWidth
@@ -98,7 +97,7 @@ fcsinserterTest C.SNat =
     @C.System
     defExpectOptions
     (fmap fullPackets (Gen.list (Range.linear 0 100) genPackets))  -- Input packets
-    (C.exposeClockResetEnable model)                               -- Desired behaviour of FcsInserter
+    (C.exposeClockResetEnable modelInsert)                               -- Desired behaviour of FcsInserter
     (C.exposeClockResetEnable ckt)                                 -- Implementation of FcsInserter
     (===)                                                          -- Property to test
   where
@@ -121,19 +120,94 @@ fcsinserterTest C.SNat =
       Gen.enumBounded <*>
       Gen.enumBounded
 
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d1)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d2)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d4)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d8)
-
 prop_fcsinserter_d1, prop_fcsinserter_d2, prop_fcsinserter_d4, prop_fcsinserter_d8 :: Property
 prop_fcsinserter_d1 = fcsinserterTest C.d1
 prop_fcsinserter_d2 = fcsinserterTest C.d2
 prop_fcsinserter_d4 = fcsinserterTest C.d4
 prop_fcsinserter_d8 = fcsinserterTest C.d8
 
-tests :: TestTree
-tests =
+testsInsert :: TestTree
+testsInsert =
+    localOption (mkTimeout 12_000_000 {- 12 seconds -})
+  $ localOption (HedgehogTestLimit (Just 1_000))
+  $(testGroupGenerator)
+
+modelValidate
+  :: C.KnownNat dataWidth
+  => 1 C.<= dataWidth
+  => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
+modelValidate fragments = validateCrc =<< chunkByPacket  fragments
+
+validateCrc
+  :: forall (dataWidth :: C.Nat)
+  .  C.KnownNat dataWidth
+  => 1 C.<= dataWidth
+  => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
+validateCrc packet = L.init packet ++ [lastPacketSetAbort]
+  where
+    lastFragment = last packet
+    softwareCrc = mkSoftwareCrc (Proxy @Crc32_ethernet) C.d8
+    crcBytes =  digest $ L.foldl' feed softwareCrc $ packetToCrcInp packet
+    valid = C.complement crcBytes == residue (Proxy @Crc32_ethernet)
+
+    lastPacketSetAbort = lastFragment {
+      _abort = not valid || _abort lastFragment
+    }
+
+-- | Test the fcsvalidator
+fcsvalidatorTest
+  :: forall n
+  .  (1 C.<= n, HardwareCrc Crc32_ethernet 8 n)
+  => C.SNat n -> Property
+fcsvalidatorTest C.SNat =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    inpPackets''  -- Input packets
+    (C.exposeClockResetEnable modelValidate)                                             -- Desired behaviour of FcsInserter
+    (C.exposeClockResetEnable ckt)                                               -- Implementation of FcsInserter
+    (===)                                                                        -- Property to test
+  where
+    ckt
+      :: forall (dom :: C.Domain) (dataWidth :: C.Nat)
+      .  C.KnownDomain dom
+      => 1 C.<= dataWidth
+      => C.HiddenClockResetEnable dom
+      => HardwareCrc Crc32_ethernet 8 dataWidth
+      => Circuit
+        (PacketStream dom dataWidth ())
+        (PacketStream dom dataWidth ())
+    ckt = fcsValidatorC
+
+    -- This generates the packets
+    inpPackets'' = join <$> genPackets'
+
+    genPackets' = do
+      fragments <- insertCrc . fullPackets <$> Gen.list (Range.linear 1 100) genPackets
+      let packets = chunkByPacket fragments
+      forM packets $ \packet -> do
+        poison <- Gen.enumBounded :: Gen Bool
+        let lastfmnt = last packet
+        return $
+          if poison
+          then init packet L.++ [lastfmnt {_last = Nothing}] L.++ [lastfmnt]
+          else packet
+
+    genPackets =
+      PacketStreamM2S <$>
+      genVec @n Gen.enumBounded <*>
+      Gen.maybe Gen.enumBounded <*>
+      Gen.enumBounded <*>
+      Gen.enumBounded
+
+prop_fcsvalidator_d1, prop_fcsvalidator_d2, prop_fcsvalidator_d4, prop_fcsvalidator_d8 :: Property
+prop_fcsvalidator_d1 = fcsvalidatorTest C.d1
+prop_fcsvalidator_d2 = fcsvalidatorTest C.d2
+prop_fcsvalidator_d4 = fcsvalidatorTest C.d4
+prop_fcsvalidator_d8 = fcsvalidatorTest C.d8
+
+testsValidate :: TestTree
+testsValidate =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)

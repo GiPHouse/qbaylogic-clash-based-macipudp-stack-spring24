@@ -1,6 +1,7 @@
 {-# language FlexibleContexts #-}
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Test.Cores.Ethernet.AsyncFIFO where
 
