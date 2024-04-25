@@ -2,6 +2,10 @@
 {-# language FlexibleContexts #-}
 {-# language RecordWildCards #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.Depacketizer
+Description : Generic depacketizer for stripping headers from beginning of packets
+-}
 module Clash.Cores.Ethernet.Depacketizer
   (depacketizerC) where
 import Data.Constraint ( Dict(..), (:-)(..) )
@@ -181,6 +185,7 @@ depacketizerT _ st@LastForward{..} (_, bwdIn) = (nextStOut, (PacketStreamS2M Fal
   where
     nextStOut = if _ready bwdIn then Parse False (repeat defaultByte) maxBound else st
 
+-- | Reads bytes at the start of each packet into metadata.
 depacketizerC
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
@@ -196,6 +201,7 @@ depacketizerC
   , 1 <= dataWidth
   , KnownNat dataWidth)
   => (header -> metaIn -> metaOut)
+  -- ^ Used to compute final metadata of outgoing packets from header and incoming metadata
   -> Circuit (PacketStream dom dataWidth metaIn) (PacketStream dom dataWidth metaOut)
 depacketizerC toMetaOut = forceResetSanity |> fromSignals outCircuit
   where
