@@ -13,6 +13,22 @@ import Data.Maybe
 import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Internal ( CSignal(..) )
 
+data PacketStreamContent(dataWidth :: Nat) (metaType :: Type)
+  = PacketStreamContent {
+  _cdata :: Vec dataWidth (BitVector 8),
+  -- ^ The bytes to be transmitted
+  _clast :: Maybe (Index dataWidth),
+  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
+  _cabort :: Bool
+  -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
+} deriving (Generic, ShowX, Show, NFDataX, Bundle)
+
+toPacketStreamContent :: PacketStreamM2S dataWidth metaType -> PacketStreamContent dataWidth metaType
+toPacketStreamContent PacketStreamM2S{ _data=d, _last=l, _meta=_, _abort=b } = PacketStreamContent d l b
+
+toPacketStreamM2S :: PacketStreamContent dataWidth metaType -> metaType -> PacketStreamM2S dataWidth metaType
+toPacketStreamM2S PacketStreamContent{ _cdata=d, _clast=l, _cabort=b } m = PacketStreamM2S d l m b
+
 packetBuffer
   :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat) .
   HiddenClockResetEnable dom
@@ -32,18 +48,23 @@ packetBuffer
   -- ^ Output CSignal s
 packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
   where
+    ramOut = toPacketStreamM2S <$> ramContent <*> ramMeta
     --The backing ram
-    ramOut = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") readAddr' writeCommand
+    ramContent = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") cReadAddr' writeCommand
+    ramMeta = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") mReadAddr' mWriteCommand
 
       -- write command
-    writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, fromJustX <$> fwdIn)
+    writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, toPacketStreamContent . fromJustX <$> fwdIn)
+    mWriteCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, _meta . fromJustX <$> fwdIn)
 
     -- Registers : pointers
     wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
     wordAddr = register 0 $ mux dropping' packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
     packetAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (wordAddr + 1) packetAddr
-    readAddr' = mux readEnable (readAddr + 1) readAddr
-    readAddr = register 0 readAddr'
+    cReadAddr' = mux readEnable (readAddr + 1) readAddr
+    readAddr = register 0 cReadAddr'
+
+    mReadAddr' = mux readEnable (readAddr + 1) readAddr
 
     -- Registers : status
     dropping', dropping, emptyBuffer :: Signal dom Bool
