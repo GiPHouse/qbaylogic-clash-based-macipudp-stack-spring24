@@ -77,6 +77,14 @@ checkZeroAfterReset d (_:xs) (_:ys) = checkZeroAfterReset d xs ys
 extendInput :: Int -> [(Bool, Maybe x)] -> [(Bool, Maybe x)]
 extendInput delay input = input ++ replicate delay (False, Nothing)
 
+-- Tests the one's complement sum
+prop_onescomplementadd :: Property
+prop_onescomplementadd = property $ do
+  a <- forAll $ Gen.int (Range.linear 0 65_536)
+  b <- forAll $ Gen.int (Range.linear 0 65_536)
+  let c = (a + b) `mod` 65_536 + (a + b) `div` 65_536
+  onesComplementAdd (C.fromIntegral a) (C.fromIntegral b) === C.fromIntegral c
+
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
 prop_checksum_succeed =
