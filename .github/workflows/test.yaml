@@ -27,6 +27,7 @@ jobs:
           run: | 
             echo "hello world"
             cd work 
+            ls
             nix --version
             nix-shell --run "make check_format"
             nix-shell --run "make clean_tests"
