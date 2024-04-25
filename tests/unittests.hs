@@ -17,8 +17,6 @@ import qualified Test.Cores.Ethernet.PacketStream
 import qualified Test.Cores.Ethernet.PaddingInserter 
 import qualified Test.Lattice.ECP5.UART 
 import qualified Test.Cores.Ethernet.UpConverter
-import qualified Test.Cores.Ethernet.MaybeControl
-import qualified Test.Cores.Ethernet.MaybeControlProperty
 import qualified Test.Cores.Ethernet.FcsInserter
 import Clash.Cores.Crc (deriveHardwareCrc)
 import Clash.Cores.Crc.Catalog (Crc32_ethernet)
