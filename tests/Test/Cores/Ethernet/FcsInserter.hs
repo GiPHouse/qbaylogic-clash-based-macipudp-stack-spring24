@@ -32,6 +32,12 @@ import Protocols.Hedgehog
 -- util module
 import Test.Cores.Ethernet.Util
 
+-- upconverter model
+import qualified Test.Cores.Ethernet.UpConverter as UC
+
+-- downconverter model
+import qualified Test.Cores.Ethernet.DownConverter as DC
+
 -- data module
 import qualified Data.List as L
 import Data.Maybe
@@ -56,7 +62,7 @@ model
   :: C.KnownNat dataWidth
   => 1 C.<= dataWidth
   => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
-model fragments = insertCrc =<< chunkByPacket  fragments
+model fragments = insertCrc =<< chunkByPacket fragments
 
 packetToCrcInp
   :: C.KnownNat dataWidth
@@ -69,21 +75,31 @@ insertCrc
   .  C.KnownNat dataWidth
   => 1 C.<= dataWidth
   => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
-insertCrc packet = L.init packet ++ extraLastPackets
+insertCrc =  UC.model . go . DC.model 
   where
-    lastFragment = last packet
-    softwareCrc = mkSoftwareCrc (Proxy @Crc32_ethernet) C.d8
-    crcBytes = C.v2bv <$> (C.toList . C.reverse . C.unconcat C.d8 . C.bv2v . digest $ L.foldl' feed softwareCrc $ packetToCrcInp packet)
-    lastValid = fromEnum . fromJust . _last $ lastFragment
-    lastData = L.take (lastValid + 1) $ C.toList . _data $ lastFragment
-    lastFragments = chopBy (C.natToNum @dataWidth) (lastData L.++ crcBytes)
-    lastValids = replicate (length lastFragments - 1) Nothing ++ [Just $ fromIntegral (length (last lastFragments) - 1)]
-    extraLastPackets = L.zipWith toPacket lastFragments lastValids 
+    go :: [PacketStreamM2S 1 ()] -> [PacketStreamM2S 1 ()]
+    go pkt = pkt''
+      where
+        crcInp = C.head . _data <$> pkt
+        softwareCrc = mkSoftwareCrc (Proxy @Crc32_ethernet) C.d8
+        crc = digest $ L.foldl' feed softwareCrc  crcInp
+        crc' = C.singleton . C.v2bv <$> (C.toList . C.reverse . C.unconcat C.d8 . C.bv2v $ crc)
+        lastfmnt = L.last pkt
+        pkt' = init pkt L.++ [lastfmnt {_last = Nothing}] L.++ fmap (\dat -> lastfmnt {_data = dat, _last = Nothing}) crc'
+        pkt'' = init pkt' ++ [(last pkt'){_last = Just 0}]
+    -- lastFragment = last packet
+    -- softwareCrc = mkSoftwareCrc (Proxy @Crc32_ethernet) C.d8
+    -- crcBytes = C.v2bv <$> (C.toList . C.reverse . C.unconcat C.d8 . C.bv2v . digest $ L.foldl' feed softwareCrc $ packetToCrcInp packet)
+    -- lastValid = fromEnum . fromJust . _last $ lastFragment
+    -- lastData = L.take (lastValid + 1) $ C.toList . _data $ lastFragment
+    -- lastFragments = chopBy (C.natToNum @dataWidth) (lastData L.++ crcBytes)
+    -- lastValids = replicate (length lastFragments - 1) Nothing ++ [Just $ fromIntegral (length (last lastFragments) - 1)]
+    -- extraLastPackets = L.zipWith toPacket lastFragments lastValids 
 
-    toPacket d v = lastFragment { 
-        _data = foldr (C.+>>) (C.repeat 0) d
-      , _last = v
-    }
+    -- toPacket d v = lastFragment { 
+    --     _data = foldr (C.+>>) (C.repeat 0) d
+    --   , _last = v
+    -- }
 
 -- | Test the fcsinserter
 fcsinserterTest
