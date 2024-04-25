@@ -27,6 +27,11 @@ jobs:
           run: |
             mkdir /tmp
             cd work
+            # check formating 
+            cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
+            echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
+            stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
+            rm ./.stylish-haskell-check.yaml
             cabal test
             # make netlist
             cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
