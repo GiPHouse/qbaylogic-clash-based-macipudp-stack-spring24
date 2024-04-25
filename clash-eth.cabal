@@ -99,6 +99,7 @@ library
     Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketDispatcher
     Clash.Cores.Ethernet.PacketStream
+    Clash.Cores.Ethernet.PaddingInserter
     Clash.Cores.Ethernet.PreambleStripper
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
@@ -107,6 +108,7 @@ library
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
     Clash.Cores.Ethernet.AsyncFIFO
+    Clash.Cores.Ethernet.InternetChecksum
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -147,16 +149,16 @@ test-suite test-library
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
+    Test.Cores.Ethernet.PaddingInserter
     Test.Cores.Ethernet.PacketDispatcher
     Test.Cores.Ethernet.PreambleStripper
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
-    Test.Cores.Ethernet.MaybeControl
-    Test.Cores.Ethernet.MaybeControlProperty
     Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.AsyncFIFO
+    Test.Cores.Ethernet.InternetChecksum
   build-depends:
     clash-eth,
     QuickCheck,
