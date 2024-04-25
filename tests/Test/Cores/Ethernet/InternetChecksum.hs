@@ -51,9 +51,9 @@ prop_checksum_succeed =
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
 
-    let checkSum = last $ take size $ C.simulate @C.System internetChecksum input
+    let checkSum = last $ take (size + 1) $ C.simulate @C.System internetChecksum input
         input' = input ++ [Just (checkSum, False)]
-        checkSum' = last $ take (size + 1) $ C.simulate @C.System internetChecksum input'
+        checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
 
     checkSum' === 0x0000
 
@@ -69,9 +69,9 @@ prop_checksum_fail =
     randomIndex <- forAll $ Gen.int (Range.linear 0 (size - 1))
     randomBitIndex <- forAll $ Gen.int (Range.linear 0 (16 - 1))
 
-    let checkSum = last $ take size $ C.simulate @C.System internetChecksum input
+    let checkSum = last $ take (size + 1) $ C.simulate @C.System internetChecksum input
         input' = flipBit randomIndex randomBitIndex $ input ++ [Just (checkSum, False)]
-        checkSum' = last $ take (size + 1) $ C.simulate @C.System internetChecksum input'
+        checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
 
     checkSum' /== 0x0000
       where
@@ -92,7 +92,7 @@ prop_checksum_specific_values =
   property $ do
     let input = Just . (, False) <$> [0x4500, 0x0073, 0x0000, 0x4000, 0x4011, 0x0000, 0xc0a8, 0x0001, 0xc0a8, 0x00c7]
         size = length input
-        result = take size $ C.simulate @C.System internetChecksum input
+        result = take (size + 1) $ C.simulate @C.System internetChecksum input
         checkSum = last result
 
     footnoteShow $ showComplementAsHex result
@@ -107,15 +107,12 @@ prop_checksum_reset =
     let size = length input
         result = take size $ C.simulate @C.System internetChecksum input
 
-    footnoteShow $ showComplementAsHex result
-    assert $ checkCurValueAfterReset input result False
+    assert $ checkCurValueAfterReset False input result
       where
-        checkCurValueAfterReset [] _ _ = True
         checkCurValueAfterReset _ [] _ = True
-        checkCurValueAfterReset (Nothing:xs) (_:ys) lastReset = checkCurValueAfterReset xs ys lastReset
-        checkCurValueAfterReset (Just (x, reset):xs) (y:ys) True =
-          (x == C.complement y) && checkCurValueAfterReset xs ys reset
-        checkCurValueAfterReset (Just (_, reset):xs) (_:ys) False = checkCurValueAfterReset xs ys reset
+        checkCurValueAfterReset _ _ [] = True
+        checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset False xs ys
+        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset reset xs ys 
 
 tests :: TestTree
 tests =
