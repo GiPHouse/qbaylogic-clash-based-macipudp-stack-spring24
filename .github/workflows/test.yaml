@@ -32,6 +32,17 @@ jobs:
             echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
             stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
             rm ./.stylish-haskell-check.yaml
+      - name: test-library
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            cabal test test-library --verbose=0
       - name: place and route
         uses: addnab/docker-run-action@v3
         with:
@@ -42,16 +53,16 @@ jobs:
           run: |
             mkdir /tmp
             cd work
-            cabal test
-            # make netlist
+            # make verilog
             cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+            # make netlist 
             dir -p netlist
-            # yosys \
-            #   -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
-            #   -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
-            #   -p "ecp5_infer_bram_outreg" \
-            #   -p "write_json ${netlist}" \
-            #   verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+            yosys \
+              -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
+              -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
+              -p "ecp5_infer_bram_outreg" \
+              -p "write_json ${netlist}" \
+            # verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
             # nextpnr-ecp5 --json ${netlist} \
             #   --lpf pinout.lpf \
             #   --textcfg ${pnr} --25k \
