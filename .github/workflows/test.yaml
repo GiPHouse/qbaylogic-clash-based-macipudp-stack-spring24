@@ -26,7 +26,7 @@ jobs:
           options: -v ${{ github.workspace }}:/work -e ABC=123
           run: |
             mkdir sometempdir
-            TMPDIR=sometempdir
+            export TMP=sometempdir
             echo "hello world"
             cd work 
             ls
