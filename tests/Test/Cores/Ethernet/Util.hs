@@ -73,11 +73,11 @@ fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
 dropAbortedPackets :: [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 dropAbortedPackets packets = concat $ filter (not . any _abort) (chunkByPacket packets)
 
-splitPackets :: forall n meta. 1 C.<= n => C.KnownNat n => [PacketStreamM2S n meta] -> [PacketStreamM2S 1 meta]
-splitPackets = concatMap chopPacket
+downConvert :: forall n meta. 1 C.<= n => C.KnownNat n => [PacketStreamM2S n meta] -> [PacketStreamM2S 1 meta]
+downConvert = concatMap chopPacket
 
-mergePackets :: forall n meta. 1 C.<= n => C.KnownNat n => [PacketStreamM2S 1 meta] -> [PacketStreamM2S n meta]
-mergePackets packets = chunkToPacket <$> chopBy (C.natToNum @n) packets
+upConvert :: forall n meta. 1 C.<= n => C.KnownNat n => [PacketStreamM2S 1 meta] -> [PacketStreamM2S n meta]
+upConvert packets = chunkToPacket <$> chopBy (C.natToNum @n) packets
 
 cleanPackets :: forall n meta. 1 C.<= n => C.KnownNat n => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 cleanPackets = map cleanPacket

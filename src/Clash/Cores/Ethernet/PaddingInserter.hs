@@ -18,14 +18,14 @@ import Protocols ( Circuit, fromSignals )
 -- Counts up to ceil(`padBytes`/`dataWidth`) packets, which is
 -- the amount of packets needed to fill `padBytes` bytes.
 data PaddingInserterState (dataWidth :: Nat) (padBytes :: Nat)
-  = Filling { count :: Index (DivRU padBytes dataWidth)}
+  = Filling { count :: Index (DivRU padBytes dataWidth) }
   | Full
-  | Padding { count :: Index (DivRU padBytes dataWidth)}
+  | Padding { count :: Index (DivRU padBytes dataWidth) }
   deriving (Eq, Show, Generic, NFDataX)
 
 paddingInserter
-  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain) .
-  HiddenClockResetEnable dom
+  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain)
+   . HiddenClockResetEnable dom
   => 1 <= dataWidth
   => 1 <= padBytes
   => KnownNat dataWidth
@@ -36,8 +36,7 @@ paddingInserter
   -- ^ Input packet stream from the source
   --   Input backpressure from the sink
   -> ( Signal dom PacketStreamS2M
-     , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
-     )
+     , Signal dom (Maybe (PacketStreamM2S dataWidth ())))
   -- ^ Output backpressure to the source
   --   Output packet stream to the sink
 paddingInserter _ = mealyB go (Filling 0)
@@ -55,29 +54,33 @@ paddingInserter _ = mealyB go (Filling 0)
     -- If state is Padding, send out null-bytes to source and backpressure to sink
     go st@(Padding i) (_, PacketStreamS2M inReady) = (if inReady then st' else st, (PacketStreamS2M False, Just fwdOut))
       where
-        st' = if i == maxBound then Filling 0 else Padding (i + 1)
-        fwdOut = padding {_last = toMaybe (i == maxBound) lastIdx}
+        done = i == maxBound
+        st' = if done then Filling 0 else Padding (i + 1)
+        fwdOut = padding {_last = toMaybe done lastIdx}
 
     -- If state is Filling, forward the input from sink with updated _last
     go (Filling i) (Nothing, bwd) = (Filling i, (bwd, Nothing))
     go st@(Filling i) (Just fwdIn, bwd@(PacketStreamS2M inReady)) = (if inReady then st' else st, (bwd, Just fwdOut))
       where
-        st' = case (i == maxBound, _last fwdIn) of
-          (True, Nothing) -> Full
-          (True, Just _) -> Filling 0
-          (False, Nothing) -> Filling (i + 1)
-          (False, Just _) -> Padding (i + 1)
+        done = i == maxBound
+        next = i + 1
+        st' = case (done, _last fwdIn) of
+          (True,  Nothing) -> Full
+          (True,  Just _ ) -> Filling 0
+          (False, Nothing) -> Filling next
+          (False, Just _ ) -> Padding next
         -- If i < maxBound, then set _last to Nothing
         -- Otherwise, set _last to the maximum of the
         -- index that would reach the minimum frame size,
         -- and the _last of fwdIn
-        fwdOut = fwdIn {_last = guard (i == maxBound) >> max lastIdx <$> _last fwdIn}
+        fwdOut = fwdIn {_last = guard done >> max lastIdx <$> _last fwdIn}
 
 -- | Pads ethernet frames to a minimum of `padBytes` bytes.
 -- Assumes that all invalid bytes are set to 0.
+-- Sends bytes the same clock cycle as they are received.
 paddingInserterC
-  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain).
-  HiddenClockResetEnable dom
+  :: forall (dataWidth :: Nat) (padBytes :: Nat) (dom :: Domain)
+   . HiddenClockResetEnable dom
   => 1 <= dataWidth
   => 1 <= padBytes
   => KnownNat dataWidth

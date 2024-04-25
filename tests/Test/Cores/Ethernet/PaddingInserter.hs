@@ -39,12 +39,12 @@ genVec gen = sequence (C.repeat gen)
 
 model
   :: forall (dataWidth :: C.Nat)
-   . 1 <= dataWidth
-  => C.KnownNat dataWidth
+   . C.KnownNat dataWidth
+  => 1 <= dataWidth
   => Int
   -> [PacketStreamM2S dataWidth ()]
   -> [PacketStreamM2S dataWidth ()]
-model padBytes fragments = concatMap (mergePackets . setLasts . insertPadding) $ chunkByPacket $ splitPackets fragments
+model padBytes fragments = concatMap (upConvert . setLasts . insertPadding) $ chunkByPacket $ downConvert fragments
   where
     insertPadding pkts = pkts ++ replicate (paddingNeeded pkts) padding
     paddingNeeded pkts = max 0 (padBytes - length pkts)
@@ -53,20 +53,24 @@ model padBytes fragments = concatMap (mergePackets . setLasts . insertPadding) $
 
 -- | Test the padding inserter.
 paddingInserterTest
-  :: forall n p. C.KnownNat n => C.KnownNat p => 1 <= n => 1 <= p => C.SNat n -> C.SNat p -> Property
-paddingInserterTest _ padBytes =
+  :: forall dataWidth padBytes
+   . C.KnownNat padBytes
+  => 1 <= dataWidth
+  => 1 <= padBytes
+  => C.SNat dataWidth
+  -> C.SNat padBytes
+  -> Property
+paddingInserterTest C.SNat padBytes =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
     (fmap (cleanPackets . fullPackets) (Gen.list (Range.linear 0 100) genPackets))
-    (C.exposeClockResetEnable (model $ C.natToNum @p))
-    (C.exposeClockResetEnable @C.System (ckt @n))
+    (C.exposeClockResetEnable (model $ C.natToNum @padBytes))
+    (C.exposeClockResetEnable @C.System ckt)
     (===)
   where
-    ckt :: forall (dataWidth :: C.Nat) (dom :: C.Domain).
-      C.HiddenClockResetEnable dom
-      => 1 <= dataWidth
-      => C.KnownNat dataWidth
+    ckt :: forall (dom :: C.Domain)
+      . C.HiddenClockResetEnable dom
       => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
     ckt = paddingInserterC padBytes
 
@@ -83,9 +87,9 @@ paddingInserterTest _ padBytes =
 -- a case where dataWidth does not divide padBytes, and
 -- a case where dataWidth is more than padBytes.
 prop_paddinginserter_d1, prop_paddinginserter_d2, prop_paddinginserter_d5, prop_paddinginserter_d50 :: Property
-prop_paddinginserter_d1  = paddingInserterTest C.d1 C.d1
-prop_paddinginserter_d2  = paddingInserterTest C.d2 C.d46
-prop_paddinginserter_d5 = paddingInserterTest C.d5 C.d46
+prop_paddinginserter_d1  = paddingInserterTest C.d1  C.d1
+prop_paddinginserter_d2  = paddingInserterTest C.d2  C.d46
+prop_paddinginserter_d5  = paddingInserterTest C.d5  C.d46
 prop_paddinginserter_d50 = paddingInserterTest C.d50 C.d46
 
 tests :: TestTree
