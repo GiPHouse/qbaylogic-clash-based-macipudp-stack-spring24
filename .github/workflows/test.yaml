@@ -26,11 +26,10 @@ jobs:
           options: -v ${{ github.workspace }}:/work -e ABC=123
           run: |
             mkdir sometempdir
-            export TMP=sometempdir
-            mktemp
-            echo "hello world"
+            TMP=sometempdir
+            ls -al
             cd work 
-            ls
+            ls -al
             cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
             echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
             stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
