@@ -37,73 +37,6 @@ toCRCInput
   -> (Index dataWidth, Vec dataWidth (BitVector 8))
 toCRCInput (PacketStreamM2S{..}) = (fromMaybe maxBound _last, _data)
 
-
-
--- | States of the FcsInserter
-data FcsInserterState dataWidth
-  = FcsCopy
-      { _cachedFwd :: Maybe (PacketStreamM2S dataWidth ()) }
-  | FcsInsert
-      { _aborted :: Bool
-      , _cachedFwd :: Maybe (PacketStreamM2S dataWidth ())
-      , _valid :: Index 4
-      -- ^ how many bytes of _cachedCrc are valid
-      , _cachedCrc :: Vec 4 (BitVector 8)
-      }
-  deriving (Show, Generic, NFDataX)
-
--- | fcsInserter
-fcsInserter
-  :: forall (dom :: Domain) (dataWidth :: Nat)
-  .  HiddenClockResetEnable dom
-  => KnownNat dataWidth
-  => HardwareCrc Crc32_ethernet 8 dataWidth
-  => ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
-     , Signal dom PacketStreamS2M
-     )
-  -> ( Signal dom PacketStreamS2M
-     , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
-     )
-fcsInserter (fwdIn, bwdIn) = (bwdOut, fwdOut)
-  where
-    fwdInX = fromJustX <$> fwdIn
-    crcInX = toCRCInput <$> fwdInX
-    transferOccured = ready .&&. isJust <$> fwdIn
-    crcIn = toMaybe <$> transferOccured <*> crcInX
-
-    firstFragment = regEn True transferOccured $ isJust . _last <$> fwdInX
-    ethCrc = crcEngine @dom (Proxy @Crc32_ethernet) firstFragment crcIn
-    ethCrcBytes = reverse . unpack <$> ethCrc
-
-    bwdOut = PacketStreamS2M <$> ready
-
-    (fwdOut, ready) = fcsHelper (ethCrcBytes, fwdIn, bwdIn)
-
-
--- | fcsInserter circuit
-fcsInserterC
-  :: forall (dom :: Domain) (dataWidth :: Nat)
-  .  KnownDomain dom
-  => KnownNat dataWidth
-  => HiddenClockResetEnable dom
-  => HardwareCrc Crc32_ethernet 8 dataWidth
-  => Circuit
-    (PacketStream dom dataWidth ())
-    (PacketStream dom dataWidth ())
-fcsInserterC = forceResetSanity |> fromSignals fcsInserter
-
-fcsHelper
-  :: forall (dom :: Domain) (dataWidth :: Nat)
-  .  HiddenClockResetEnable dom
-  => KnownNat dataWidth
-  => ( Signal dom (Vec 4 (BitVector 8))
-     , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
-     , Signal dom PacketStreamS2M)
-  -> ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
-     , Signal dom Bool
-     )
-fcsHelper = mealyB fcsHelperT (FcsCopy Nothing)
-
 fcsHelperT
   :: forall dataWidth
   . KnownNat dataWidth
@@ -184,4 +117,60 @@ fcsHelperT
       if readyIn
       then nextStIfReady
       else currSt
+
+
+
+-- | States of the FcsInserter
+data FcsInserterState dataWidth
+  = FcsCopy
+      { _cachedFwd :: Maybe (PacketStreamM2S dataWidth ()) }
+  | FcsInsert
+      { _aborted :: Bool
+      , _cachedFwd :: Maybe (PacketStreamM2S dataWidth ())
+      , _valid :: Index 4
+      -- ^ how many bytes of _cachedCrc are valid
+      , _cachedCrc :: Vec 4 (BitVector 8)
+      }
+  deriving (Show, Generic, NFDataX)
+
+-- | fcsInserter
+fcsInserter
+  :: forall (dom :: Domain) (dataWidth :: Nat)
+  .  HiddenClockResetEnable dom
+  => KnownNat dataWidth
+  => HardwareCrc Crc32_ethernet 8 dataWidth
+  => ( Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+     , Signal dom PacketStreamS2M
+     )
+  -> ( Signal dom PacketStreamS2M
+     , Signal dom (Maybe (PacketStreamM2S dataWidth ()))
+     )
+fcsInserter (fwdIn, bwdIn) = (bwdOut, fwdOut)
+  where
+    fwdInX = fromJustX <$> fwdIn
+    crcInX = toCRCInput <$> fwdInX
+    transferOccured = ready .&&. isJust <$> fwdIn
+    crcIn = toMaybe <$> transferOccured <*> crcInX
+
+    firstFragment = regEn True transferOccured $ isJust . _last <$> fwdInX
+    ethCrc = crcEngine @dom (Proxy @Crc32_ethernet) firstFragment crcIn
+    ethCrcBytes = reverse . unpack <$> ethCrc
+
+    bwdOut = PacketStreamS2M <$> ready
+
+    (fwdOut, ready) = mealyB fcsHelperT (FcsCopy Nothing) (ethCrcBytes, fwdIn, bwdIn)
+
+
+-- | fcsInserter circuit
+fcsInserterC
+  :: forall (dom :: Domain) (dataWidth :: Nat)
+  .  KnownDomain dom
+  => KnownNat dataWidth
+  => HiddenClockResetEnable dom
+  => HardwareCrc Crc32_ethernet 8 dataWidth
+  => Circuit
+    (PacketStream dom dataWidth ())
+    (PacketStream dom dataWidth ())
+fcsInserterC = forceResetSanity |> fromSignals fcsInserter
+
 
