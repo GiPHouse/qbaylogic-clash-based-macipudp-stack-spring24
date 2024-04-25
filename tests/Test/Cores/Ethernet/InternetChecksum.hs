@@ -51,11 +51,11 @@ prop_checksum_succeed =
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
 
-    let checkSum = last $ take (size + 1) $ C.simulate @C.System internetChecksum input
+    let checkSum = C.complement $ last $ take (size + 1) $ C.simulate @C.System internetChecksum input
         input' = input ++ [Just (checkSum, False)]
         checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
 
-    checkSum' === 0x0000
+    checkSum' === 0xFFFF
 
 -- | Flips a random bit and checks whether the checksum actually fails
 prop_checksum_fail :: Property
@@ -69,11 +69,11 @@ prop_checksum_fail =
     randomIndex <- forAll $ Gen.int (Range.linear 0 (size - 1))
     randomBitIndex <- forAll $ Gen.int (Range.linear 0 (16 - 1))
 
-    let checkSum = last $ take (size + 1) $ C.simulate @C.System internetChecksum input
+    let checkSum = C.complement $ last $ take (size + 1) $ C.simulate @C.System internetChecksum input
         input' = flipBit randomIndex randomBitIndex $ input ++ [Just (checkSum, False)]
         checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
 
-    checkSum' /== 0x0000
+    checkSum' /== 0xFFFF
       where
         flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
         flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
@@ -95,9 +95,10 @@ prop_checksum_specific_values =
         result = take (size + 1) $ C.simulate @C.System internetChecksum input
         checkSum = last result
 
-    footnoteShow $ showComplementAsHex result
-    checkSum === 0xb861
+    footnoteShow $ showAsHex result
+    C.complement checkSum === 0xb861
 
+-- | testing whether the value returns to 0 after a reset
 prop_checksum_reset :: Property
 prop_checksum_reset =
   property $ do
@@ -111,8 +112,8 @@ prop_checksum_reset =
       where
         checkCurValueAfterReset _ [] _ = True
         checkCurValueAfterReset _ _ [] = True
-        checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset False xs ys
-        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0xFFFF || not lastReset) && checkCurValueAfterReset reset xs ys
+        checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
+        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
 
 tests :: TestTree
 tests =
