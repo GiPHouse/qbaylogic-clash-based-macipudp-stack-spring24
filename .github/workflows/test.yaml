@@ -25,8 +25,8 @@ jobs:
           image: baublesaurus/clockbox:latest
           options: -v ${{ github.workspace }}:/work
           run: |
-            mkdir sometempdir
             TMP=sometempdir
+            mkdir $TMP
             ls -al
             cd work 
             ls -al
