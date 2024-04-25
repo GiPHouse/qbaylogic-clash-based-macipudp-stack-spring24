@@ -32,11 +32,11 @@ import Clash.Sized.Vector.Extra
 import Protocols
 
 
-fragment2bv
+toCRCInput
   :: KnownNat dataWidth
   => PacketStreamM2S dataWidth ()
   -> (Index dataWidth, Vec dataWidth (BitVector 8))
-fragment2bv (PacketStreamM2S{..}) = (fromMaybe maxBound _last, _data)
+toCRCInput (PacketStreamM2S{..}) = (fromMaybe maxBound _last, _data)
 
 
 
@@ -68,7 +68,7 @@ fcsInserter
 fcsInserter (fwdIn, bwdIn) = (bwdOut, fwdOut)
   where
     fwdInX = fromJustX <$> fwdIn
-    crcInX = fragment2bv <$> fwdInX
+    crcInX = toCRCInput <$> fwdInX
     transferOccured = ready .&&. isJust <$> fwdIn
     crcIn = toMaybe <$> transferOccured <*> crcInX
 
