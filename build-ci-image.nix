@@ -9,6 +9,7 @@ in dockerTools.buildImage {
   copyToRoot = pkgs.buildEnv {
     name = "image-root";
     paths = [ coreutils bash ]
+     ++ shell.nativeBuildInputs
      ++ shell.buildInputs;
 
     pathsToLink = [ "/bin" ];
