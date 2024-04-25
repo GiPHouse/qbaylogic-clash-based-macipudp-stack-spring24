@@ -28,10 +28,9 @@ jobs:
             echo "hello world"
             cd work 
             ls
-            nix --version
-            nix-shell --run "make check_format"
-            nix-shell --run "make clean_tests"
-            nix-shell --run "make test"
-            nix-shell --run "make verilog"
-            nix-shell --run "make netlist"
-            nix-shell --run "make pnr"
+            make check_format
+            make clean_tests
+            make test
+            make verilog
+            make netlist
+            make pnr
