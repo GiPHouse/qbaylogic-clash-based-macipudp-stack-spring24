@@ -68,7 +68,7 @@ prop_packetBuffer_id =
     (===)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = packetBufferC d12
+  ckt = packetBufferC d12 d12
 
   -- test for id and proper dropping of aborted packets, with a small buffer to ensure
   -- backpressure is tested
@@ -82,7 +82,7 @@ prop_packetBuffer_id_small_buffer =
     (C.exposeClockResetEnable ckt)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = packetBufferC d5
+  ckt = packetBufferC d5 d5
 
   gen :: Gen [PacketStreamM2S 4 ()]
   gen = Prelude.concat <$> Gen.list (Range.linear 0 10) (genCleanPacket (Range.linear 0 31))
@@ -92,7 +92,7 @@ prop_packetBuffer_no_gaps :: Property
 prop_packetBuffer_no_gaps = property $ do
   let packetBufferSize = d12
       maxInputSize = 50
-      ckt = exposeClockResetEnable (packetBufferC packetBufferSize) systemClockGen resetGen enableGen
+      ckt = exposeClockResetEnable (packetBufferC packetBufferSize packetBufferSize) systemClockGen resetGen enableGen
       gen = U.fullPackets <$> Gen.list (Range.linear 0 maxInputSize) genPackets
 
   packets :: [PacketStreamM2S 4 ()] <- H.forAll gen
@@ -121,7 +121,7 @@ prop_overflowDropPacketBufferC_id =
     (===)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = fromPacketStream |> overflowDropPacketBufferC d12
+  ckt = fromPacketStream |> overflowDropPacketBufferC d12 d12
 
 
 -- | test for proper dropping when full
@@ -139,7 +139,7 @@ prop_overflowDropPacketBufferC_drop =
   bufferSize = d5
 
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = fromPacketStream |> overflowDropPacketBufferC bufferSize
+  ckt = fromPacketStream |> overflowDropPacketBufferC bufferSize bufferSize
 
   model :: [PacketStreamM2S 4 ()] -> [PacketStreamM2S 4 ()]
   model packets = Prelude.concat $ take 1 packetChunk ++ drop 2 packetChunk

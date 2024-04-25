@@ -30,14 +30,16 @@ toPacketStreamM2S :: PacketStreamContent dataWidth metaType -> metaType -> Packe
 toPacketStreamM2S PacketStreamContent{ _cdata=d, _clast=l, _cabort=b } m = PacketStreamM2S d l m b
 
 packetBuffer
-  :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat) .
+  :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (contentSizeBits :: Nat) (metaSizeBits :: Nat) .
   HiddenClockResetEnable dom
   => KnownNat dataWidth
-  => KnownNat sizeBits
+  => KnownNat contentSizeBits => KnownNat metaSizeBits
+  => 1 <= contentSizeBits => 1 <= metaSizeBits
   => NFDataX metaType
-  => 1 <= sizeBits
-  => SNat sizeBits
-  -- ^ Depth of the packet buffer 2^sizeBits
+  -- ^ Depth for the content of the packet buffer 2^contentSizeBits
+  => SNat contentSizeBits
+  -> SNat metaSizeBits
+  -- ^ Depth for the meta of the packet buffer 
   -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
@@ -46,19 +48,19 @@ packetBuffer
      , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      )
   -- ^ Output CSignal s
-packetBuffer SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
+packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
   where
+    -- The backing ram
     ramOut = toPacketStreamM2S <$> ramContent <*> ramMeta
-    --The backing ram
-    ramContent = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") cReadAddr' writeCommand
-    ramMeta = blockRam1 NoClearOnReset (SNat @(2 ^ sizeBits)) (errorX "initial block ram contents") mReadAddr' mWriteCommand
+    ramContent = blockRam1 NoClearOnReset (SNat @(2 ^ contentSizeBits)) (errorX "initial block ram contents") cReadAddr' writeCommand
+    ramMeta = blockRam1 NoClearOnReset (SNat @(2 ^ metaSizeBits)) (errorX "initial block ram contents") mReadAddr' mWriteCommand
 
       -- write command
     writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, toPacketStreamContent . fromJustX <$> fwdIn)
     mWriteCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, _meta . fromJustX <$> fwdIn)
 
     -- Registers : pointers
-    wordAddr, packetAddr, readAddr :: Signal dom (Unsigned sizeBits)
+    wordAddr, packetAddr, readAddr :: Signal dom (Unsigned contentSizeBits)
     wordAddr = register 0 $ mux dropping' packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
     packetAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (wordAddr + 1) packetAddr
     cReadAddr' = mux readEnable (readAddr + 1) readAddr
@@ -107,28 +109,33 @@ abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle
 -- If a word in a packet has _abort set to true, the packetBuffer will drop the entire packet.
 -- If a packet is larger than 2^sizeBits, the packetBuffer will have a deadlock, this should be avoided!
 packetBufferC
-  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) (sizeBits :: Nat).
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) 
+      (contentSizeBits :: Nat) (metaSizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth
-    => KnownNat sizeBits
+    => KnownNat contentSizeBits => KnownNat metaSizeBits
+    => 1 <= contentSizeBits => 1 <= metaSizeBits
     => NFDataX metaType
-    => 1 <= sizeBits
-    => SNat sizeBits
+    => SNat contentSizeBits
+    -> SNat metaSizeBits
     -- ^ Depth of the packet buffer, this is equal to 2^sizeBits
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
-packetBufferC sizeBits = forceResetSanity |> fromSignals (packetBuffer sizeBits)
+packetBufferC cSizeBits mSizeBits = forceResetSanity |> fromSignals (packetBuffer cSizeBits mSizeBits)
 
 -- | A packet buffer that drops packets when it is full, instead of giving backpressure
-overflowDropPacketBufferC :: forall (dataWidth :: Nat) (dom :: Domain) (metaType :: Type) (sizeBits :: Nat) .
+overflowDropPacketBufferC 
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) 
+      (contentSizeBits :: Nat) (metaSizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth
+    => KnownNat contentSizeBits => KnownNat metaSizeBits
+    => 1 <= contentSizeBits => 1 <= metaSizeBits
     => NFDataX metaType
-    => KnownNat sizeBits
-    => 1 <= sizeBits
-    => SNat sizeBits
+    => SNat contentSizeBits
+    -> SNat metaSizeBits
     -- ^ Depth of the packet buffer 2^sizeBits
     -> Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
-overflowDropPacketBufferC size =  backPressureC |> fromSignals (packetBuffer size)
+overflowDropPacketBufferC cSizeBits mSizeBits =  backPressureC |> fromSignals (packetBuffer cSizeBits mSizeBits)
   where
     backPressureC :: Circuit (CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))) (PacketStream dom dataWidth metaType)
     backPressureC = fromSignals abortOnBackPressure
