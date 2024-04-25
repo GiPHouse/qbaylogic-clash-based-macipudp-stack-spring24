@@ -14,17 +14,10 @@ import qualified Test.Cores.Ethernet.MaybeControlProperty
 import qualified Test.Cores.Ethernet.InterpacketGapInserter
 import qualified Test.Cores.Ethernet.AsyncFIFO
 import qualified Test.Cores.Ethernet.FcsInserter
-import Clash.Cores.Crc (HardwareCrc, deriveHardwareCrc)
+import Clash.Cores.Crc (deriveHardwareCrc)
 import Clash.Cores.Crc.Catalog (Crc32_ethernet)
 import Data.Proxy
 import Clash.Prelude
-
-
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d1)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d8)
-
 
 main :: IO ()
 main = defaultMain $ testGroup "."
