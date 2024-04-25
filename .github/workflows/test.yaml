@@ -28,8 +28,9 @@ jobs:
             mkdir /tmp
             cd work
             cabal test
-            # cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
-            # mkdir -p netlist
+            # make netlist
+            cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+            dir -p netlist
             # yosys \
             #   -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
             #   -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
@@ -44,4 +45,4 @@ jobs:
             #   --randomize-seed --timing-allow-fail
             rm -rf dist-newstyle
             rm -rf verilog
-            rm -rf netlist
+            rm -rf netlist2
