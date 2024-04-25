@@ -3,6 +3,8 @@ module Clash.Sized.Vector.Extra (
   , appendVec
 ) where
 
+import Clash.Prelude
+
 -- | Like 'take' but uses a 'Data.Type.Ord.<=' constraint
 takeLe
   :: forall (n :: Nat)
