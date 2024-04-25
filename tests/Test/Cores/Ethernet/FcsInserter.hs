@@ -1,10 +1,10 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE NumericUnderscores #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# language FlexibleContexts #-}
+{-# language MultiParamTypeClasses #-}
+{-# language NumericUnderscores #-}
+{-# language RecordWildCards #-}
+{-# language ScopedTypeVariables #-}
+{-# language TemplateHaskell #-}
 
 module Test.Cores.Ethernet.FcsInserter where
 
@@ -12,18 +12,18 @@ module Test.Cores.Ethernet.FcsInserter where
 import Prelude
 
 -- clash-prelude
-import qualified Clash.Prelude as C
+import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog (HedgehogTestLimit(HedgehogTestLimit))
-import Test.Tasty.Hedgehog.Extra (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
+import Test.Tasty.Hedgehog.Extra ( testProperty )
+import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
@@ -33,13 +33,13 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- upconverter model
-import qualified Test.Cores.Ethernet.UpConverter as UC
+import Test.Cores.Ethernet.UpConverter qualified as UC
 
 -- downconverter model
-import qualified Test.Cores.Ethernet.DownConverter as DC
+import Test.Cores.Ethernet.DownConverter qualified as DC
 
 -- data module
-import qualified Data.List as L
+import Data.List qualified as L
 import Data.Maybe
 
 -- crc module
@@ -75,7 +75,7 @@ insertCrc
   .  C.KnownNat dataWidth
   => 1 C.<= dataWidth
   => [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
-insertCrc =  upConvert . go . downConvert 
+insertCrc =  upConvert . go . downConvert
   where
     go :: [PacketStreamM2S 1 ()] -> [PacketStreamM2S 1 ()]
     go pkt = pkt''
