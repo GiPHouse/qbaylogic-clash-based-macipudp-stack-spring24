@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: git checkout
         uses: actions/checkout@v4 
-      - name: run docker image
+      - name: check formatting 
         uses: addnab/docker-run-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -32,6 +32,16 @@ jobs:
             echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
             stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
             rm ./.stylish-haskell-check.yaml
+      - name: place and route
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
             cabal test
             # make netlist
             cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
