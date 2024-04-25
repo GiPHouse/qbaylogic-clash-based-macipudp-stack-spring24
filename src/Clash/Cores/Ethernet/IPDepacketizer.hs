@@ -89,12 +89,12 @@ verifyChecksum = Circuit $ mealyB go (0, 0)
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
       -> ((BitVector 16, Index (20 `DivRU` n)), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
     go s (Nothing, bwd) = (s, (bwd, Nothing))
-    go (acc, i) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
+    go s@(acc, i) (Just fwdIn, PacketStreamS2M inReady) = (if inReady then s' else s, (PacketStreamS2M inReady, Just fwdOut))
       where 
         containsData = i == maxBound
         dataIdx = natToNum @(20 `Mod` n)
-        header = imap (\j x -> if containsData || j >= dataIdx then 0 else x) $ _data fwdIn
+        header = imap (\j x -> if containsData && j >= dataIdx then 0 else x) $ _data fwdIn
         acc' = fold onesComplementAdd (acc :> bitCoerce header)
         i' = if i < maxBound then i + 1 else maxBound
-        s' = if isJust (_last fwdIn) && inReady then (0, 0) else (acc', i')
+        s' = if isJust (_last fwdIn) then (0, 0) else (acc', i')
         fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || acc' /= 0 } else fwdIn

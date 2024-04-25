@@ -6,6 +6,8 @@ module Test.Cores.Ethernet.IPDepacketizer where
 
 -- base
 import Prelude
+import Data.Maybe
+import Control.Monad (replicateM)
 
 -- clash-prelude
 import Clash.Prelude qualified as C
@@ -33,7 +35,6 @@ import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
 
 import Test.Cores.Ethernet.InternetChecksum ( pureInternetChecksum )
-import Control.Monad (replicateM)
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -63,10 +64,11 @@ testIPPacketizerValid _ = idWithModelSingleDomain
   where 
     geb :: forall (a :: C.Type) . (Enum a, Bounded a) => Gen a
     geb = Gen.enumBounded
-    randomHeader = IPv4Header <$> geb <*> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
+    randomHeader = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
     validHeader = (\h -> h {_ipv4Checksum = pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16))}) <$> randomHeader
-    headerPacket = PacketStreamM2S <$> (C.bitCoerce <$> validHeader) <*> pure Nothing <*> pure (C.errorX "undefined ethernet header" :: EthernetHeader) <*> pure False
-    packet = concatMap chopPacket . fullPackets <$> ((:) <$> headerPacket <*> Gen.list (Range.linear 0 5) (genPackets @20 (C.unpack <$> geb)))
+    headerPacket = PacketStreamM2S <$> (C.bitCoerce <$> validHeader) <*> pure Nothing <*> (C.unpack <$> Gen.enumBounded) <*> pure False
+    dataPackets = fullPackets <$> Gen.list (Range.linear 0 5) (genPackets @20 (C.unpack <$> geb))
+    packet = concatMap chopPacket <$> ((\x -> ([x] ++)) <$> headerPacket <*> dataPackets)
     packetList = Gen.int (Range.linear 0 100) >>= (\x -> concat <$> replicateM x packet)
 
     model = depacketizerModel @dataWidth @20 @EthernetHeader @IPv4HeaderLite @IPv4Header (const . toLite)
@@ -88,19 +90,25 @@ testIPPacketizer _ = idWithModelSingleDomain
   where 
     model ps = 
      let
-       ps' = depacketizerModel (const . toLite) ps
-       headers = head <$> chunkByPacket $ upConvert $ downConvert ps
-       invalidChecksums = (/= 0xFFFF) . pureInternetChecksum .
-         C.bitCoerce @(C.Vec 20 (C.BitVector 8)) @(C.Vec 10 (C.BitVector 16)) .
-         _data <$> headers
+       ps' = depacketizerModel const ps
+       ps'' = fmap toLite <$> ps'
+       invalidChecksums = (\h -> 0xFFFF /= pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16))) . _meta <$> ps'
+       invalidIHLs = (/= 5) . _ipv4Ihl . _meta <$> ps'
+       aborts = zipWith (||) invalidChecksums invalidIHLs
       in
-       concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps') invalidChecksums
+       concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps'') (aborts ++ repeat False)
 
 prop_ip_depacketizer_valid_d2 :: Property
 prop_ip_depacketizer_valid_d2 = testIPPacketizer C.d2
 
-prop_ip_depacketizer_valid_d4 :: Property
-prop_ip_depacketizer_valid_d4 = testIPPacketizer C.d4
+prop_ip_depacketizer_valid_d6 :: Property
+prop_ip_depacketizer_valid_d6 = testIPPacketizer C.d6
+
+prop_ip_depacketizer_valid_d18 :: Property
+prop_ip_depacketizer_valid_d18 = testIPPacketizer C.d18
+
+prop_ip_depacketizer_valid_d20 :: Property
+prop_ip_depacketizer_valid_d20 = testIPPacketizer C.d20
 
 prop_ip_depacketizer_valid_d28 :: Property
 prop_ip_depacketizer_valid_d28 = testIPPacketizer C.d28
@@ -108,8 +116,14 @@ prop_ip_depacketizer_valid_d28 = testIPPacketizer C.d28
 prop_ip_depacketizer_d2 :: Property
 prop_ip_depacketizer_d2 = testIPPacketizer C.d2
 
-prop_ip_depacketizer_d4 :: Property
-prop_ip_depacketizer_d4 = testIPPacketizer C.d4
+prop_ip_depacketizer_d6 :: Property
+prop_ip_depacketizer_d6 = testIPPacketizer C.d6
+
+prop_ip_depacketizer_d18 :: Property
+prop_ip_depacketizer_d18 = testIPPacketizer C.d18
+
+prop_ip_depacketizer_d20 :: Property
+prop_ip_depacketizer_d20 = testIPPacketizer C.d20
 
 prop_ip_depacketizer_d28 :: Property
 prop_ip_depacketizer_d28 = testIPPacketizer C.d28
