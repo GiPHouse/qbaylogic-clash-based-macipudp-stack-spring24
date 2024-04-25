@@ -12,7 +12,7 @@ import Data.Bifunctor
 import Protocols
 
 -- | Routes packets depending on their metadata, using given routing functions.
--- 
+--
 -- Data is sent to at most one element of the output vector, for which the
 -- dispatch function evaluates to true on the metadata of the input. If none of
 -- the functions evaluate to true, the input is dropped. If more than one of the
