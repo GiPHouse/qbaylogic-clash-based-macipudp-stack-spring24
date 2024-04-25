@@ -25,6 +25,8 @@ jobs:
           image: baublesaurus/clockbox:latest
           options: -v ${{ github.workspace }}:/work -e ABC=123
           run: |
+            mkdir sometempdir
+            TMPDIR=sometempdir
             echo "hello world"
             cd work 
             ls
