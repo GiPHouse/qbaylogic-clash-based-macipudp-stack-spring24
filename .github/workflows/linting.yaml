@@ -14,7 +14,12 @@ jobs:
           echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
       - name: run the formatter
         run: |
-          curl -sL https://raw.github.com/haskell/stylish-haskell/master/scripts/latest.sh 
-          sh -s -c ./.stylish-haskell-check.yaml -r src tests      
+          curl -sL https://raw.github.com/haskell/stylish-haskell/master/scripts/latest.sh > stylish-haskell
+          chmod +x stylish-haskell 
+          ./stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
+  cleanup:
+    steps:  
       - name: Clean-up after stylish haskell
-        run: rm ./.stylish-haskell-check.yaml
+        run: |
+          rm ./.stylish-haskell-check.yaml
+          rm stylish-haskell
