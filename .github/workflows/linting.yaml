@@ -17,10 +17,3 @@ jobs:
           curl -sL https://raw.github.com/haskell/stylish-haskell/master/scripts/latest.sh > stylish-haskell
           chmod +x stylish-haskell 
           ./stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:  
-      - name: Clean-up after stylish haskell
-        run: |
-          rm ./.stylish-haskell-check.yaml
-          rm stylish-haskell
