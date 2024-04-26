@@ -1,0 +1,16 @@
+name: "Linters"
+on:
+  push:
+  pull_request:
+jobs:
+  linters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v4
+      - name: Whitespace file endings
+        run: |
+          .ci/test_whitespace.sh
+      - name: Run haskell formatter 
+        run: |
+          make check_format
