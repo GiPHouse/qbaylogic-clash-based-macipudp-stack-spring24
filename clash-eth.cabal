@@ -109,15 +109,19 @@ library
     Clash.Cores.Ethernet.InterpacketGapInserter
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
+    Clash.Cores.Ethernet.FcsInserter
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.UartEthRxStack
     Clash.Lattice.ECP5.Colorlight.UartEthTxStack
+  other-modules:
+    Clash.Sized.Vector.Extra
   default-language: Haskell2010
   build-depends:
     interpolate,
     clash-cores,
+    clash-cores-crc,
     deepseq,
     hashable,
     constraints,
@@ -157,6 +161,7 @@ test-suite test-library
     Test.Cores.Ethernet.UpConverter
     Test.Cores.Ethernet.PacketBuffer
     Test.Cores.Ethernet.InterpacketGapInserter
+    Test.Cores.Ethernet.FcsInserter
     Test.Cores.Ethernet.AsyncFIFO
     Test.Cores.Ethernet.InternetChecksum
   build-depends:
@@ -164,6 +169,7 @@ test-suite test-library
     QuickCheck,
     hedgehog,
     clash-cores,
+    clash-cores-crc,
     hashable,
     unordered-containers,
     tasty >= 1.2 && < 1.5,

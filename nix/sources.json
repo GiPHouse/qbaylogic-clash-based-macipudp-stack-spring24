@@ -1,4 +1,16 @@
 {
+    "clash-cores-crc": {
+        "branch": "master",
+        "description": "A CRC core for Clash",
+        "homepage": null,
+        "owner": "rowanG077",
+        "repo": "clash-cores-crc",
+        "rev": "911a69f63aa678f1eac346235c5f9c6a5894f556",
+        "sha256": "1fnrjvwf28fd1vfyfbkq0qhpvml3apqwq50i8r5igizw9xjcfnbn",
+        "type": "tarball",
+        "url": "https://github.com/rowanG077/clash-cores-crc/archive/911a69f63aa678f1eac346235c5f9c6a5894f556.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "circuit-notation": {
         "branch": "master",
         "description": "A plugin for circuit notation",
