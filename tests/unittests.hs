@@ -15,6 +15,7 @@ import Test.Cores.Ethernet.PacketStream qualified
 import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
+import Test.Cores.Ethernet.FcsInserter qualified
 import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
@@ -33,4 +34,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
     , Test.Cores.Ethernet.InternetChecksum.tests
+    , Test.Cores.Ethernet.FcsInserter.tests
   ]
