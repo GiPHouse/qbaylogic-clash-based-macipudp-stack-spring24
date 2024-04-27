@@ -5,6 +5,7 @@ import Test.Tasty
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
+import Test.Cores.Ethernet.FcsInserter qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
 import Test.Cores.Ethernet.MacDepacketizer qualified
@@ -15,7 +16,6 @@ import Test.Cores.Ethernet.PacketStream qualified
 import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
-import Test.Cores.Ethernet.FcsInserter qualified
 import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
