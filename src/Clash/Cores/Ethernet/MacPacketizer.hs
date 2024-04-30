@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.MacPacketizer
+Description : Specialized packetizer for ethernet header
+-}
 module Clash.Cores.Ethernet.MacPacketizer
   (macPacketizerC) where
 

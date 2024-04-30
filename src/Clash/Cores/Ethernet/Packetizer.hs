@@ -1,6 +1,10 @@
 {-# language FlexibleContexts #-}
 {-# language RecordWildCards #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.Packetizer
+Description : Generic packetizer for appending headers to the beginning of packets
+-}
 module Clash.Cores.Ethernet.Packetizer where
 
 import Clash.Prelude
