@@ -62,13 +62,12 @@ isSubsequenceOf (x:xs) (y:ys)
 -- | test for id and proper dropping of aborted packets
 prop_packetBuffer_id :: Property
 prop_packetBuffer_id =
-  propWithModelSingleDomain
+  idWithModelSingleDomain
     @C.System
     defExpectOptions
     (genPackets (Range.linear 0 100))
     (C.exposeClockResetEnable dropAbortedPackets)
     (C.exposeClockResetEnable ckt)
-    (===)
  where
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 Int16) (PacketStream System 4 Int16)
   ckt = packetBufferC d12 d12
