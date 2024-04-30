@@ -6,8 +6,6 @@ module Test.Cores.Ethernet.IPDepacketizer where
 
 -- base
 import Prelude
-import Data.Maybe
-import Control.Monad (replicateM)
 
 -- clash-prelude
 import Clash.Prelude qualified as C
@@ -27,7 +25,6 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.IPDepacketizer
 
@@ -46,32 +43,6 @@ genPackets genMeta =
   Gen.maybe Gen.enumBounded <*>
   genMeta <*>
   Gen.enumBounded
-
--- | Tests the IP depacketizer with only valid IP headers.
-testIPPacketizerValid
-  :: forall (dataWidth :: C.Nat) k
-   . ( C.KnownNat dataWidth
-     , 1 C.<= dataWidth
-     , dataWidth ~ 2 C.* k
-     )
-  => C.SNat dataWidth
-  -> Property
-testIPPacketizerValid _ = idWithModelSingleDomain
-  @C.System defExpectOptions
-  (upConvert <$> packetList)
-  (C.exposeClockResetEnable model)
-  (C.exposeClockResetEnable (ipDepacketizerC @C.System @dataWidth))
-  where
-    geb :: forall (a :: C.Type) . (Enum a, Bounded a) => Gen a
-    geb = Gen.enumBounded
-    randomHeader = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
-    validHeader = (\h -> h {_ipv4Checksum = pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16))}) <$> randomHeader
-    headerPacket = PacketStreamM2S <$> (C.bitCoerce <$> validHeader) <*> pure Nothing <*> (C.unpack <$> Gen.enumBounded) <*> pure False
-    dataPackets = fullPackets <$> Gen.list (Range.linear 0 5) (genPackets @20 (C.unpack <$> geb))
-    packet = concatMap chopPacket <$> ((\x -> ([x] ++)) <$> headerPacket <*> dataPackets)
-    packetList = Gen.int (Range.linear 0 100) >>= (\x -> concat <$> replicateM x packet)
-
-    model = depacketizerModel @dataWidth @20 @EthernetHeader @IPv4HeaderLite @IPv4Header (const . toLite)
 
 -- | Tests the IP depacketizer for arbitrary packets
 testIPPacketizer
@@ -97,23 +68,7 @@ testIPPacketizer _ = idWithModelSingleDomain
       in
        concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps'') (aborts ++ repeat False)
 
-
 -- Odd data widths
-prop_ip_depacketizer_valid_d1 :: Property
-prop_ip_depacketizer_valid_d1 = testIPPacketizer C.d1
-
-prop_ip_depacketizer_valid_d7 :: Property
-prop_ip_depacketizer_valid_d7 = testIPPacketizer C.d7
-
-prop_ip_depacketizer_valid_d19 :: Property
-prop_ip_depacketizer_valid_d19 = testIPPacketizer C.d19
-
-prop_ip_depacketizer_valid_d21 :: Property
-prop_ip_depacketizer_valid_d21 = testIPPacketizer C.d21
-
-prop_ip_depacketizer_valid_d23 :: Property
-prop_ip_depacketizer_valid_d23 = testIPPacketizer C.d23
-
 prop_ip_depacketizer_d1 :: Property
 prop_ip_depacketizer_d1 = testIPPacketizer C.d1
 
@@ -130,21 +85,6 @@ prop_ip_depacketizer_d23 :: Property
 prop_ip_depacketizer_d23 = testIPPacketizer C.d23
 
 -- Even data widths
-prop_ip_depacketizer_valid_d2 :: Property
-prop_ip_depacketizer_valid_d2 = testIPPacketizer C.d2
-
-prop_ip_depacketizer_valid_d6 :: Property
-prop_ip_depacketizer_valid_d6 = testIPPacketizer C.d6
-
-prop_ip_depacketizer_valid_d18 :: Property
-prop_ip_depacketizer_valid_d18 = testIPPacketizer C.d18
-
-prop_ip_depacketizer_valid_d20 :: Property
-prop_ip_depacketizer_valid_d20 = testIPPacketizer C.d20
-
-prop_ip_depacketizer_valid_d28 :: Property
-prop_ip_depacketizer_valid_d28 = testIPPacketizer C.d28
-
 prop_ip_depacketizer_d2 :: Property
 prop_ip_depacketizer_d2 = testIPPacketizer C.d2
 
