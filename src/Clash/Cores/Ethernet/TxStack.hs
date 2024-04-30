@@ -9,16 +9,16 @@ import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 
 import Clash.Cores.Ethernet.AsyncFIFO ( asyncFifoC )
-import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.DownConverter ( downConverterC )
+import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.FcsInserter ( fcsInserterC )
 import Clash.Cores.Ethernet.InterpacketGapInserter ( interpacketGapInserterC )
+import Clash.Cores.Ethernet.Packetizer ( packetizerC )
 import Clash.Cores.Ethernet.PacketStream ( PacketStream )
 import Clash.Cores.Ethernet.PaddingInserter ( paddingInserterC )
 import Clash.Cores.Ethernet.PreambleInserter ( preambleInserterC )
 import Clash.Prelude
 import Protocols
-import Clash.Cores.Ethernet.Packetizer (packetizerC)
 
 -- | Processes bytes to send over ethernet
 txStack
@@ -36,7 +36,7 @@ txStack
 txStack ethClk ethRst ethEn
   =  packetizerC (const ()) (const header)
   |> paddingInserterC d60
-  |> fcsInserterC 
+  |> fcsInserterC
   |> preambleInserterC
   |> asyncFifoC'
   |> downConverterC'

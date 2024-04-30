@@ -7,8 +7,8 @@ module Clash.Lattice.ECP5.Colorlight.UartEthTxStack
 
 import Data.Proxy
 
-import Clash.Cores.Crc.Internal
 import Clash.Cores.Crc.Catalog
+import Clash.Cores.Crc.Internal
 
 import Clash.Cores.Ethernet.PacketBuffer ( packetBufferC )
 import Clash.Cores.Ethernet.PacketStream
