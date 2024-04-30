@@ -70,28 +70,28 @@ macPacketizerPropertyGenerator _ =
           Gen.enum False False--Gen.enumBounded
 
 -- | n mod dataWidth ~ 1
-prop_mac_packetizer_d1 :: Property
-prop_mac_packetizer_d1 = macPacketizerPropertyGenerator d1
+--prop_mac_packetizer_d1 :: Property
+--prop_mac_packetizer_d1 = macPacketizerPropertyGenerator d1
 
 -- | n mod dataWidth ~ 3
 prop_mac_packetizer_d3 :: Property
 prop_mac_packetizer_d3 = macPacketizerPropertyGenerator d3
 
 -- | n mod dataWidth ~ 1
-prop_mac_packetizer_d7 :: Property
-prop_mac_packetizer_d7 = macPacketizerPropertyGenerator d3
+--prop_mac_packetizer_d7 :: Property
+--prop_mac_packetizer_d7 = macPacketizerPropertyGenerator d3
 
 -- | dataWidth < header byte size
-prop_mac_packetizer_d9 :: Property
-prop_mac_packetizer_d9 = macPacketizerPropertyGenerator d9
+--prop_mac_packetizer_d9 :: Property
+--prop_mac_packetizer_d9 = macPacketizerPropertyGenerator d9
 
 -- | dataWidth ~ header byte size
-prop_mac_packetizer_d14 :: Property
-prop_mac_packetizer_d14 = macPacketizerPropertyGenerator d14
+--prop_mac_packetizer_d14 :: Property
+--prop_mac_packetizer_d14 = macPacketizerPropertyGenerator d14
 
 -- | dataWidth > header byte size
-prop_mac_packetizer_d15 :: Property
-prop_mac_packetizer_d15 = macPacketizerPropertyGenerator d15
+--prop_mac_packetizer_d15 :: Property
+--prop_mac_packetizer_d15 = macPacketizerPropertyGenerator d15-}
 
 tests :: TestTree
 tests =

@@ -21,11 +21,13 @@ type ForwardBufSize (headerBytes :: Nat) (dataWidth :: Nat)
 data PacketizerState (metaOut :: Type) (headerBytes :: Nat)  (dataWidth :: Nat)
   = Insert {
       _counter :: Index (headerBytes `DivRU` dataWidth),
-      _hdrBuf :: Vec (HeaderBufSize headerBytes dataWidth) (BitVector 8)
+      _hdrBuf :: Vec (HeaderBufSize headerBytes dataWidth) (BitVector 8),
+      _aborted :: Bool
     }
   | Forward {
       _metaOut :: metaOut,
-      _fwdBuf :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8)
+      _fwdBuf :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8),
+      _aborted :: Bool
     }
   | LastForward
       { _lastFragment :: PacketStreamM2S dataWidth metaOut }
@@ -70,66 +72,61 @@ packetizerT
      , (PacketStreamS2M, Maybe (PacketStreamM2S dataWidth metaOut)))
 packetizerT toMetaOut toHeader st@Insert {..} (Just pkt@PacketStreamM2S {..}, bwdIn) = (nextStOut, (PacketStreamS2M outReady, fwdOut))
   where
-    --nextAborted = _aborted || _abort
-    header :: Vec headerBytes (BitVector 8) = bitCoerce $ toHeader _meta
-    combined = header ++ _data
-
+    nextAborted = _aborted || _abort
+    header = bitCoerce (toHeader _meta)
     metaOut = toMetaOut _meta
-    --resized :: Index (headerBytes + dataWidth) = resize _counter
 
-    outReady = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-      SNatLE -> False--counter == maxBound
-      SNatGT -> _counter == maxBound
-
-
-
-    hdrBuf = if _counter == minBound then combined else _hdrBuf
-
+    hdrBuf = if _counter == minBound then header ++ _data else _hdrBuf
     dataOut = take (SNat @dataWidth) hdrBuf
     newHdrBuf = rotateLeftS hdrBuf (SNat @dataWidth)
-
 
     adjustLast :: Index dataWidth -> Either (Index dataWidth) (Index dataWidth)
     adjustLast idx = if outputNow then Left nowIdx else Right nextIdx
       where
         outputNow = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
           SNatLE -> True
-          SNatGT -> idx < natToNum @(headerBytes `Mod` dataWidth)
-        nowIdx = idx + natToNum @(dataWidth - 1 - ForwardBufSize headerBytes dataWidth)
-        nextIdx = idx - natToNum @(dataWidth - 1 - ForwardBufSize headerBytes dataWidth)
+          SNatGT -> idx < natToNum @(dataWidth - ForwardBufSize headerBytes dataWidth)
+        nowIdx = satSub SatWrap idx (natToNum @(dataWidth - ForwardBufSize headerBytes dataWidth))
+        nextIdx = satSub SatWrap idx (natToNum @(dataWidth - ForwardBufSize headerBytes dataWidth))
 
-    outPkt = pkt { _abort = False--nextAborted
+    outPkt = pkt { _abort = nextAborted
                  , _data = dataOut
                  , _meta = metaOut
                  , _last = Nothing
                  }
 
     forwardBytes :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8)
-    forwardBytes = take (SNat @(ForwardBufSize headerBytes dataWidth)) (rotateRightS _data (SNat @(ForwardBufSize headerBytes dataWidth)))
+    forwardBytes = snd $ shiftOutFromN (SNat @(ForwardBufSize headerBytes dataWidth)) _data
 
     (nextSt, fwdOut)
       = case (_counter == maxBound, _last) of
-          (False, Nothing)
-            -> (Insert (succ _counter) newHdrBuf, Just outPkt)
           (False, _)
-            -> ( Insert (succ _counter) newHdrBuf, Just outPkt)
+            -> (Insert (succ _counter) newHdrBuf False, Just outPkt)
           (True, Just idx)
-            -> (a, Just b)--( Insert minBound newHdrBuf, Just outPkt)
+            -> (a, Just b)
             where
               newLast = adjustLast idx
               (a, b) = case newLast of
                 Left i -> case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-                  SNatLE -> (Forward metaOut forwardBytes, outPkt)
-                  SNatGT -> (Insert minBound (repeat 0x00), outPkt {_last = Just i})
-                Right i -> (LastForward pkt {_last = Just i, _meta = metaOut}, outPkt)
+                  SNatLE -> (Forward metaOut forwardBytes nextAborted, outPkt)
+                  SNatGT -> (Insert minBound (repeat 0x00) False, outPkt {_last = Just i})
+                Right j -> (LastForward pkt {_data = take (SNat @dataWidth) newHdrBuf, _last = Just j, _meta = metaOut}, outPkt)
           (True, Nothing)
-            -> ( Forward metaOut forwardBytes, Just outPkt)
-
+            -> (Forward metaOut forwardBytes nextAborted, Just outPkt)
+    
     nextStOut = if isNothing fwdOut || _ready bwdIn then nextSt else st
+
+    -- Assert backpressure while inserting the header. If shifting needs to be done
+    -- and we are at the last cycle of insertion, we do not need to assert backpressure
+    -- because we put the rest of the data in _fwdBuf.
+    outReady = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
+      SNatLE -> False
+      SNatGT -> _counter == maxBound
 
 packetizerT _ _ st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = (nextStOut, (bwdIn, Just outPkt))
   where
-    --nextAborted = _aborted || _abort
+    -- TODO currently circuit does not produce enough output, because we exit Forward too early?
+    nextAborted = _aborted || _abort
     combined :: Vec (ForwardBufSize headerBytes dataWidth + dataWidth) (BitVector 8)
     combined = _fwdBuf ++ _data
     dataOut :: Vec dataWidth (BitVector 8)
@@ -144,27 +141,27 @@ packetizerT _ _ st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = (nextStO
         outputNow = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
           SNatLE -> True
           SNatGT -> idx < natToNum @(headerBytes `Mod` dataWidth)
-        nowIdx = idx + natToNum @(ForwardBufSize headerBytes dataWidth)
-        nextIdx = idx - natToNum @(headerBytes `Mod` dataWidth)
+        nowIdx = satAdd SatWrap idx (natToNum @(headerBytes `Mod` dataWidth))--idx + natToNum @(headerBytes `Mod` dataWidth)
+        nextIdx = satSub SatWrap idx (natToNum @(headerBytes `Mod` dataWidth))--idx - natToNum @(headerBytes `Mod` dataWidth)
 
     newLast = fmap adjustLast _last
-    outPkt = pkt { _abort = False--nextAborted
+    outPkt = pkt { _abort = nextAborted
                  , _data = dataOut
                  , _meta = _metaOut
                  , _last = either Just (const Nothing) =<< newLast
                  }
 
     nextSt = case newLast of
-               Nothing -> Forward _metaOut nextFwdBuf --nextAborted _metaOut nextFwdBuf
-               Just (Left _) -> Insert minBound (repeat 0x00)--Parse False (repeat defaultByte) maxBound
-               Just (Right idx) -> LastForward $ PacketStreamM2S dataLast (Just idx) _metaOut False--nextAborted
+               Nothing -> Forward _metaOut nextFwdBuf nextAborted
+               Just (Left _) -> Insert minBound (repeat 0x00) False
+               Just (Right idx) -> LastForward $ PacketStreamM2S dataLast (Just idx) _metaOut nextAborted
 
     nextStOut = if _ready bwdIn then nextSt else st
 packetizerT _ _ st@Forward{} (Nothing, bwdIn) = (st, (bwdIn, Nothing))
 
 packetizerT _ _ st@LastForward{..} (_, bwdIn) = (nextStOut, (PacketStreamS2M False, Just _lastFragment))
   where
-    nextStOut = if _ready bwdIn then Insert minBound (repeat 0x00) else st
+    nextStOut = if _ready bwdIn then Insert minBound (repeat 0x00) False else st
 
 packetizerT _ _ s (_, bwdIn) = (s, (bwdIn, Nothing))
 
@@ -196,6 +193,6 @@ packetizerC toMetaOut toHeader = forceResetSanity |> fromSignals outCircuit
     outCircuit
       = case (divProof, modProof) of
           (SNatLE, SNatLE) -> case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) (SNat @dataWidth) of
-            SNatLE -> mealyB (packetizerT @headerBytes toMetaOut toHeader) (Insert minBound (repeat 0x00))
+            SNatLE -> mealyB (packetizerT @headerBytes toMetaOut toHeader) (Insert minBound (repeat 0x00) False)
             _ -> errorX "depacketizer1: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
           _ -> errorX "depacketizer0: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
