@@ -1,5 +1,4 @@
 {-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
 
 module Test.Cores.Ethernet.Packetizer
   (packetizerModel) where
@@ -7,11 +6,6 @@ module Test.Cores.Ethernet.Packetizer
 -- base
 import Data.List qualified as L
 import Prelude
-
--- tasty
-import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-prelude
 import Clash.Prelude hiding ( concat )
@@ -22,7 +16,8 @@ import Clash.Cores.Ethernet.PacketStream
 
 import Test.Cores.Ethernet.Util
 
--- | Model of the generic `packetizerC`.
+
+-- | Model of the generic @packetizerC@.
 packetizerModel
   :: forall (dataWidth :: Nat)
             (headerBytes :: Nat)
@@ -42,17 +37,17 @@ packetizerModel
 packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
   where
     prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
-    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = m}) fragments
+    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = metaOut}) fragments
       where
-        m = toMetaOut (_meta (L.head fragments))
+        metaOut = toMetaOut (_meta (L.head fragments))
         header = toHeader (_meta (L.head fragments))
         hdr = L.map go (toList $ bitCoerce header)
           where
             go byte = PacketStreamM2S {
               _data = byte :> Nil,
               _last = Nothing,
-              _meta = m,
-              _abort = False
+              _meta = metaOut,
+              _abort = _abort (L.head fragments)
             }
 
     bytePackets :: [[PacketStreamM2S 1 metaIn]]
@@ -63,10 +58,3 @@ packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
 
     dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
     dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> prependedPackets
-
-{-tests :: TestTree
-tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000_000))
-  $(testGroupGenerator)
--}

@@ -10,14 +10,13 @@ import Clash.Cores.Ethernet.Packetizer
 import Clash.Cores.Ethernet.PacketStream
 
 
--- | Prepends the `EthernetHeader` in the `_meta` field of the packet to the PacketStream
+-- | Prepends an @EthernetHeader@ in the metadata to the packet stream, for each packet.
 macPacketizerC
   :: forall (dom :: Domain)
-            (dataWidth :: Nat)
-   . HiddenClockResetEnable dom
-  => KnownDomain dom
-  => 1 <= dataWidth
-  => Mod 14 dataWidth <= (dataWidth - 1)
-  => KnownNat dataWidth
+            (dataWidth :: Nat) .
+  ( HiddenClockResetEnable dom
+  , KnownDomain dom
+  , 1 <= dataWidth
+  , KnownNat dataWidth)
   => Circuit (PacketStream dom dataWidth EthernetHeader) (PacketStream dom dataWidth ())
 macPacketizerC = packetizerC (const ()) id

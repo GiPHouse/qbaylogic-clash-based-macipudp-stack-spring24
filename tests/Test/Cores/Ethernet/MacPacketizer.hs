@@ -42,13 +42,12 @@ genMeta :: forall (meta :: Type) (metaBytes :: Nat)
   => BitPack meta
   => BitSize meta ~ metaBytes * 8
   => Gen meta
-genMeta = fmap (unpack . pack) (genVec Gen.enumBounded :: Gen (Vec metaBytes (BitVector 8)))
+genMeta = fmap bitCoerce (genVec Gen.enumBounded :: Gen (Vec metaBytes (BitVector 8)))
 
 macPacketizerPropertyGenerator
-  :: forall (dataWidth :: Nat).
+  :: forall (dataWidth :: Nat) .
   ( KnownNat dataWidth
-  , 1 <= dataWidth
-  , Mod 14 dataWidth <= (dataWidth - 1))
+  , 1 <= dataWidth)
   => SNat dataWidth
   -> Property
 macPacketizerPropertyGenerator _ =
@@ -67,31 +66,31 @@ macPacketizerPropertyGenerator _ =
           genVec Gen.enumBounded <*>
           Gen.maybe Gen.enumBounded <*>
           genMeta <*>
-          Gen.enum False False--Gen.enumBounded
+          Gen.enumBounded
 
 -- | n mod dataWidth ~ 1
---prop_mac_packetizer_d1 :: Property
---prop_mac_packetizer_d1 = macPacketizerPropertyGenerator d1
+prop_mac_packetizer_d1 :: Property
+prop_mac_packetizer_d1 = macPacketizerPropertyGenerator d1
 
 -- | n mod dataWidth ~ 3
 prop_mac_packetizer_d3 :: Property
 prop_mac_packetizer_d3 = macPacketizerPropertyGenerator d3
 
--- | n mod dataWidth ~ 1
---prop_mac_packetizer_d7 :: Property
---prop_mac_packetizer_d7 = macPacketizerPropertyGenerator d3
+-- | n mod dataWidth ~ 0
+prop_mac_packetizer_d7 :: Property
+prop_mac_packetizer_d7 = macPacketizerPropertyGenerator d7
 
 -- | dataWidth < header byte size
---prop_mac_packetizer_d9 :: Property
---prop_mac_packetizer_d9 = macPacketizerPropertyGenerator d9
+prop_mac_packetizer_d9 :: Property
+prop_mac_packetizer_d9 = macPacketizerPropertyGenerator d9
 
 -- | dataWidth ~ header byte size
---prop_mac_packetizer_d14 :: Property
---prop_mac_packetizer_d14 = macPacketizerPropertyGenerator d14
+prop_mac_packetizer_d14 :: Property
+prop_mac_packetizer_d14 = macPacketizerPropertyGenerator d14
 
 -- | dataWidth > header byte size
---prop_mac_packetizer_d15 :: Property
---prop_mac_packetizer_d15 = macPacketizerPropertyGenerator d15-}
+prop_mac_packetizer_d15 :: Property
+prop_mac_packetizer_d15 = macPacketizerPropertyGenerator d15
 
 tests :: TestTree
 tests =
