@@ -48,32 +48,42 @@ packetBuffer
      , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      )
   -- ^ Output CSignal s
-packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, toMaybe <$> (not <$> emptyBuffer) <*> ramOut)
+packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, fwdOut)
   where
     -- The backing ram
-    ramOut = toPacketStreamM2S <$> ramContent <*> ramMeta
-    ramContent = blockRam1 NoClearOnReset (SNat @(2 ^ contentSizeBits)) (errorX "initial block ram contents") cReadAddr' writeCommand
-    ramMeta = blockRam1 NoClearOnReset (SNat @(2 ^ metaSizeBits)) (errorX "initial block ram contents") mReadAddr' mWriteCommand
+    fwdOut = toMaybe <$> (not <$> emptyBuffer) <*> (toPacketStreamM2S <$> ramContent <*> ramMeta)
+    ramContent = blockRam1 NoClearOnReset (SNat @(2 ^ contentSizeBits)) (errorX "initial block ram content") cReadAddr' writeCommand
+    ramMeta = blockRam1 NoClearOnReset (SNat @(2 ^ metaSizeBits)) (errorX "initial block ram meta content") mReadAddr' mWriteCommand
 
       -- write command
-    writeCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, toPacketStreamContent . fromJustX <$> fwdIn)
-    mWriteCommand = toMaybe <$> writeEnable <*> bundle(wordAddr, _meta . fromJustX <$> fwdIn)
+    writeCommand = toMaybe <$> writeEnable <*> bundle(cWordAddr, toPacketStreamContent . fromJustX <$> fwdIn)
+    mWriteCommand = toMaybe <$> mWriteEnable <*> bundle(mWriteAddr, _meta . fromJustX <$> fwdIn)
 
     -- Registers : pointers
-    wordAddr, packetAddr, readAddr :: Signal dom (Unsigned contentSizeBits)
-    wordAddr = register 0 $ mux dropping' packetAddr $ mux writeEnable (wordAddr + 1) wordAddr
-    packetAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (wordAddr + 1) packetAddr
-    cReadAddr' = mux readEnable (readAddr + 1) readAddr
-    readAddr = register 0 cReadAddr'
+    -- Addresses for the content
+    cWordAddr, cPacketAddr, cReadAddr :: Signal dom (Unsigned contentSizeBits)
+    cWordAddr = register 0 $ mux dropping' cPacketAddr $ mux writeEnable (cWordAddr + 1) cWordAddr
+    cPacketAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (cWordAddr + 1) cPacketAddr
+    cReadAddr' = mux readEnable (cReadAddr + 1) cReadAddr
+    cReadAddr = register 0 cReadAddr'
 
-    mReadAddr' = mux readEnable (readAddr + 1) readAddr
+    -- Addresses for the meta content
+    mWriteAddr, mReadAddr :: Signal dom (Unsigned metaSizeBits)
+    mWriteAddr = register 0 mWriteAddr'
+    mWriteAddr' = mux mWriteEnable (mWriteAddr + 1) mWriteAddr
+
+    mReadAddr' = mux mReadEnable (mReadAddr + 1) mReadAddr
+    mReadAddr = register 0 mReadAddr'
+
+    mWriteEnable = lastWordIn .&&. writeEnable
+    mReadEnable = lastWordOut .&&. readEnable
 
     -- Registers : status
     dropping', dropping, emptyBuffer :: Signal dom Bool
     -- start dropping packet on abort
     dropping' = abortIn .||. dropping
     dropping = register False $ dropping' .&&. (not <$> lastWordIn)
-    emptyBuffer  = register 0 packetAddr .==. readAddr
+    emptyBuffer = (register 0 cPacketAddr .==. cReadAddr) .||. (register 0 mWriteAddr .==. mReadAddr)
 
     -- Only write if there is space and we're not dropping
     writeEnable = writeRequest .&&. (not <$> fullBuffer) .&&. (not <$> dropping')
@@ -81,9 +91,10 @@ packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, t
     readEnable = (not <$> emptyBuffer) .&&. (_ready <$> bwdIn)
 
     --The status signals
-    fullBuffer = (wordAddr + 1) .==. readAddr
+    fullBuffer = ((cWordAddr + 1) .==. cReadAddr) .||. ((mWriteAddr + 1) .==. mReadAddr)
     writeRequest = isJust <$> fwdIn
     lastWordIn = maybe False (isJust . _last) <$> fwdIn
+    lastWordOut = maybe False (isJust . _last) <$> fwdOut
     abortIn = maybe False _abort <$> fwdIn
 
 abortOnBackPressure

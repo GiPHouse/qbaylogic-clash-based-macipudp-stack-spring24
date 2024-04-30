@@ -17,6 +17,8 @@ import Clash.Prelude qualified as C
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Sized.Vector qualified as Vec
+import Hedgehog
+import qualified Hedgehog.Gen as Gen
 
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
 chunkBy _ [] = []
@@ -87,3 +89,32 @@ cleanPackets = map cleanPacket
       Just i  -> pkt {_data = M.fromJust $ Vec.fromList datas}
         where
           datas = take (1 + fromIntegral i) (C.toList _data) ++ replicate ((C.natToNum @n) - 1 - fromIntegral i) 0
+
+-- Generates a single valid packet using the given generator, 
+-- The meta value of the first word will be that of all words, and only the last value in the packet will have Last = Just ..
+genValidPacket :: forall (dataWidth :: C.Nat) (metaType :: C.Type).
+  C.KnownNat dataWidth
+  => 1 C.<= dataWidth
+  => Range Int
+  -> Gen (PacketStreamM2S dataWidth metaType)
+  -> Gen [PacketStreamM2S dataWidth metaType]
+genValidPacket range gen = do
+  genWords <- Gen.list range gen
+  return $ makeValidPacket genWords
+    where
+      makeValidPacket :: [PacketStreamM2S dataWidth metaType] -> [PacketStreamM2S dataWidth metaType]
+      makeValidPacket [] = []
+      makeValidPacket list@(x:_) = fullPackets $ fmap (\pkt -> pkt { _meta = _meta x, _last = Nothing }) list
+
+-- | Generates a list filled with valid packets, packets which have the same meta value for all words
+genValidPackets :: forall (dataWidth :: C.Nat) (metaType :: C.Type).
+  C.KnownNat dataWidth
+  => 1 C.<= dataWidth
+  => Range Int
+  -- ^ Range specifying the amount of packets to generate
+  -> Range Int
+  -- ^ Range specifying the size of packets to generate
+  -> Gen (PacketStreamM2S dataWidth metaType)
+  -- ^ Generator for a single packet
+  -> Gen [PacketStreamM2S dataWidth metaType]
+genValidPackets range packetRange gen = concat <$> Gen.list range (genValidPacket packetRange gen)
