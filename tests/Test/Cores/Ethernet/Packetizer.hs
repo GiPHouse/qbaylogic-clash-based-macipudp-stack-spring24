@@ -17,7 +17,7 @@ import Clash.Cores.Ethernet.PacketStream
 import Test.Cores.Ethernet.Util
 
 
--- | Model of the generic @packetizerC@.
+-- | Model of the generic `packetizerC`.
 packetizerModel
   :: forall (dataWidth :: Nat)
             (headerBytes :: Nat)

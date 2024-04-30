@@ -109,7 +109,6 @@ library
     Clash.Cores.Ethernet.TxStack
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
-    Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
     Clash.Cores.Ethernet.FcsInserter

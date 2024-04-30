@@ -14,7 +14,7 @@ import Clash.Cores.Ethernet.Packetizer
 import Clash.Cores.Ethernet.PacketStream
 
 
--- | Prepends an @EthernetHeader@ in the metadata to the packet stream, for each packet.
+-- | Prepends an `EthernetHeader` in the metadata to the packet stream, for each packet.
 macPacketizerC
   :: forall (dom :: Domain)
             (dataWidth :: Nat) .
