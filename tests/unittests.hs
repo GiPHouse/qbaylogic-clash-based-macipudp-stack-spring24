@@ -15,6 +15,7 @@ import Test.Cores.Ethernet.PacketBuffer qualified
 import Test.Cores.Ethernet.PacketDispatcher qualified
 import Test.Cores.Ethernet.PacketStream qualified
 import Test.Cores.Ethernet.PaddingInserter qualified
+import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
 import Test.Lattice.ECP5.UART qualified
@@ -30,6 +31,7 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.DownConverter.tests
     , Test.Cores.Ethernet.PacketBuffer.tests
     , Test.Cores.Ethernet.PacketDispatcher.tests
+    , Test.Cores.Ethernet.PreambleInserter.tests
     , Test.Cores.Ethernet.PreambleStripper.tests
     , Test.Cores.Ethernet.InterpacketGapInserter.tests
     , Test.Cores.Ethernet.Depacketizer.tests

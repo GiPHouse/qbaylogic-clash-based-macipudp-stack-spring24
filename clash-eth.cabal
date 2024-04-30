@@ -102,6 +102,7 @@ library
     Clash.Cores.Ethernet.PacketDispatcher
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.PaddingInserter
+    Clash.Cores.Ethernet.PreambleInserter
     Clash.Cores.Ethernet.PreambleStripper
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
@@ -109,7 +110,6 @@ library
     Clash.Cores.Ethernet.TxStack
     Clash.Cores.Ethernet.Util
     Clash.Cores.Ethernet.InterpacketGapInserter
-    Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
     Clash.Cores.Ethernet.FcsInserter
@@ -158,6 +158,7 @@ test-suite test-library
     Test.Cores.Ethernet.PacketStream
     Test.Cores.Ethernet.PaddingInserter
     Test.Cores.Ethernet.PacketDispatcher
+    Test.Cores.Ethernet.PreambleInserter
     Test.Cores.Ethernet.PreambleStripper
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
