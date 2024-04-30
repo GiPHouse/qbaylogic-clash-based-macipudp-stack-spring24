@@ -5,7 +5,8 @@
 Module      : Clash.Cores.Ethernet.Packetizer
 Description : Generic packetizer for appending headers to the beginning of packets
 -}
-module Clash.Cores.Ethernet.Packetizer where
+module Clash.Cores.Ethernet.Packetizer
+  (packetizerC) where
 
 import Clash.Prelude
 
