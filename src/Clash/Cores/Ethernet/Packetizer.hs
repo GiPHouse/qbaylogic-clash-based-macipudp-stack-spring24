@@ -43,9 +43,7 @@ deriving instance (NFDataX metaOut , PacketizerCt headerBytes dataWidth)
   => NFDataX (PacketizerState metaOut headerBytes dataWidth)
 
 type PacketizerCt (headerBytes :: Nat) (dataWidth :: Nat)
-  = ( 1 <= headerBytes `DivRU` dataWidth
-    , headerBytes `Mod` dataWidth <= dataWidth
-    , KnownNat dataWidth
+  = ( KnownNat dataWidth
     , 1 <= dataWidth
     , KnownNat headerBytes)
 
@@ -53,12 +51,17 @@ defaultByte :: BitVector 8
 defaultByte = 0x00
 
 -- The initial state of our packetizer. For readability purposes, because we use this exact expression a lot.
-initialState :: forall (metaOut :: Type) (headerBytes :: Nat) (dataWidth :: Nat) .
-     PacketizerCt headerBytes dataWidth
+initialState
+  :: forall (metaOut :: Type)
+            (headerBytes :: Nat)
+            (dataWidth :: Nat) .
+    PacketizerCt headerBytes dataWidth
   => PacketizerState metaOut headerBytes dataWidth
-initialState = Insert minBound (repeat defaultByte) False
+initialState = Insert 0 (repeat defaultByte) False
 
-adjustLast :: forall (headerBytes :: Nat) (dataWidth :: Nat) .
+adjustLast
+  :: forall (headerBytes :: Nat)
+            (dataWidth :: Nat) .
   ( headerBytes `Mod` dataWidth <= dataWidth
   , KnownNat dataWidth
   , 1 <= dataWidth)
@@ -92,14 +95,15 @@ packetizerT
 packetizerT toMetaOut toHeader st@Insert {..} (Just pkt@PacketStreamM2S {..}, bwdIn)
   = (nextStOut, (bwdOut, fwdOut))
   where
+    alignedCmp = compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) d0
     nextAborted = _aborted || _abort
     header = bitCoerce (toHeader _meta)
     metaOut = toMetaOut _meta
-    hdrBuf = if _counter == minBound then header ++ _data else _hdrBuf
+    hdrBuf = if _counter == 0 then header ++ _data else _hdrBuf
     (newHdrBuf, dataOut) = shiftOutFrom0 (SNat @dataWidth) hdrBuf
     forwardBytes = snd $ shiftOutFromN (SNat @(ForwardBufSize headerBytes dataWidth)) _data
 
-    newLast = case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) d0 of
+    newLast = case alignedCmp of
       SNatLE -> Nothing
       SNatGT -> fmap (adjustLast (SNat @headerBytes)) _last
 
@@ -121,7 +125,7 @@ packetizerT toMetaOut toHeader st@Insert {..} (Just pkt@PacketStreamM2S {..}, bw
     -- Assert backpressure while inserting the header. If shifting needs to be done
     -- and we are at the last cycle of insertion, we do not need to assert backpressure
     -- because we put the rest of the data in _fwdBuf (of course, unless our subordinate asserts backpressure).
-    bwdOut = PacketStreamS2M $ case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) d0 of
+    bwdOut = PacketStreamS2M $ case alignedCmp of
       SNatLE -> False
       SNatGT -> _ready bwdIn && _counter == maxBound
 
@@ -130,7 +134,7 @@ packetizerT toMetaOut _ st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = 
     nextAborted = _aborted || _abort
     metaOut = toMetaOut _meta
     (dataOut, nextFwdBuf) = splitAt (SNat @dataWidth) (_fwdBuf ++ _data)
-    dataLast = nextFwdBuf ++ (repeat defaultByte :: Vec (dataWidth - ForwardBufSize headerBytes dataWidth) (BitVector 8))
+    dataLast = nextFwdBuf ++ repeat @(dataWidth - ForwardBufSize headerBytes dataWidth) defaultByte
     newLast = fmap (adjustLast (SNat @headerBytes)) _last
 
     outPkt = pkt {
@@ -177,10 +181,6 @@ packetizerC
   -> Circuit (PacketStream dom dataWidth metaIn) (PacketStream dom dataWidth metaOut)
 packetizerC toMetaOut toHeader = fromSignals outCircuit
   where
-    divProof = compareSNat d1 (SNat @(headerBytes `DivRU` dataWidth))
-    modProof = compareSNat (SNat @(headerBytes `Mod` dataWidth)) (SNat @dataWidth)
-    outCircuit = case (divProof, modProof) of
-      (SNatLE, SNatLE) -> case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) (SNat @dataWidth) of
+    outCircuit = case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) (SNat @dataWidth) of
         SNatLE -> mealyB (packetizerT @headerBytes toMetaOut toHeader) initialState
-        _ -> errorX "packetizer1: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
-      _ -> errorX "packetizer0: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
+        _ -> errorX "packetizer0: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
