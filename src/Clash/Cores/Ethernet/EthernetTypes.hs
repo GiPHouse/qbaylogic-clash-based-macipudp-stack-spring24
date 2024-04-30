@@ -3,8 +3,8 @@ Module      : Clash.Cores.Ethernet.EthernetTypes
 Description : Provides various data types, aliases and constants for the Ethernet protocol.
 -}
 module Clash.Cores.Ethernet.EthernetTypes
-  ( MacAddress
-  , EthernetHeader
+  ( MacAddress(..)
+  , EthernetHeader(..)
   , Preamble
   , preamble
   , startFrameDelimiter
