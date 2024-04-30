@@ -41,6 +41,6 @@ uartEthTxStack clkEth rstEth baudGen uartRxS = snd $ toSignals ckt (CSignal uart
     ckt = uartRxNoBaudGenC' baudGen
           |> unsafeToPacketStream
           |> upConverterC
-          |> packetBufferC d10 d8
+          |> packetBufferC d10 d6
           |> txStack @4 clkEth rstEth enableGen
           |> exposeClockResetEnable (rgmiiTxC (delayg d0) oddrx1f) clkEth rstEth enableGen
