@@ -112,7 +112,7 @@ packetizerT toMetaOut toHeader st@Insert {..} (Just pkt@PacketStreamM2S {..}, bw
 
     nextSt = case (_counter == maxBound, newLast) of
       (False, _) -> Insert (succ _counter) newHdrBuf nextAborted
-      (True, Nothing) -> Forward metaOut forwardBytes nextAborted
+      (True, Nothing) -> Forward forwardBytes nextAborted
       (True, Just (Left _)) -> initialState
       (True, Just (Right idx)) -> LastForward (PacketStreamM2S (take (SNat @dataWidth) newHdrBuf) (Just idx) metaOut nextAborted)
 
@@ -141,7 +141,7 @@ packetizerT toMetaOut _ st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = 
     }
 
     nextSt = case newLast of
-               Nothing -> Forward metaOut nextFwdBuf nextAborted
+               Nothing -> Forward nextFwdBuf nextAborted
                Just (Left _) -> initialState
                Just (Right idx) -> LastForward (PacketStreamM2S dataLast (Just idx) metaOut nextAborted)
 
