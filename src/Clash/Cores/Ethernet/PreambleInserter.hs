@@ -23,8 +23,4 @@ preambleInserterC
   , 1 <= dataWidth
   , KnownNat dataWidth)
   => Circuit (PacketStream dom dataWidth ()) (PacketStream dom dataWidth ())
-preambleInserterC = fromSignals ckt |> packetizerC (const ()) id
-  where
-    ckt (fwdIn, bwdIn) = (bwdIn, fwdOut)
-      where
-        fwdOut = fmap (fmap (\x -> x { _meta = preamble })) fwdIn
+preambleInserterC = packetizerC (const ()) (const preamble)
