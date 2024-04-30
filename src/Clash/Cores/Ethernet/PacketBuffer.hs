@@ -13,21 +13,13 @@ import Data.Maybe
 import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Internal ( CSignal(..) )
 
-data PacketStreamContent(dataWidth :: Nat) (metaType :: Type)
-  = PacketStreamContent {
-  _cdata :: Vec dataWidth (BitVector 8),
-  -- ^ The bytes to be transmitted
-  _clast :: Maybe (Index dataWidth),
-  -- ^ If Nothing, we are not yet at the last byte, otherwise signifies how many bytes of _data are valid
-  _cabort :: Bool
-  -- ^ If True, the current transfer is aborted and the slave should ignore the current transfer
-} deriving (Generic, ShowX, Show, NFDataX, Bundle)
+type PacketStreamContent(dataWidth :: Nat) (metaType :: Type) = (Vec dataWidth (BitVector 8), Maybe (Index dataWidth))
 
 toPacketStreamContent :: PacketStreamM2S dataWidth metaType -> PacketStreamContent dataWidth metaType
-toPacketStreamContent PacketStreamM2S{ _data=d, _last=l, _meta=_, _abort=b } = PacketStreamContent d l b
+toPacketStreamContent PacketStreamM2S{ _data=d, _last=l, _meta=_, _abort=_ } = (d,l)
 
 toPacketStreamM2S :: PacketStreamContent dataWidth metaType -> metaType -> PacketStreamM2S dataWidth metaType
-toPacketStreamM2S PacketStreamContent{ _cdata=d, _clast=l, _cabort=b } m = PacketStreamM2S d l m b
+toPacketStreamM2S (d, l) m = PacketStreamM2S d l m False
 
 packetBuffer
   :: forall (dom :: Domain) (dataWidth :: Nat) (metaType :: Type) (contentSizeBits :: Nat) (metaSizeBits :: Nat) .
