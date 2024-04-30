@@ -6,9 +6,11 @@ Description : Strips the IP header from packets
 -}
 module Clash.Cores.Ethernet.IPDepacketizer
   ( ipDepacketizerC
+  , ipDepacketizerLiteC
   , IPv4Header(..)
   , IPv4HeaderLite(..)
   , toLite
+  , toLiteC
   ) where
 
 import Clash.Prelude
@@ -51,7 +53,7 @@ data IPv4HeaderLite = IPv4HeaderLite
 toLite :: IPv4Header -> IPv4HeaderLite
 toLite IPv4Header {..} = IPv4HeaderLite _ipv4Source _ipv4Destination
 
--- | Applies `toLite` to the metadata of all packets
+-- | Shrinks IPv4 headers
 toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4HeaderLite)
 toLiteC = Circuit (swap . unbundle . go . bundle)
   where
@@ -65,11 +67,21 @@ ipDepacketizerC
      , KnownNat n
      , 1 <= n
      )
-  => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
-ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength |> toLiteC
+  => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4Header)
+ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength
   where
     verifyLength = Circuit $ \(fwdIn, bwdIn) -> (bwdIn, (go <$>) <$> fwdIn)
     go p = p {_abort = _abort p || _ipv4Ihl (_meta p) /= 5}
+
+-- | Version of `ipDepacketizerC` that only keeps some of the IPv4 header fields.
+ipDepacketizerLiteC
+  :: forall (dom :: Domain) (n :: Nat)
+   . ( HiddenClockResetEnable dom
+     , KnownNat n
+     , 1 <= n
+     )
+  => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
+ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
 
 -- | Verifies the internet checksum of the first 20 bytes of each packet. Sets
 -- the abort bit from byte 21 onwards if the checksum is invalid. Data is left
