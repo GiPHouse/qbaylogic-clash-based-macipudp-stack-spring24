@@ -21,6 +21,7 @@ import Clash.Cores.Ethernet.Depacketizer (depacketizerC)
 import qualified Data.Bifunctor as B
 import Data.Tuple
 import Data.Maybe
+import Data.Type.Equality
 
 type IPv4Address = BitVector 32
 
@@ -59,11 +60,10 @@ toLiteC = Circuit (swap . unbundle . go . bundle)
 -- | Parses the IPv4 header. Does not support parsing options in the header.
 -- If the checksum is invalid or options are given, the abort bit is set.
 ipDepacketizerC
-  :: forall (dom :: Domain) (n :: Nat) m
+  :: forall (dom :: Domain) (n :: Nat)
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
-     , n ~ 2 * m
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
 ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength |> toLiteC
@@ -75,26 +75,48 @@ ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength |> toLit
 -- the abort bit from byte 21 onwards if the checksum is invalid. Data is left
 -- intact.
 verifyChecksum
-  :: forall dom n m
+  :: forall dom n
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
-     , n ~ m * 2
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
-verifyChecksum = Circuit $ mealyB go (0, 0)
+verifyChecksum = Circuit $ mealyB go (0, 0, undefined)
   where
-    go
-      :: (BitVector 16, Index (1 + 20 `Div` n))
+    go :: (BitVector 16, Index (1 + 20 `Div` n), BitVector 8)
+      -- Accumulator for checksum, packet counter, extra byte for odd data widths
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
-      -> ((BitVector 16, Index (1 + 20 `Div` n)), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
+      -> ((BitVector 16, Index (1 + 20 `Div` n), BitVector 8), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
     go s (Nothing, bwd) = (s, (bwd, Nothing))
-    go s@(acc, i) (Just fwdIn, PacketStreamS2M inReady) = (if inReady then s' else s, (PacketStreamS2M inReady, Just fwdOut))
+    go s@(acc, i, byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
       where
         containsData = i == maxBound
         dataIdx = natToNum @(20 `Mod` n)
+
+        -- Set all data bytes to zero
         header = imap (\j x -> if containsData && j >= dataIdx then 0 else x) $ _data fwdIn
-        acc' = fold onesComplementAdd (acc :> bitCoerce header)
-        i' = if i < maxBound then i + 1 else maxBound
-        s' = if isJust (_last fwdIn) then (0, 0) else (acc', i')
+
+        -- We verify that 2 * n Div 2 + n Mod 2 = n, and distinguish between
+        -- even and odd data widths. For odd data widths, we have to save the
+        -- extra byte in even packets and use it in the odd packets.
+        (acc', byte') =
+          case ( sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2))
+               , sameNat (SNat @(n `Mod` 2)) d0
+               , sameNat (SNat @(n `Mod` 2)) d1
+               ) of
+            (Just Refl, Just Refl, _) -> -- n mod 2 = 0
+              let xs :: Vec (n `Div` 2) (BitVector 16)
+                  xs = bitCoerce header
+               in (fold onesComplementAdd (acc :> xs), undefined)
+            (Just Refl, _, Just Refl) -> -- n mod 2 = 1
+              let xs :: Vec (n `Div` 2 + 1) (BitVector 16)
+                  xs = bitCoerce $ if even i then init header :< 0 :< 0 else byte :> header
+               in (fold onesComplementAdd (acc :> xs), last header)
+            _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n, or n `Mod` 2 not 0 or 1"
+
+        i' = satSucc SatSymmetric i
+        s'
+          | not inReady = s
+          | isJust (_last fwdIn) = (0, 0, undefined)
+          | otherwise = (acc', i', byte')
         fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || acc' /= 0 } else fwdIn

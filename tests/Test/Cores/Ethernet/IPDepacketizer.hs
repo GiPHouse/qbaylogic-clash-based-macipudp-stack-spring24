@@ -75,10 +75,9 @@ testIPPacketizerValid _ = idWithModelSingleDomain
 
 -- | Tests the IP depacketizer for arbitrary packets
 testIPPacketizer
-  :: forall (dataWidth :: C.Nat) k
+  :: forall (dataWidth :: C.Nat)
    . ( C.KnownNat dataWidth
      , 1 C.<= dataWidth
-     , dataWidth ~ 2 C.* k
      )
   => C.SNat dataWidth
   -> Property
@@ -98,6 +97,39 @@ testIPPacketizer _ = idWithModelSingleDomain
       in
        concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps'') (aborts ++ repeat False)
 
+
+-- Odd data widths
+prop_ip_depacketizer_valid_d1 :: Property
+prop_ip_depacketizer_valid_d1 = testIPPacketizer C.d1
+
+prop_ip_depacketizer_valid_d7 :: Property
+prop_ip_depacketizer_valid_d7 = testIPPacketizer C.d7
+
+prop_ip_depacketizer_valid_d19 :: Property
+prop_ip_depacketizer_valid_d19 = testIPPacketizer C.d19
+
+prop_ip_depacketizer_valid_d21 :: Property
+prop_ip_depacketizer_valid_d21 = testIPPacketizer C.d21
+
+prop_ip_depacketizer_valid_d23 :: Property
+prop_ip_depacketizer_valid_d23 = testIPPacketizer C.d23
+
+prop_ip_depacketizer_d1 :: Property
+prop_ip_depacketizer_d1 = testIPPacketizer C.d1
+
+prop_ip_depacketizer_d7 :: Property
+prop_ip_depacketizer_d7 = testIPPacketizer C.d7
+
+prop_ip_depacketizer_d19 :: Property
+prop_ip_depacketizer_d19 = testIPPacketizer C.d19
+
+prop_ip_depacketizer_d21 :: Property
+prop_ip_depacketizer_d21 = testIPPacketizer C.d21
+
+prop_ip_depacketizer_d23 :: Property
+prop_ip_depacketizer_d23 = testIPPacketizer C.d23
+
+-- Even data widths
 prop_ip_depacketizer_valid_d2 :: Property
 prop_ip_depacketizer_valid_d2 = testIPPacketizer C.d2
 
