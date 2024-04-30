@@ -58,25 +58,22 @@ packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, f
 
       -- The write commands to the RAM
     writeCommand = toMaybe <$> writeEnable <*> bundle(cWordAddr, toPacketStreamContent . fromJustX <$> fwdIn)
-    mWriteCommand = toMaybe <$> mWriteEnable <*> bundle(mWriteAddr, _meta . fromJustX <$> fwdIn)
+    mWriteCommand = toMaybe <$> nextPacketIn <*> bundle(mWriteAddr, _meta . fromJustX <$> fwdIn)
 
     -- Addresses for the content data
     cWordAddr, cPacketAddr, cReadAddr :: Signal dom (Unsigned contentSizeBits)
     cWordAddr = register 0 $ mux dropping' cPacketAddr $ mux writeEnable (cWordAddr + 1) cWordAddr
-    cPacketAddr = register 0 $ mux (lastWordIn .&&. writeEnable) (cWordAddr + 1) cPacketAddr
+    cPacketAddr = register 0 $ mux nextPacketIn (cWordAddr + 1) cPacketAddr
     cReadAddr' = mux readEnable (cReadAddr + 1) cReadAddr
     cReadAddr = register 0 cReadAddr'
 
     -- Addresses for the meta data
     mWriteAddr, mReadAddr :: Signal dom (Unsigned metaSizeBits)
     mWriteAddr = register 0 mWriteAddr'
-    mWriteAddr' = mux mWriteEnable (mWriteAddr + 1) mWriteAddr
+    mWriteAddr' = mux nextPacketIn (mWriteAddr + 1) mWriteAddr
 
     mReadAddr' = mux mReadEnable (mReadAddr + 1) mReadAddr
     mReadAddr = register 0 mReadAddr'
-
-    -- only write the value down if we're at the last word of the packet
-    mWriteEnable = lastWordIn .&&. writeEnable
     -- only read the next value if we've outpustted the last word of a packet
     mReadEnable = lastWordOut .&&. readEnable
 
@@ -98,6 +95,7 @@ packetBuffer SNat SNat (fwdIn, bwdIn) = (PacketStreamS2M . not <$> fullBuffer, f
     lastWordIn = maybe False (isJust . _last) <$> fwdIn
     lastWordOut = maybe False (isJust . _last) <$> fwdOut
     abortIn = maybe False _abort <$> fwdIn
+    nextPacketIn = lastWordIn .&&. writeEnable
 
 abortOnBackPressure
   :: forall  (dom :: Domain) (dataWidth :: Nat) (metaType :: Type).
