@@ -10,7 +10,7 @@ class TestUartToEth(unittest.TestCase):
         frame check sequence and tests that the frames are returned over ethernet.
         """
         N = 5
-        frame = b"UUUUUUU\xd5\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffabcdefhijklmnopqrstuvwABCDEFHIJKLMNOPQRSTUVW0123456789\xa2\xba\xed\xe1"
+        frame = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffabcdefhijklmnopqrstuvwABCDEFHIJKLMNOPQRSTUVW0123456789\xa2\xba\xed\xe1"
         with util.open_socket() as sock, util.open_serial() as ser:
             ser.write(N * util.make_uart_packet(frame))
             for _ in range(N):
