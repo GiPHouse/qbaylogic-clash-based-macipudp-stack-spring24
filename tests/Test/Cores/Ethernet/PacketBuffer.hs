@@ -49,6 +49,9 @@ genWord =  PacketStreamM2S <$>
               Gen.enumBounded <*>
               Gen.enumBounded
 
+genPackets :: Range Int -> Gen [PacketStreamM2S 4 Int16]
+genPackets range = makeValid <$> Gen.list range genWord
+
 isSubsequenceOf :: Eq a => [a] -> [a] -> Bool
 isSubsequenceOf [] _ = True
 isSubsequenceOf _ [] = False
@@ -62,7 +65,7 @@ prop_packetBuffer_id =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (genValidPackets (Range.linear 0 20) (Range.linear 0 20) genWord)
+    (genPackets (Range.linear 0 100))
     (C.exposeClockResetEnable dropAbortedPackets)
     (C.exposeClockResetEnable ckt)
     (===)
@@ -89,7 +92,7 @@ prop_packetBuffer_no_gaps = property $ do
   let packetBufferSize = d12
       maxInputSize = 50
       ckt = exposeClockResetEnable (packetBufferC packetBufferSize packetBufferSize) systemClockGen resetGen enableGen
-      gen = genValidPackets (Range.linear 0 20) (Range.linear 0 20) genWord
+      gen = genPackets (Range.linear 0 100)
 
   packets :: [PacketStreamM2S 4 Int16] <- H.forAll gen
 
@@ -111,7 +114,7 @@ prop_overFlowDrop_packetBuffer_id =
   idWithModelSingleDomain
     @C.System
     defExpectOptions
-    (genValidPackets (Range.linear 0 20) (Range.linear 0 10) genWord)
+    (genPackets (Range.linear 0 100))
     (C.exposeClockResetEnable dropAbortedPackets)
     (C.exposeClockResetEnable ckt)
  where
@@ -140,16 +143,16 @@ prop_overFlowDrop_packetBuffer_drop =
     where
       packetChunk = chunkByPacket packets
 
-  genSmall = genValidPackets (Range.linear 1 1) (Range.linear 1 5) genCleanWord
-  genBig = genValidPackets (Range.linear 1 1) (Range.linear 33 50) genCleanWord
+  genSmall = genValidPacket (Range.linear 1 5) genCleanWord
+  genBig = genValidPacket (Range.linear 33 50) genCleanWord
 
 -- | test for id using a small metabuffer to ensure backpressure using the metabuffer is tested
 prop_packetBuffer_small_metaBuffer :: Property
 prop_packetBuffer_small_metaBuffer =
-  idWithModelSingleDomain 
+  idWithModelSingleDomain
     @C.System
     defExpectOptions
-    (genValidPackets (Range.linear 0 20) (Range.linear 0 20) genCleanWord)
+    (genPackets (Range.linear 0 100))
     (C.exposeClockResetEnable dropAbortedPackets)
     (C.exposeClockResetEnable ckt)
  where

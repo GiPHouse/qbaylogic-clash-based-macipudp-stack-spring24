@@ -39,7 +39,7 @@ packetBuffer
   -- ^ Depth for the content of the packet buffer 2^contentSizeBits
   => SNat contentSizeBits
   -> SNat metaSizeBits
-  -- ^ Depth for the meta of the packet buffer 
+  -- ^ Depth for the meta of the packet buffer
   -> ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
@@ -122,7 +122,7 @@ abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle
 -- If a word in a packet has _abort set to true, the packetBuffer will drop the entire packet.
 -- If a packet is equal to or larger than 2^sizeBits-1, the packetBuffer will have a deadlock, this should be avoided!
 packetBufferC
-  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) 
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type)
       (contentSizeBits :: Nat) (metaSizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth
@@ -132,14 +132,14 @@ packetBufferC
     => SNat contentSizeBits
     -- ^ Depth of the content of the packet buffer, this is equal to 2^contentSizeBits
     -> SNat metaSizeBits
-    -- ^ Depth for the meta of the packet buffer, this is equal to 2^metaSizeBits. 
+    -- ^ Depth for the meta of the packet buffer, this is equal to 2^metaSizeBits.
     -- This can usually be smaller than contentSizeBits as for every packet we only need a single meta entry, while we usually have many words.
     -> Circuit (PacketStream dom dataWidth metaType) (PacketStream dom dataWidth metaType)
 packetBufferC cSizeBits mSizeBits = forceResetSanity |> fromSignals (packetBuffer cSizeBits mSizeBits)
 
 -- | A packet buffer that drops packets when it is full, instead of giving backpressure, see packetBufferC for more detailed explanation
-overflowDropPacketBufferC 
-  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type) 
+overflowDropPacketBufferC
+  :: forall  (dom :: Domain)  (dataWidth :: Nat) (metaType :: Type)
       (contentSizeBits :: Nat) (metaSizeBits :: Nat).
   HiddenClockResetEnable dom
     => KnownNat dataWidth

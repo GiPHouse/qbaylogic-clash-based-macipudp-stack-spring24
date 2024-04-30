@@ -18,7 +18,7 @@ import Clash.Prelude qualified as C
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Sized.Vector qualified as Vec
 import Hedgehog
-import qualified Hedgehog.Gen as Gen
+import Hedgehog.Gen qualified as Gen
 
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
 chunkBy _ [] = []
@@ -90,7 +90,19 @@ cleanPackets = map cleanPacket
         where
           datas = take (1 + fromIntegral i) (C.toList _data) ++ replicate ((C.natToNum @n) - 1 - fromIntegral i) 0
 
--- Generates a single valid packet using the given generator, 
+-- | Make an existing list of packets valid, meaning all words in a packet share the same meta value, and the list always contain full packets
+makeValid :: forall (dataWidth :: C.Nat) (metaType :: C.Type).
+  C.KnownNat dataWidth
+  => 1 C.<= dataWidth
+  => [PacketStreamM2S dataWidth metaType]
+  -> [PacketStreamM2S dataWidth metaType]
+makeValid packets = fullPackets $ concatMap sameMeta $ chunkByPacket packets
+  where
+      sameMeta :: [PacketStreamM2S dataWidth metaType] -> [PacketStreamM2S dataWidth metaType]
+      sameMeta [] = []
+      sameMeta list@(x:_) = fullPackets $ fmap (\pkt -> pkt { _meta = _meta x }) list
+
+-- Generates a single valid packet using the given generator,
 -- The meta value of the first word will be that of all words, and only the last value in the packet will have Last = Just ..
 genValidPacket :: forall (dataWidth :: C.Nat) (metaType :: C.Type).
   C.KnownNat dataWidth
