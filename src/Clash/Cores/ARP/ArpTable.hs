@@ -52,8 +52,8 @@ arpTable SNat = fromSignals ckt
           where
             go (ip, entry) = case ip of
               -- No request, so no response
-              Nothing     -> Nothing 
+              Nothing     -> Nothing
               -- Request. Now we have to look if the IP address is in our ARP table
-              Just ipAddr -> case entry of 
+              Just ipAddr -> case entry of
                 NoData -> Just ARPEntryNotFound
                 Data (e, _) -> if _arpIP e == ipAddr then Just $ ARPEntryFound (_arpMac e) else Just ARPEntryNotFound
