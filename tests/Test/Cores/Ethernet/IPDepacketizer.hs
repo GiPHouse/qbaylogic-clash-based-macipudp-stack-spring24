@@ -27,11 +27,14 @@ import Protocols.Hedgehog
 -- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.IPDepacketizer
+import Clash.Cores.Ethernet.EthernetTypes
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
 
 import Test.Cores.Ethernet.InternetChecksum ( pureInternetChecksum )
+import qualified Clash.Sized.Vector as C
+import Clash.Cores.Ethernet.Util (toMaybe)
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -54,10 +57,32 @@ testIPDepacketizer
   -> Property
 testIPDepacketizer _ = idWithModelSingleDomain
   @C.System defExpectOptions
-  (fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets (C.unpack <$> Gen.enumBounded))))
+  gen
   (C.exposeClockResetEnable model)
   (C.exposeClockResetEnable (ipDepacketizerC @C.System @dataWidth))
   where
+    gen = Gen.choice [genGarbage, genValidHeaders]
+
+    genGarbage = fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets (C.unpack <$> Gen.enumBounded)))
+    geb :: forall x . (Enum x, Bounded x) => Gen x
+    geb = Gen.enumBounded
+    genIPv4Header = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
+    genValidPacket = do
+      { ethernetHeader :: EthernetHeader <- C.unpack <$> Gen.enumBounded
+      ; rawHeader <- genIPv4Header
+      ; let checksum = pureInternetChecksum (C.bitCoerce rawHeader :: C.Vec 10 (C.BitVector 16))
+            header = rawHeader {_ipv4Checksum = checksum}
+            headerBytes = C.toList (C.bitCoerce header :: C.Vec 20 (C.BitVector 8))
+      ; dataBytes :: [C.BitVector 8] <- Gen.list (Range.linear 0 (5 * C.natToNum @dataWidth)) geb
+      ; let dataFragments = chopBy (C.natToNum @dataWidth) (headerBytes ++ dataBytes)
+            fragments = (\x -> PacketStreamM2S x Nothing ethernetHeader False) <$> (C.unsafeFromList @dataWidth <$> dataFragments)
+            fragments' = init fragments ++ [(last fragments) {_last = Just (fromIntegral (length (last dataFragments) - 1))}]
+      ; aborts <- sequence (Gen.bool <$ fragments)
+      ; let fragments'' = zipWith (\p abort -> p {_abort = abort}) fragments' aborts
+      ; return fragments''
+      }
+    genValidHeaders = concat <$> Gen.list (Range.linear 1 50) genValidPacket
+
     model ps =
      let
        ps' = depacketizerModel const ps
