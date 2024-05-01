@@ -95,11 +95,14 @@ library
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.MacPacketizer
+    Clash.Cores.Ethernet.Packetizer
     Clash.Cores.Ethernet.PacketArbiter
     Clash.Cores.Ethernet.PacketBuffer
     Clash.Cores.Ethernet.PacketDispatcher
     Clash.Cores.Ethernet.PacketStream
     Clash.Cores.Ethernet.PaddingInserter
+    Clash.Cores.Ethernet.PreambleInserter
     Clash.Cores.Ethernet.PreambleStripper
     Clash.Cores.Ethernet.UpConverter
     Clash.Cores.Ethernet.DownConverter
@@ -155,6 +158,7 @@ test-suite test-library
     Test.Cores.Ethernet.PacketStream
     Test.Cores.Ethernet.PaddingInserter
     Test.Cores.Ethernet.PacketDispatcher
+    Test.Cores.Ethernet.PreambleInserter
     Test.Cores.Ethernet.PreambleStripper
     Test.Lattice.ECP5.UART
     Test.Cores.Ethernet.DownConverter
@@ -164,6 +168,8 @@ test-suite test-library
     Test.Cores.Ethernet.FcsInserter
     Test.Cores.Ethernet.AsyncFIFO
     Test.Cores.Ethernet.InternetChecksum
+    Test.Cores.Ethernet.Packetizer
+    Test.Cores.Ethernet.MacPacketizer
   build-depends:
     clash-eth,
     QuickCheck,

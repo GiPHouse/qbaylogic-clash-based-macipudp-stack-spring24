@@ -1,8 +1,15 @@
 {-# language FlexibleContexts #-}
+{-# language MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Clash.Lattice.ECP5.Colorlight.UartEthTxStack
   ( uartEthTxStack
   ) where
+
+import Data.Proxy
+
+import Clash.Cores.Crc.Catalog
+import Clash.Cores.Crc.Internal
 
 import Clash.Cores.Ethernet.PacketBuffer ( packetBufferC )
 import Clash.Cores.Ethernet.PacketStream
@@ -15,6 +22,8 @@ import Clash.Lattice.ECP5.UART
 import Clash.Prelude
 import Protocols
 import Protocols.Internal ( CSignal(CSignal) )
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 
 -- | Runs incoming packets from a UART signal through the ethernet transmit
 -- stack, creating an RGMIITXChannel.

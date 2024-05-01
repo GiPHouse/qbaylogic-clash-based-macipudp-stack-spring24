@@ -3,9 +3,10 @@ Module      : Clash.Cores.Ethernet.EthernetTypes
 Description : Provides various data types, aliases and constants for the Ethernet protocol.
 -}
 module Clash.Cores.Ethernet.EthernetTypes
-  ( MacAddress
-  , EthernetHeader
+  ( MacAddress(..)
+  , EthernetHeader(..)
   , Preamble
+  , preamble
   , startFrameDelimiter
   ) where
 
@@ -28,6 +29,10 @@ data EthernetHeader = EthernetHeader {
 
 -- | A vector of 8 bytes, which is the size of the Ethernet preamble + start frame delimiter.
 type Preamble = Vec 8 (BitVector 8)
+
+-- | The actual preamble, each byte ordered least significant bit first.
+preamble :: Preamble
+preamble = replicate d7 0x55 :< 0xD5
 
 -- | Ethernet start frame delimiter (SFD), least significant bit first.
 startFrameDelimiter :: BitVector 8
