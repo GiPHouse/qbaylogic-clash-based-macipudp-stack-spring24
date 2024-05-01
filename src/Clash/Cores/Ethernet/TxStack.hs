@@ -1,5 +1,4 @@
 {-# language FlexibleContexts #-}
-{-# language MultiParamTypeClasses #-}
 
 module Clash.Cores.Ethernet.TxStack
   ( txStack
@@ -19,6 +18,7 @@ import Clash.Cores.Ethernet.PaddingInserter ( paddingInserterC )
 import Clash.Cores.Ethernet.PreambleInserter ( preambleInserterC )
 import Clash.Prelude
 import Protocols
+
 
 -- | Processes bytes to send over ethernet
 txStack

@@ -1,5 +1,6 @@
 {-# language FlexibleContexts #-}
 {-# language MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Clash.Lattice.ECP5.Colorlight.UartEthTxStack
   ( uartEthTxStack
