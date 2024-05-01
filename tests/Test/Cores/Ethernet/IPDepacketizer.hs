@@ -75,7 +75,7 @@ testIPDepacketizer _ = idWithModelSingleDomain
             headerBytes = C.toList (C.bitCoerce header :: C.Vec 20 (C.BitVector 8))
       ; dataBytes :: [C.BitVector 8] <- Gen.list (Range.linear 0 (5 * C.natToNum @dataWidth)) geb
       ; let dataFragments = chopBy (C.natToNum @dataWidth) (headerBytes ++ dataBytes)
-            fragments = (\x -> PacketStreamM2S x Nothing ethernetHeader False) <$> (C.unsafeFromList @dataWidth <$> dataFragments)
+            fragments = (\x -> PacketStreamM2S x Nothing ethernetHeader False) <$> (C.unsafeFromList @dataWidth <$> (++ repeat 0xAA) <$> dataFragments)
             fragments' = init fragments ++ [(last fragments) {_last = Just (fromIntegral (length (last dataFragments) - 1))}]
       ; aborts <- sequence (Gen.bool <$ fragments)
       ; let fragments'' = zipWith (\p abort -> p {_abort = abort}) fragments' aborts

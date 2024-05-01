@@ -131,4 +131,7 @@ verifyChecksum = Circuit $ mealyB go (0, 0, undefined)
           | not inReady = s
           | isJust (_last fwdIn) = (0, 0, undefined)
           | otherwise = (acc', i', byte')
-        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || acc' /= 0 } else fwdIn
+
+        -- If the packet ends too early, acc' might have become undefined
+        earlyLast = maybe False (< dataIdx) (_last fwdIn)
+        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || earlyLast || acc' /= 0 } else fwdIn
