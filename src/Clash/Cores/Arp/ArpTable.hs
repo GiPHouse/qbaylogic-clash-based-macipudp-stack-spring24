@@ -37,7 +37,7 @@ arpTable SNat = fromSignals ckt
         -- A second has passed if this counter is 0. The counter is reset upon an insertion request.
         counter :: Signal dom (Index (10^12 `Div` DomainPeriod dom))
         counter = withReset rst register maxBound (satPred SatWrap <$> counter)
-        rst = unsafeToReset (isJust . dataToMaybe <$> insertReq)
+        rst = unsafeFromLowPolarity (isJust . dataToMaybe <$> insertReq)
 
         arpEntry :: Signal dom (ArpEntry, Index (maxAgeSeconds + 1))
         arpEntry = register (errorX "empty initial content", 0) writeCommand
