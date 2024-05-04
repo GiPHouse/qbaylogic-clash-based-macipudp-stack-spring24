@@ -44,13 +44,13 @@ python_test: /run/netns/colorlight prog
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
-verilog=verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/topEntity.v
+verilog=verilog/Clash.TinyTapeout.EthernetMac.TopEntity.topEntity/topEntity.v
 netlist=netlist/synth.json
 pnr=netlist/pnr.cfg
 bitstream=netlist/clash-eth.bit
 
 ${verilog}: ${HASKELL_SOURCES}
-	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+	cabal run clash -- Clash.TinyTapeout.EthernetMac.TopEntity --verilog -g -fclash-clear
 
 .PHONY: verilog
 verilog: $(verilog)
@@ -60,9 +60,8 @@ ${netlist}: ${verilog}
 	yosys \
 		-m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
 		-p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
-		-p "ecp5_infer_bram_outreg" \
-		-p "write_json ${netlist}" \
-		verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+		-p "write_json ${verilog}" \
+		verilog/Clash.TinyTapeout.EthernetMac.TopEntity.topEntity/*.v
 
 .PHONY: netlist
 netlist: $(netlist)
@@ -73,7 +72,8 @@ ${pnr}: ${netlist} pinout.lpf
 		--textcfg ${pnr} --25k \
 		--speed 6 \
 		--package CABGA256 \
-		--randomize-seed --timing-allow-fail
+		--randomize-seed --timing-allow-fail \
+		--lpf-allow-unconstrained
 
 .PHONY: pnr
 pnr: $(pnr)
