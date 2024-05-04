@@ -68,7 +68,7 @@ chopPacket PacketStreamM2S {..} = packets where
 
 fullPackets :: (C.KnownNat n) => [PacketStreamM2S n meta] -> [PacketStreamM2S n meta]
 fullPackets [] = []
-fullPackets fragments = let lastFragment = (last fragments) { _last = Just 0 }
+fullPackets fragments = let lastFragment = (last fragments) { _last = Just maxBound }
                         in  init fragments ++ [lastFragment]
 
 -- drops packets if one of the words in the packet has the abort flag set

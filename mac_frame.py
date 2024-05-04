@@ -13,12 +13,13 @@ import struct
 import sys
 
 def get_mac_addr(socket, ifname):
+    return b'\xff\xff\xff\xff\xff\xff'
     ifname_c = struct.pack('256s', ifname[:15].encode())
     info = fcntl.ioctl(socket.fileno(), 0x8927, ifname_c)
     return bytes.fromhex(info[18:24].hex())
 
 ifname = sys.argv[1]
-eth_type = b'\xff\xff'
+eth_type = b'\x20\x02'
 message = sys.argv[2]
 
 payload = message.encode('utf-8')

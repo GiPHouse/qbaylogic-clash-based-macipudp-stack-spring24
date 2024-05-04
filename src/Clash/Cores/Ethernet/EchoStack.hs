@@ -36,7 +36,7 @@ echoStackC
    . KnownDomain dom
   => KnownDomain domEthRx
   => KnownDomain domEthTx
-  => HardwareCrc Crc32_ethernet 8 4
+  => HardwareCrc Crc32_ethernet 8 2
   => HiddenClockResetEnable dom
   => Clock domEthRx
   -> Reset domEthRx
@@ -48,8 +48,7 @@ echoStackC
 echoStackC rxClk rxRst rxEn txClk txRst txEn = ckt
   where
     swapMac hdr@EthernetHeader {..} = hdr { _macSrc = _macDst, _macDst = _macSrc}
-    ckt = rxStack @4 rxClk rxRst rxEn (pure myMac)
+    ckt = rxStack @2 rxClk rxRst rxEn (pure myMac)
             |> packetBufferC d10 d4
             |> mapMeta swapMac
             |> txStack txClk txRst txEn
-

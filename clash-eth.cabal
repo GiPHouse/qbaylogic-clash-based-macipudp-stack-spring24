@@ -103,6 +103,7 @@ library
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
+    Clash.Cores.Ethernet.MII
     Clash.Cores.Ethernet.MacPacketizer
     Clash.Cores.Ethernet.IpPacketizer
     Clash.Cores.Ethernet.PacketizeFromDf
@@ -130,6 +131,9 @@ library
     Clash.Cores.IP.IPDepacketizer
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
+    Clash.TinyTapeout.EthernetMac.TopEntity
+    Clash.TinyTapeout.EthernetMac.EthStack
+    Clash.TinyTapeout.EthernetMac.Credits
   other-modules:
     Clash.Sized.Vector.Extra
     Clash.Signal.Extra
@@ -189,6 +193,7 @@ test-suite test-library
     Test.Cores.Ethernet.EthernetTypes
     Test.Cores.IP.Icmp
     Test.Cores.IP.IPDepacketizer
+    Test.TinyTapeout.Credits
   build-depends:
     clash-eth,
     QuickCheck,

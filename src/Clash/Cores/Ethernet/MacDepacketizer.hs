@@ -15,6 +15,7 @@ import Clash.Cores.Ethernet.PacketStream
 
 
 -- | Parses the first 14 bytes of the incoming PacketStream into an `EthernetHeader`.
+{-# NOINLINE macDepacketizerC #-}
 macDepacketizerC :: forall (dom :: Domain) (dataWidth :: Nat).
   ( KnownDomain dom
   , HiddenClockResetEnable dom

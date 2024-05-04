@@ -122,11 +122,11 @@ pll50 !_ = (clockGen, unsafeToLowPolarity resetGen)
     .OUTDIVIDER_MUXD(\\"DIVD\\"),
     .CLKI_DIV(1),
     .CLKOP_ENABLE(\\"ENABLED\\"),
-    .CLKOP_DIV(12),
-    .CLKOP_CPHASE(5),
+    .CLKOP_DIV(8),
+    .CLKOP_CPHASE(4),
     .CLKOP_FPHASE(0),
     .FEEDBK_PATH(\\"CLKOP\\"),
-    .CLKFB_DIV(2)
+    .CLKFB_DIV(3)
   ) ~GENSYM[pll50_inst][2] (
     .RST(1'b0),
     .STDBY(1'b0),
