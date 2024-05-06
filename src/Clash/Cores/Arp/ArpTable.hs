@@ -26,7 +26,7 @@ secondTimer
   => Signal dom (Index (10^12 `Div` DomainPeriod dom))
 secondTimer = register maxBound (satPred SatWrap <$> secondTimer)
 
--- | ARP table that stores one ARP entry in a register. `maxAgeSeconds` is the number of seconds before
+-- | ARP table that stores one ARP entry in a register. `maxAgeSeconds` is the number of seconds before the
 --   entry will be removed from the table (lazily). The timeout is inaccurate for up to one second, because
 --   the circuit uses a constant counter for efficiency.
 arpTable
