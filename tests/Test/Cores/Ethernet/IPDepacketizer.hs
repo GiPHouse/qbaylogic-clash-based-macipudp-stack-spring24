@@ -34,7 +34,6 @@ import Test.Cores.Ethernet.Util
 
 import Test.Cores.Ethernet.InternetChecksum ( pureInternetChecksum )
 import qualified Clash.Sized.Vector as C
-import Clash.Cores.Ethernet.Util (toMaybe)
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -52,6 +51,7 @@ testIPDepacketizer
   :: forall (dataWidth :: C.Nat)
    . ( C.KnownNat dataWidth
      , 1 C.<= dataWidth
+     , 20 `C.Mod` dataWidth C.<= dataWidth
      )
   => C.SNat dataWidth
   -> Property
@@ -66,21 +66,22 @@ testIPDepacketizer _ = idWithModelSingleDomain
     genGarbage = fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets (C.unpack <$> Gen.enumBounded)))
     geb :: forall x . (Enum x, Bounded x) => Gen x
     geb = Gen.enumBounded
-    genIPv4Header = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> geb <*> geb
+    genIpAddr = C.sequence (C.repeat @4 geb)
+    genIPv4Header = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> genIpAddr <*> genIpAddr
     genValidPacket = do
-      { ethernetHeader :: EthernetHeader <- C.unpack <$> Gen.enumBounded
-      ; rawHeader <- genIPv4Header
-      ; let checksum = pureInternetChecksum (C.bitCoerce rawHeader :: C.Vec 10 (C.BitVector 16))
-            header = rawHeader {_ipv4Checksum = checksum}
-            headerBytes = C.toList (C.bitCoerce header :: C.Vec 20 (C.BitVector 8))
-      ; dataBytes :: [C.BitVector 8] <- Gen.list (Range.linear 0 (5 * C.natToNum @dataWidth)) geb
-      ; let dataFragments = chopBy (C.natToNum @dataWidth) (headerBytes ++ dataBytes)
-            fragments = (\x -> PacketStreamM2S x Nothing ethernetHeader False) <$> (C.unsafeFromList @dataWidth <$> (++ repeat 0xAA) <$> dataFragments)
-            fragments' = init fragments ++ [(last fragments) {_last = Just (fromIntegral (length (last dataFragments) - 1))}]
-      ; aborts <- sequence (Gen.bool <$ fragments)
-      ; let fragments'' = zipWith (\p abort -> p {_abort = abort}) fragments' aborts
-      ; return fragments''
-      }
+      ethernetHeader :: EthernetHeader <- C.unpack <$> Gen.enumBounded
+      rawHeader <- genIPv4Header
+      let checksum = pureInternetChecksum (C.bitCoerce rawHeader :: C.Vec 10 (C.BitVector 16))
+          header = rawHeader {_ipv4Checksum = checksum}
+          headerBytes = C.toList (C.bitCoerce header :: C.Vec 20 (C.BitVector 8))
+      dataBytes :: [C.BitVector 8] <- Gen.list (Range.linear 0 (5 * C.natToNum @dataWidth)) geb
+      let dataFragments = chopBy (C.natToNum @dataWidth) (headerBytes ++ dataBytes)
+          fragments = (\x -> PacketStreamM2S x Nothing ethernetHeader False) <$> (C.unsafeFromList @dataWidth <$> (++ repeat 0xAA) <$> dataFragments)
+          fragments' = init fragments ++ [(last fragments) {_last = Just (fromIntegral (length (last dataFragments) - 1))}]
+      aborts <- sequence (Gen.bool <$ fragments)
+      let fragments'' = zipWith (\p abort -> p {_abort = abort}) fragments' aborts
+      return fragments''
+
     genValidHeaders = concat <$> Gen.list (Range.linear 1 50) genValidPacket
 
     model ps =

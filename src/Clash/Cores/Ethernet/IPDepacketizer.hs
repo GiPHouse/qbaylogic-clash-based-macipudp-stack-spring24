@@ -24,12 +24,21 @@ ipDepacketizerC
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
+     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4Header)
 ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength
   where
     verifyLength = Circuit $ \(fwdIn, bwdIn) -> (bwdIn, (go <$>) <$> fwdIn)
-    go p = p {_abort = _abort p || _ipv4Ihl (_meta p) /= 5}
+    go p =
+      let
+       header = _meta p
+       abort =
+         _ipv4Version header /= 4 ||
+         _ipv4Ihl header /= 5 ||
+         _ipv4FlagReserved header ||
+         _ipv4FlagMF header
+      in p {_abort = _abort p || abort}
 
 -- | Version of `ipDepacketizerC` that only keeps some of the IPv4 header fields.
 ipDepacketizerLiteC
@@ -37,6 +46,7 @@ ipDepacketizerLiteC
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
+     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
 ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
@@ -49,11 +59,15 @@ verifyChecksum
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
+     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
-verifyChecksum = Circuit $ mealyB go (0, 0, undefined)
+verifyChecksum = case sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)) of
+    Just Refl -> Circuit $ mealyB go (0, 0, undefined)
+    _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n"
   where
-    go :: (BitVector 16, Index (1 + 20 `Div` n), BitVector 8)
+    go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n )
+      => (BitVector 16, Index (1 + 20 `Div` n), BitVector 8)
       -- Accumulator for checksum, packet counter, extra byte for odd data widths
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
       -> ((BitVector 16, Index (1 + 20 `Div` n), BitVector 8), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
@@ -61,35 +75,33 @@ verifyChecksum = Circuit $ mealyB go (0, 0, undefined)
     go s@(acc, i, byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
       where
         containsData = i == maxBound
-        dataIdx = natToNum @(20 `Mod` n)
 
         -- Set all data bytes to zero
-        header = imap (\j x -> if containsData && j >= dataIdx then 0 else x) $ _data fwdIn
+        (dataLo, dataHi0) = splitAtI @(20 `Mod` n) @(n - 20 `Mod` n) $ _data fwdIn
+        dataHi1 = if containsData then repeat 0 else dataHi0
+        header = dataLo ++ dataHi1
 
         -- We verify that 2 * n Div 2 + n Mod 2 = n, and distinguish between
         -- even and odd data widths. For odd data widths, we have to save the
         -- extra byte in even packets and use it in the odd packets.
         (acc', byte') =
-          case ( sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2))
-               , sameNat (SNat @(n `Mod` 2)) d0
+          case ( sameNat (SNat @(n `Mod` 2)) d0
                , sameNat (SNat @(n `Mod` 2)) d1
                ) of
-            (Just Refl, Just Refl, _) -> -- n mod 2 = 0
+            (Just Refl, _) -> -- n mod 2 = 0
               let xs :: Vec (n `Div` 2) (BitVector 16)
                   xs = bitCoerce header
                in (fold onesComplementAdd (acc :> xs), undefined)
-            (Just Refl, _, Just Refl) -> -- n mod 2 = 1
+            (_, Just Refl) -> -- n mod 2 = 1
               let xs :: Vec (n `Div` 2 + 1) (BitVector 16)
                   xs = bitCoerce $ if even i then init header :< 0 :< 0 else byte :> header
                in (fold onesComplementAdd (acc :> xs), last header)
-            _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n, or n `Mod` 2 not 0 or 1"
+            _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: n `Mod` 2 not equal to 0 or 1"
 
-        i' = satSucc SatSymmetric i
+        i' = satSucc SatBound i
         s'
           | not inReady = s
           | isJust (_last fwdIn) = (0, 0, undefined)
           | otherwise = (acc', i', byte')
 
-        -- If the packet ends too early, acc' might have become undefined
-        earlyLast = maybe False (< dataIdx) (_last fwdIn)
-        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || earlyLast || acc' /= 0 } else fwdIn
+        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || acc' /= 0 } else fwdIn
