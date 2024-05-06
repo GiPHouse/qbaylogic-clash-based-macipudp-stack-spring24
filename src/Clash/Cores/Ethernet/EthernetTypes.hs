@@ -22,7 +22,6 @@ import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
 import Data.Tuple ( swap )
 
-
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))
   deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)

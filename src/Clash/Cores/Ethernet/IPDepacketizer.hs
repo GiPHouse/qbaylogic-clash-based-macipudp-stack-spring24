@@ -1,5 +1,3 @@
-{-# language RecordWildCards #-}
-
 {-|
 Module      : Clash.Cores.Ethernet.IPDepacketizer
 Description : Strips the IP header from packets
@@ -7,10 +5,6 @@ Description : Strips the IP header from packets
 module Clash.Cores.Ethernet.IPDepacketizer
   ( ipDepacketizerC
   , ipDepacketizerLiteC
-  , IPv4Header(..)
-  , IPv4HeaderLite(..)
-  , toLite
-  , toLiteC
   ) where
 
 import Clash.Prelude
@@ -18,46 +12,10 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.InternetChecksum
 import Protocols
-import Control.DeepSeq ( NFData )
 import Clash.Cores.Ethernet.Depacketizer (depacketizerC)
-import qualified Data.Bifunctor as B
-import Data.Tuple
 import Data.Maybe
 import Data.Type.Equality
 
-type IPv4Address = BitVector 32
-
--- | (Almost) full IPv4 header. Does not contain options field.
-data IPv4Header = IPv4Header
-  { _ipv4Version :: BitVector 4
-  , _ipv4Ihl :: Unsigned 4
-  , _ipv4Dscp :: BitVector 6
-  , _ipv4Ecn :: BitVector 2
-  , _ipv4Length :: Unsigned 16
-  , _ipv4Id :: BitVector 16
-  , _ipv4Flags :: BitVector 3
-  , _ipv4FragmentOffset :: BitVector 13
-  , _ipv4Ttl :: Unsigned 8
-  , _ipv4Protocol :: Unsigned 8
-  , _ipv4Checksum :: BitVector 16
-  , _ipv4Source :: IPv4Address
-  , _ipv4Destination :: IPv4Address
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
--- | Partial IPv4 header.
-data IPv4HeaderLite = IPv4HeaderLite
-  { _ipv4lSource :: IPv4Address
-  , _ipv4lDestination :: IPv4Address
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-toLite :: IPv4Header -> IPv4HeaderLite
-toLite IPv4Header {..} = IPv4HeaderLite _ipv4Source _ipv4Destination
-
--- | Shrinks IPv4 headers
-toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4HeaderLite)
-toLiteC = Circuit (swap . unbundle . go . bundle)
-  where
-    go = fmap $ B.first $ fmap $ fmap toLite
 
 -- | Parses the IPv4 header. Does not support parsing options in the header.
 -- If the checksum is invalid or options are given, the abort bit is set.
