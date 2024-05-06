@@ -47,7 +47,7 @@ instance Protocol (MIITXChannel domain) where
 miiSender
   :: forall dom
    . HiddenClockResetEnable dom
-  => (forall a. Signal dom a -> Signal dom a)
+  => (forall a. NFDataX a => Signal dom a -> Signal dom a)
   -- ^ tx output function
   -> ( Signal dom (Maybe (PacketStreamM2S 1 ()))
      , Signal dom ()
@@ -73,7 +73,7 @@ miiSender fo (packet, _) = (fmap PacketStreamS2M $ inputVld .&&. nibbleSelect, c
 miiReceiver
   :: forall dom
    . HiddenClockResetEnable dom
-  => (forall a. Signal dom a -> Signal dom a)
+  => (forall a. NFDataX a => Signal dom a -> Signal dom a)
   -- ^ Input function
   -> ( MIIRXChannel dom
      , Signal dom PacketStreamS2M
@@ -115,7 +115,7 @@ unsafeMiiRxC
    . ( HiddenClockResetEnable dom
      , KnownDomain dom
      )
-  => (forall a. Signal dom a -> Signal dom a)
+  => (forall a. NFDataX a => Signal dom a -> Signal dom a)
   -> Circuit (MIIRXChannel dom) (PacketStream dom 1 ())
 unsafeMiiRxC fi = fromSignals (miiReceiver fi)
 
@@ -124,6 +124,6 @@ miiTxC
    . ( HiddenClockResetEnable dom
      , KnownDomain dom
      )
-  => (forall a. Signal dom a -> Signal dom a)
+  => (forall a. NFDataX a => Signal dom a -> Signal dom a)
   -> Circuit (PacketStream dom 1 ()) (MIITXChannel dom)
 miiTxC fo = fromSignals (miiSender fo)

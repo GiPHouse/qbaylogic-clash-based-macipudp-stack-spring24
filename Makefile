@@ -60,7 +60,7 @@ ${netlist}: ${verilog}
 	yosys \
 		-m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
 		-p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
-		-p "write_json ${verilog}" \
+		-p "write_json ${netlist}" \
 		verilog/Clash.TinyTapeout.EthernetMac.TopEntity.topEntity/*.v
 
 .PHONY: netlist

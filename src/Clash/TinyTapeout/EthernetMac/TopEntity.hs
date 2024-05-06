@@ -13,15 +13,6 @@ import Clash.TinyTapeout.EthernetMac.EthStack (stack)
 import Protocols (toSignals)
 
 createDomain vSystem
-  { vName="RP2040"
-  , vPeriod=40000
-  , vActiveEdge=Rising
-  , vResetKind=Synchronous
-  , vInitBehavior=Unknown
-  , vResetPolarity=ActiveLow
-  }
-
-createDomain vSystem
   { vName="DomEthTx"
   , vPeriod=40000
   , vActiveEdge=Rising
@@ -44,9 +35,11 @@ topEntity
   -> "ethTxClk" ::: Clock DomEthTx
   -> "rstN" ::: Reset DomEthRx
   -> "" ::: MIIRXChannel DomEthRx
-  -> "" ::: MIITXChannel DomEthRx
-topEntity rxClk _txClk rxRst rxChannel = snd $ ckt (rxChannel, pure ())
+  -> "" ::: MIITXChannel DomEthTx
+topEntity rxClk txClk rawRst rxChannel = snd $ ckt (rxChannel, pure ())
   where
-    ckt = toSignals $ exposeClockResetEnable stack rxClk rxRst enableGen
+    rxRst = resetSynchronizer rxClk rawRst
+    txRst = convertReset rxClk txClk rawRst
+    ckt = toSignals $ exposeClockResetEnable (stack rxClk rxRst) txClk txRst enableGen
 
 makeTopEntity 'topEntity
