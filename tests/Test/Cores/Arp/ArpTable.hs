@@ -81,7 +81,7 @@ prop_arp_table = property $
                        , Just (ArpEntryFound (_arpMac arpEntry2))]
                        -- For 28 ticks (2.8 seconds), the entry should be found. Not 30, because the counter
                        -- has already counted a couple ticks once we add the arp entry. This inaccuracy is correct.
-                       L.++ L.replicate 28 (Just (ArpEntryFound (_arpMac arpEntry1))) 
+                       L.++ L.replicate 28 (Just (ArpEntryFound (_arpMac arpEntry1)))
                        L.++ [Just ArpEntryNotFound]
 
 tests :: TestTree
