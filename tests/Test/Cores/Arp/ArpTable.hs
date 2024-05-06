@@ -31,6 +31,7 @@ import Protocols.Df hiding ( fst, snd )
 import Clash.Cores.Arp.ArpTable
 import Clash.Cores.Arp.ArpTypes
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.IP.IPv4Types
 
 
 createDomain vSystem
@@ -59,7 +60,7 @@ arpEntry2 = ArpEntry {
 -- | Tests proper expiration and overwriting of ARP entries in the table.
 prop_arp_table :: Property
 prop_arp_table = property $
-  do L.map fst (sampleN 14 (bundle bwdOut)) === expectedBwdOut
+  do L.map fst (sampleN 32 (bundle bwdOut)) === expectedBwdOut
     where
       fwdIn :: [(Maybe IPAddress, Data ArpEntry)]
       fwdIn = [ (Nothing, NoData)
@@ -70,16 +71,18 @@ prop_arp_table = property $
       bwdOut :: (Signal TestDom10Hz (Maybe ArpResponse), Signal TestDom10Hz Ack)
       (bwdOut, _) = toSignals ckt (unbundle $ fromList fwdIn, ())
         where
-          -- ARP entries expire after 1 second, so after 10 clock cycles for a 10 Hz clock.
-          ckt = exposeClockResetEnable (arpTable d1) clockGen resetGen enableGen
+          -- ARP entries should expire after 2-3 seconds,
+          --depending on the value of the timer when they are inserted
+          ckt = exposeClockResetEnable (arpTable d3) clockGen resetGen enableGen
 
       expectedBwdOut :: [Maybe ArpResponse]
       expectedBwdOut = [ Nothing
                        , Nothing
                        , Just (ArpEntryFound (_arpMac arpEntry2))]
-                       L.++ L.replicate (natToNum @(10^12 `Div` DomainPeriod TestDom10Hz))
-                                        (Just (ArpEntryFound (_arpMac arpEntry1)))
-        L.++ [Just ArpEntryNotFound]
+                       -- For 28 ticks (2.8 seconds), the entry should be found. Not 30, because the counter
+                       -- has already counted a couple ticks once we add the arp entry. This inaccuracy is correct.
+                       L.++ L.replicate 28 (Just (ArpEntryFound (_arpMac arpEntry1))) 
+                       L.++ [Just ArpEntryNotFound]
 
 tests :: TestTree
 tests =
