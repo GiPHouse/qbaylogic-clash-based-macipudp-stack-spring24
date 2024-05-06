@@ -42,6 +42,20 @@ showAsHex = fmap (showSToString . Numeric.showHex . toInteger)
 showComplementAsHex :: [C.BitVector 16] -> [String]
 showComplementAsHex = showAsHex . fmap C.complement
 
+genVecWord :: Gen (C.Vec 5 (C.BitVector 16))
+genVecWord = sequence $ C.repeat genWord
+
+flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
+flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
+  where
+    replaceAtIndex :: Int -> a -> [a] -> [a]
+    replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
+
+    newWord =fb (bitList !! listIndex)
+
+    fb Nothing = Nothing
+    fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
+
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
 prop_checksum_succeed =
@@ -74,17 +88,6 @@ prop_checksum_fail =
         checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
 
     checkSum' /== 0xFFFF
-      where
-        flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
-        flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
-          where
-            replaceAtIndex :: Int -> a -> [a] -> [a]
-            replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
-
-            newWord =fb (bitList !! listIndex)
-
-            fb Nothing = Nothing
-            fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
 
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_specific_values :: Property
@@ -97,6 +100,36 @@ prop_checksum_specific_values =
 
     footnoteShow $ showAsHex result
     C.complement checkSum === 0xb861
+
+-- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
+prop_checksum_reduce_specific_values :: Property
+prop_checksum_reduce_specific_values =
+  property $ do
+    let input = Just . (, False) <$> [
+          0x4500 C.:> 0x0073 C.:> 0x0000 C.:> C.Nil,
+          0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil,
+          0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
+          ]
+        size = length input
+        result = take (size + 1) $ C.simulate @C.System reduceToInternetChecksum input
+        checkSum = last result
+
+    footnote $ "full output: " ++ show (showAsHex result)
+    checkSum === 0x479e
+
+prop_checksum_reduce_succeed :: Property
+prop_checksum_reduce_succeed =
+  property $ do
+    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWord <*> pure False)
+
+    input <- forAll $ genInputList (Range.linear 1 100)
+    let size = length input
+
+    let checkSum = C.complement $ last $ take (size + 1) $ C.simulate @C.System internetChecksum input
+        input' = input ++ [Just (checkSum, False)]
+        checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
+
+    checkSum' === 0xFFFF
 
 -- | testing whether the value returns to 0 after a reset
 prop_checksum_reset :: Property
