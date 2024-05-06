@@ -9,6 +9,7 @@ module Clash.Cores.Ethernet.InternetChecksum
 
 import Clash.Prelude
 import Data.Maybe
+import Prelude qualified as P
 
 generalChecksum
   :: forall (dom :: Domain) (dataWidth :: Nat).
