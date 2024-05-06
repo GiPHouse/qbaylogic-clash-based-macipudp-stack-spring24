@@ -1,3 +1,5 @@
+{-# language RecordWildCards #-}
+
 {-|
 Module      : Clash.Cores.Ethernet.EthernetTypes
 Description : Provides various data types, aliases and constants for the Ethernet protocol.
@@ -10,6 +12,11 @@ module Clash.Cores.Ethernet.EthernetTypes
   , preamble
   , startFrameDelimiter
   , toEthernetC
+  , IPv4Address
+  , IPv4Header(..)
+  , IPv4HeaderLite(..)
+  , toLite
+  , toLiteC
   ) where
 
 import Clash.Prelude
@@ -17,10 +24,12 @@ import Clash.Prelude
 import Protocols
 
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.IPv4Types
 import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
-import Data.Tuple ( swap )
+import Data.Tuple
+import Protocols
 
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))
@@ -74,3 +83,37 @@ hardCodedMac = MacAddress (0x8C :> 0x8C :> 0xAA :> 0xC8 :> 0x2B :> 0xEE :> Nil)
 -- | Broadcast MAC address.
 broadcastMac :: MacAddress
 broadcastMac = MacAddress (repeat 0xFF)
+
+type IPv4Address = Vec 4 (BitVector 8)
+
+-- | (Almost) full IPv4 header. Does not contain options field.
+data IPv4Header = IPv4Header
+  { _ipv4Version :: BitVector 4
+  , _ipv4Ihl :: Unsigned 4
+  , _ipv4Dscp :: BitVector 6
+  , _ipv4Ecn :: BitVector 2
+  , _ipv4Length :: Unsigned 16
+  , _ipv4Id :: BitVector 16
+  , _ipv4Flags :: BitVector 3
+  , _ipv4FragmentOffset :: BitVector 13
+  , _ipv4Ttl :: Unsigned 8
+  , _ipv4Protocol :: Unsigned 8
+  , _ipv4Checksum :: BitVector 16
+  , _ipv4Source :: IPv4Address
+  , _ipv4Destination :: IPv4Address
+  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
+-- | Partial IPv4 header.
+data IPv4HeaderLite = IPv4HeaderLite
+  { _ipv4lSource :: IPv4Address
+  , _ipv4lDestination :: IPv4Address
+  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
+toLite :: IPv4Header -> IPv4HeaderLite
+toLite IPv4Header {..} = IPv4HeaderLite _ipv4Source _ipv4Destination
+
+-- | Shrinks IPv4 headers
+toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4HeaderLite)
+toLiteC = Circuit (swap . unbundle . go . bundle)
+  where
+    go = fmap $ B.first $ fmap $ fmap toLite
