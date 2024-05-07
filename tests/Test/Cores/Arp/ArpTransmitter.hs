@@ -64,7 +64,7 @@ arpTransmitterPropertyGenerator SNat =
         _macSrc = myMac,
         _etherType = arpEtherType
       }
-      toArp tpa = newArpRequest ((myMac, myIP), tpa)
+      toArp tpa = newArpRequest myMac myIP tpa
 
 
 -- | n mod dataWidth ~ 1

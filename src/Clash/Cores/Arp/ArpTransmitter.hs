@@ -31,7 +31,7 @@ arpTransmitter
   -> Signal dom IPAddress
   -- ^ My IP address
   -> Circuit (Df dom IPAddress) (PacketStream dom dataWidth EthernetHeader)
-arpTransmitter shaS spaS = fromSignals arpBundle |> packetizeFromDfC toEthernet newArpRequest
+arpTransmitter shaS spaS = fromSignals arpBundle |> packetizeFromDfC toEthernet (uncurry $ uncurry newArpRequest)
   where
     arpBundle (fwdIn, bwdIn) = (bwdIn, fmap go (bundle (bundle (shaS, spaS), fwdIn)))
     go ((sha, spa), maybeTha) = case maybeTha of

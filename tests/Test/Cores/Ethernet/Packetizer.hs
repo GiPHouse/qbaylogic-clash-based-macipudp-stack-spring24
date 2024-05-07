@@ -35,7 +35,7 @@ packetizerModel
   -> (metaIn -> header)
   -> [PacketStreamM2S dataWidth metaIn]
   -> [PacketStreamM2S dataWidth metaOut]
-packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
+packetizerModel toMetaOut toHeader ps = concat (upConvert <$> L.map prependHdr bytePackets)
   where
     prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
     prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = metaOut}) fragments
@@ -54,12 +54,6 @@ packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
     bytePackets :: [[PacketStreamM2S 1 metaIn]]
     bytePackets = L.concatMap chopPacket . smearAbort <$> chunkByPacket ps
 
-    prependedPackets :: [[PacketStreamM2S 1 metaOut]]
-    prependedPackets = L.map prependHdr bytePackets
-
-    dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
-    dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> prependedPackets
-
 -- | Model of the generic `packetizeFromDfC`.
 packetizeFromDfModel
   :: forall (dataWidth :: Nat)
@@ -77,17 +71,8 @@ packetizeFromDfModel
   -> (a -> header)
   -> [a]
   -> [PacketStreamM2S dataWidth metaOut]
-packetizeFromDfModel toMetaOut toHeader ps = concat dataWidthPackets
+packetizeFromDfModel toMetaOut toHeader ps = concat (upConvert <$> L.map packetize ps)
   where
-    packetizeUponData :: a -> [PacketStreamM2S 1 metaOut]
-    packetizeUponData d = L.map go (toList $ bitCoerce (toHeader d))
-      where
-        go byte = PacketStreamM2S {
-          _data = byte :> Nil,
-          _last = Nothing,
-          _meta = toMetaOut d,
-          _abort = False
-        }
-
-    dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
-    dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> L.map (fullPackets . packetizeUponData) ps
+    packetize :: a -> [PacketStreamM2S 1 metaOut]
+    packetize d = fullPackets $ L.map (\byte -> PacketStreamM2S (byte :> Nil) Nothing (toMetaOut d) False)
+                                      (toList $ bitCoerce (toHeader d))

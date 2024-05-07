@@ -56,14 +56,14 @@ data ArpPacket
 arpEtherType :: BitVector 16
 arpEtherType = 0x0806
 
-newArpRequest :: ((MacAddress, IPAddress), IPAddress) -> ArpPacket
-newArpRequest ((myMac, myIP), tpa)
+newArpRequest :: MacAddress -> IPAddress -> IPAddress -> ArpPacket
+newArpRequest myMac myIP tpa
   = ArpPacket {
       _htype = 0x0001,
       _ptype = 0x0800,
       _hlen = 0x06,
       _plen = 0x04,
-      _oper = 0x0002,
+      _oper = 0x0001,
       _sha = myMac,
       _spa = myIP,
       _tha = broadcastMac,
