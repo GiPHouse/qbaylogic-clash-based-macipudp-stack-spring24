@@ -2,6 +2,7 @@ import Prelude
 
 import Test.Tasty
 
+import Test.Cores.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
@@ -22,7 +23,8 @@ import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-  [ Test.Cores.Ethernet.AsyncFIFO.tests
+  [ Test.Cores.Arp.ArpTransmitter.tests
+    , Test.Cores.Ethernet.AsyncFIFO.tests
     , Test.Cores.Ethernet.PacketArbiter.tests
     , Test.Cores.Ethernet.PacketStream.tests
     , Test.Cores.Ethernet.PaddingInserter.tests

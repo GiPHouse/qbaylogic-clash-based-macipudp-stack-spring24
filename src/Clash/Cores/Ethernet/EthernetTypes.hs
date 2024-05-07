@@ -6,6 +6,7 @@ module Clash.Cores.Ethernet.EthernetTypes
   ( MacAddress(..)
   , EthernetHeader(..)
   , Preamble
+  , broadcastMac
   , preamble
   , startFrameDelimiter
   ) where
@@ -37,3 +38,7 @@ preamble = replicate d7 0x55 :< 0xD5
 -- | Ethernet start frame delimiter (SFD), least significant bit first.
 startFrameDelimiter :: BitVector 8
 startFrameDelimiter = 0xD5
+
+-- | Broadcast MAC address.
+broadcastMac :: MacAddress
+broadcastMac = MacAddress (repeat 0xFF)

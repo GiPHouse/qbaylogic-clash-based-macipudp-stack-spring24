@@ -1,7 +1,8 @@
 {-# language FlexibleContexts #-}
 
 module Test.Cores.Ethernet.Packetizer
-  (packetizerModel) where
+  ( packetizerModel
+  , packetizeFromDfModel) where
 
 -- base
 import Data.List qualified as L
@@ -58,3 +59,35 @@ packetizerModel toMetaOut toHeader ps = concat dataWidthPackets
 
     dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
     dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> prependedPackets
+
+-- | Model of the generic `packetizeFromDfC`.
+packetizeFromDfModel
+  :: forall (dataWidth :: Nat)
+            (headerBytes :: Nat)
+            (a :: Type)
+            (header :: Type)
+            (metaOut :: Type) .
+  ( KnownNat dataWidth
+  , KnownNat headerBytes
+  , 1 <= dataWidth
+  , 1 <= headerBytes
+  , BitPack header
+  , BitSize header ~ headerBytes * 8)
+  => (a -> metaOut)
+  -> (a -> header)
+  -> [a]
+  -> [PacketStreamM2S dataWidth metaOut]
+packetizeFromDfModel toMetaOut toHeader ps = concat dataWidthPackets
+  where
+    packetizeUponData :: a -> [PacketStreamM2S 1 metaOut]
+    packetizeUponData d = L.map go (toList $ bitCoerce (toHeader d))
+      where
+        go byte = PacketStreamM2S {
+          _data = byte :> Nil,
+          _last = Nothing,
+          _meta = toMetaOut d,
+          _abort = False
+        }
+
+    dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
+    dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> L.map (fullPackets . packetizeUponData) ps
