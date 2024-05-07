@@ -23,8 +23,7 @@ data PacketizerState (metaOut :: Type) (headerBytes :: Nat) (dataWidth :: Nat)
   = Idle
   | Insert {
       _counter :: Index (headerBytes `DivRU` dataWidth - 1),
-      _hdrBuf :: Vec (HeaderBufSize headerBytes dataWidth) (BitVector 8),
-      _metaOut :: metaOut
+      _hdrBuf :: Vec (HeaderBufSize headerBytes dataWidth) (BitVector 8)
     }
     deriving (Generic, NFDataX, Show, ShowX)
 
@@ -52,48 +51,35 @@ packetizeFromDfT
   -> (Data a, PacketStreamS2M)
   -> ( PacketizerState metaOut headerBytes dataWidth
      , (Ack, Maybe (PacketStreamM2S dataWidth metaOut)))
-packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStateOut, (bwdOut, fwdOut))
+packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStOut, (bwdOut, Just outPkt))
   where
-    metaOut = toMetaOut dataIn
     hdrBuf = bitCoerce (toHeader dataIn) ++ repeat @dataWidth defaultByte
     (newHdrBuf, dataOut) = shiftOutFrom0 (SNat @dataWidth) hdrBuf
+    outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
-    newLast :: Index dataWidth = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-      SNatLE -> natToNum @(dataWidth - 1)
-      SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
+    (nextSt, bwdOut, newLast) = case compareSNat (SNat @headerBytes) (SNat @dataWidth) of
+      SNatLE -> (Idle, Ack (_ready bwdIn), l)
+        where
+          l = Just $ case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
+            SNatLE -> natToNum @(dataWidth - 1)
+            SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
+      SNatGT -> (Insert 0 newHdrBuf, Ack False, Nothing)
+    nextStOut = if _ready bwdIn then nextSt else Idle
 
-    fwdOut = Just PacketStreamM2S {
-      _data = dataOut,
-      _last = case compareSNat (SNat @headerBytes) (SNat @dataWidth) of
-        SNatLE -> Just newLast
-        SNatGT -> Nothing,
-      _meta = metaOut,
-      _abort = False
-    }
-
-    (nextState, bwdOut) = case compareSNat (SNat @headerBytes) (SNat @dataWidth) of
-      SNatLE -> (Idle, Ack (_ready bwdIn && True))
-      SNatGT -> (Insert 0 newHdrBuf metaOut, Ack False)
-    nextStateOut = if _ready bwdIn then nextState else Idle
-
-packetizeFromDfT _ _ st@Insert{..} (_, bwdIn) = (nextStateOut, (bwdOut, fwdOut))
+-- fwdIn is always Data in this state, because we assert backpressure in Idle before we go here
+-- Thus, we don't need to store the metadata in the state.
+packetizeFromDfT toMetaOut _ st@Insert{..} (Data dataIn, bwdIn) = (nextStOut, (bwdOut, Just outPkt))
   where
     (newHdrBuf, dataOut) = shiftOutFrom0 (SNat @dataWidth) _hdrBuf
+    outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
-    newLast = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
+    newLast = toMaybe (_counter == maxBound) $ case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
       SNatLE -> natToNum @(dataWidth - 1)
       SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
 
-    fwdOut = Just PacketStreamM2S {
-      _data = dataOut,
-      _last = toMaybe (_counter == maxBound) newLast,
-      _meta = _metaOut,
-      _abort = False
-    }
-
     bwdOut = Ack (_ready bwdIn && _counter == maxBound)
-    nextState = if _counter == maxBound then Idle else Insert (_counter + 1) newHdrBuf _metaOut
-    nextStateOut = if _ready bwdIn then nextState else st
+    nextSt = if _counter == maxBound then Idle else Insert (succ _counter) newHdrBuf
+    nextStOut = if _ready bwdIn then nextSt else st
 
 packetizeFromDfT _ _ s (NoData, bwdIn) = (s, (Ack (_ready bwdIn), Nothing))
 
@@ -103,9 +89,9 @@ packetizeFromDfT _ _ s (NoData, bwdIn) = (s, (Ack (_ready bwdIn), Nothing))
 packetizeFromDfC
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
+            (a :: Type)
             (metaOut :: Type)
             (header :: Type)
-            (a :: Type)
             (headerBytes :: Nat) .
   ( HiddenClockResetEnable dom
   , NFDataX metaOut
@@ -115,10 +101,10 @@ packetizeFromDfC
   , 1 <= dataWidth
   , KnownNat dataWidth)
   => (a -> metaOut)
-  -- ^ Metadata transformer function
+  -- ^ input to metadata transformer function
   -> (a -> header)
-  -- ^ Metadata to header that will be packetized transformer function
+  -- ^ input to header that will be packetized transformer function
   -> Circuit (Df dom a) (PacketStream dom dataWidth metaOut)
 packetizeFromDfC toMetaOut toHeader = case compareSNat d1 (SNat @(headerBytes `DivRU` dataWidth)) of
   SNatLE -> fromSignals (mealyB (packetizeFromDfT toMetaOut toHeader) Idle)
-  SNatGT -> errorX "packetizer'0: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
+  SNatGT -> errorX "packetizeFromDfC: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
