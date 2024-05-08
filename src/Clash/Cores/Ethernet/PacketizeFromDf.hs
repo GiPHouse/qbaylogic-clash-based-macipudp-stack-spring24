@@ -1,10 +1,11 @@
-{-# language FlexibleContexts #-}
-{-# language RecordWildCards #-}
-
 {-|
 Module      : Clash.Cores.Arp.PacketizeFromDf
 Description : Packetize headers from Df inputs.
 -}
+
+{-# language FlexibleContexts #-}
+{-# language RecordWildCards #-}
+
 module Clash.Cores.Ethernet.PacketizeFromDf
   (packetizeFromDfC) where
 
@@ -19,7 +20,7 @@ import Clash.Cores.Ethernet.Util
 
 type HeaderBufSize headerBytes dataWidth = headerBytes + dataWidth
 
-data PacketizerState (metaOut :: Type) (headerBytes :: Nat) (dataWidth :: Nat)
+data DfPacketizerState (metaOut :: Type) (headerBytes :: Nat) (dataWidth :: Nat)
   = Idle
   | Insert {
       _counter :: Index (headerBytes `DivRU` dataWidth - 1),
@@ -35,21 +36,21 @@ packetizeFromDfT
             (a :: Type)
             (metaOut :: Type)
             (header :: Type)
-            (headerBytes :: Nat) .
-  ( NFDataX metaOut
-  , BitPack header
-  , BitSize header ~ headerBytes * 8
-  , KnownNat headerBytes
-  , 1 <= headerBytes `DivRU` dataWidth
-  , 1 <= dataWidth
-  , KnownNat dataWidth)
+            (headerBytes :: Nat)
+   . NFDataX metaOut
+  => BitPack header
+  => BitSize header ~ headerBytes * 8
+  => KnownNat headerBytes
+  => 1 <= headerBytes `DivRU` dataWidth
+  => 1 <= dataWidth
+  => KnownNat dataWidth
   => (a -> metaOut)
-  -- ^ input to metadata transformer function
+  -- ^ function that transforms the Df input to the output metadata.
   -> (a -> header)
-  -- ^ input to header that will be packetized transformer function
-  -> PacketizerState metaOut headerBytes dataWidth
+  -- ^ function that transforms the Df input to the header that will be packetized.
+  -> DfPacketizerState metaOut headerBytes dataWidth
   -> (Data a, PacketStreamS2M)
-  -> ( PacketizerState metaOut headerBytes dataWidth
+  -> ( DfPacketizerState metaOut headerBytes dataWidth
      , (Ack, Maybe (PacketStreamM2S dataWidth metaOut)))
 packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStOut, (bwdOut, Just outPkt))
   where
@@ -58,9 +59,9 @@ packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStOut, (bwd
     outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
     (nextSt, bwdOut, newLast) = case compareSNat (SNat @headerBytes) (SNat @dataWidth) of
-      SNatLE -> (Idle, Ack (_ready bwdIn), l)
+      SNatLE -> (Idle, Ack (_ready bwdIn), Just l)
         where
-          l = Just $ case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
+          l = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
             SNatLE -> natToNum @(dataWidth - 1)
             SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
       SNatGT -> (Insert 0 newHdrBuf, Ack False, Nothing)
@@ -84,26 +85,26 @@ packetizeFromDfT toMetaOut _ st@Insert{..} (Data dataIn, bwdIn) = (nextStOut, (b
 packetizeFromDfT _ _ s (NoData, bwdIn) = (s, (Ack (_ready bwdIn), Nothing))
 
 -- | Starts a packet stream upon receiving some data.
---   The bytes to be packetized are specified by the input function that
---   transforms our input data with type `a` to type `header`.
+--   The bytes to be packetized and the output metadata
+--   are specified by the input functions.
 packetizeFromDfC
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
             (a :: Type)
             (metaOut :: Type)
             (header :: Type)
-            (headerBytes :: Nat) .
-  ( HiddenClockResetEnable dom
-  , NFDataX metaOut
-  , BitPack header
-  , BitSize header ~ headerBytes * 8
-  , KnownNat headerBytes
-  , 1 <= dataWidth
-  , KnownNat dataWidth)
+            (headerBytes :: Nat)
+   . HiddenClockResetEnable dom
+  => NFDataX metaOut
+  => BitPack header
+  => BitSize header ~ headerBytes * 8
+  => KnownNat headerBytes
+  => 1 <= dataWidth
+  => KnownNat dataWidth
   => (a -> metaOut)
-  -- ^ input to metadata transformer function
+  -- ^ function that transforms the Df input to the output metadata.
   -> (a -> header)
-  -- ^ input to header that will be packetized transformer function
+  -- ^ function that transforms the Df input to the header that will be packetized.
   -> Circuit (Df dom a) (PacketStream dom dataWidth metaOut)
 packetizeFromDfC toMetaOut toHeader = case compareSNat d1 (SNat @(headerBytes `DivRU` dataWidth)) of
   SNatLE -> fromSignals (mealyB (packetizeFromDfT toMetaOut toHeader) Idle)

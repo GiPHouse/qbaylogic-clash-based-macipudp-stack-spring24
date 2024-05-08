@@ -1,6 +1,7 @@
 {-|
 Module      : Clash.Cores.Arp.ArpTypes
 Description : Provides various data types, aliases, constructors and constants for the Address Resolution Protocol.
+              This module only provides the most common use case of ARP, which is mapping IPv4 addresses to MAC addresses.
 -}
 
 module Clash.Cores.Arp.ArpTypes where
@@ -12,7 +13,7 @@ import Clash.Prelude
 import Protocols
 
 
--- | An entry for our ARP table, which maps an IP address to a MAC address.
+-- | An entry for our ARP table, which maps an IPv4 address to a MAC address.
 --   A timestamp should be kept separately from this type.
 data ArpEntry
   = ArpEntry {
@@ -20,7 +21,7 @@ data ArpEntry
     _arpIP :: IPAddress
     } deriving (Generic, Show, ShowX, NFDataX)
 
--- | An ARP response. Either the IP address is not found in the table, or it is and its
+-- | An ARP response. Either the IPv4 address is not found in the table, or it is and its
 --   corresponding MAC address is returned.
 data ArpResponse = ArpEntryNotFound | ArpEntryFound MacAddress
   deriving (Generic, Show, ShowX, NFDataX, Eq)
@@ -31,6 +32,7 @@ instance Protocol (ArpLookup dom) where
   type Fwd (ArpLookup dom) = Signal dom (Maybe IPAddress)
   type Bwd (ArpLookup dom) = Signal dom (Maybe ArpResponse)
 
+-- | ARP packet structure. The first four fields are constant for our use case.
 data ArpPacket
   = ArpPacket {
     _htype :: BitVector 16,
@@ -53,11 +55,20 @@ data ArpPacket
     -- ^ Target protocol address
   } deriving (Generic, Show, ShowX, NFDataX, BitPack)
 
+-- | ARP's EtherType for multiplexing purposes.
 arpEtherType :: BitVector 16
 arpEtherType = 0x0806
 
-newArpRequest :: MacAddress -> IPAddress -> IPAddress -> ArpPacket
-newArpRequest myMac myIP tpa
+-- | Construct an IPv4 ARP request.
+newArpRequest
+  :: MacAddress
+  -- ^ Our MAC address
+  -> IPAddress
+  -- ^ Our IP address
+  -> IPAddress
+  -- ^ Target IP address
+  -> ArpPacket
+newArpRequest myMac myIP targetIP
   = ArpPacket {
       _htype = 0x0001,
       _ptype = 0x0800,
@@ -67,5 +78,5 @@ newArpRequest myMac myIP tpa
       _sha = myMac,
       _spa = myIP,
       _tha = broadcastMac,
-      _tpa = tpa
+      _tpa = targetIP
     }

@@ -1,6 +1,6 @@
 {-|
 Module      : Clash.Cores.Arp.ArpTransmitter
-Description : Provides a component that attempts to fetch the MAC address corresponding to an IP address.
+Description : Provides a component that attempts to fetch the MAC address corresponding to an IPv4 address.
 -}
 module Clash.Cores.Arp.ArpTransmitter
   (arpTransmitter) where
@@ -11,34 +11,32 @@ import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.PacketStream
 
 import Protocols
-import Protocols.Df hiding ( const, pure )
+import Protocols.Df ( Data(..) )
 
 import Clash.Cores.Arp.ArpTypes
 import Clash.Cores.Ethernet.PacketizeFromDf
 import Clash.Cores.IP.IPv4Types
 
 
--- | Upon receiving an IP address, this component broadcasts an ARP request
+-- | Upon receiving an IPv4 address, this component broadcasts an ARP request
 --   to fetch the MAC address corresponding to this IP address.
 arpTransmitter
   :: forall (dom :: Domain)
-            (dataWidth :: Nat) .
-  ( HiddenClockResetEnable dom
-  , 1 <= dataWidth
-  , KnownNat dataWidth)
+            (dataWidth :: Nat)
+   . HiddenClockResetEnable dom
+  => 1 <= dataWidth
+  => KnownNat dataWidth
   => Signal dom MacAddress
-  -- ^ My MAC address
+  -- ^ Our MAC address
   -> Signal dom IPAddress
-  -- ^ My IP address
+  -- ^ Our IPv4 address
   -> Circuit (Df dom IPAddress) (PacketStream dom dataWidth EthernetHeader)
-arpTransmitter shaS spaS = fromSignals arpBundle |> packetizeFromDfC toEthernet (uncurry $ uncurry newArpRequest)
+arpTransmitter shaS spaS = fromSignals arpBundle |> packetizeFromDfC toEthernetHdr (uncurry $ uncurry newArpRequest)
   where
     arpBundle (fwdIn, bwdIn) = (bwdIn, fmap go (bundle (bundle (shaS, spaS), fwdIn)))
-    go ((sha, spa), maybeTha) = case maybeTha of
-      NoData -> NoData
-      Data tha -> Data ((sha, spa), tha)
+    go ((sha, spa), maybeTha) = maybeTha >>= \tha -> Data ((sha, spa), tha)
 
-    toEthernet ((sha, _), _)
+    toEthernetHdr ((sha, _), _)
       = EthernetHeader {
           _macDst = broadcastMac,
           _macSrc = sha,
