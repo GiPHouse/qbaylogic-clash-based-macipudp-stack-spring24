@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: git checkout
-        uses: actions/checkout@v4 
-      - name: check formatting 
+        uses: actions/checkout@v4
+      - name: check formatting
         uses: addnab/docker-run-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -18,7 +18,7 @@ jobs:
           run: |
             mkdir /tmp
             cd work
-            # check formating 
+            # check formating
             make check_format
       - name: test-library
         uses: addnab/docker-run-action@v3
@@ -31,7 +31,7 @@ jobs:
             mkdir /tmp
             cd work
             cabal test test-library --verbose=0
-      - name: place and route
+      - name: Synthesize-clash
         uses: addnab/docker-run-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -41,20 +41,26 @@ jobs:
           run: |
             mkdir /tmp
             cd work
-            # make verilog
-            cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
-            # make netlist 
-            dir -p netlist
-            yosys \
-              -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
-              -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
-              -p "ecp5_infer_bram_outreg" \
-              -p "write_json ${netlist}" \
-              verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
-            # place and route
-            nextpnr-ecp5 --json netlist/synth.json \
-              --lpf pinout.lpf \
-              --textcfg netlist/pnr.cfg --25k \
-              --speed 6 \
-              --package CABGA256 \
-              --randomize-seed --timing-allow-fail
+            make verilog
+      - name: Synthesize
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            make netlist
+      - name: Place-and-route
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            make pnr
