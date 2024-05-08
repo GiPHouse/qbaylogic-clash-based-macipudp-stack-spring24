@@ -1,26 +1,92 @@
-name: "Place and route"
-on: pull_request
+name: "CI pipeline"
+on:
+  push:
+  pull_request:
 jobs:
   build_and_synthesize:
     runs-on: ubuntu-latest
     steps:
-    - name: git checkout
-      uses: actions/checkout@v4
-    - name: install nix
-      uses: cachix/install-nix-action@v22
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-    - name: cache nix
-      uses: DeterminateSystems/magic-nix-cache-action@v2
-    - name: build the nix environment
-      run: nix-build
-    - name: clean linting process
-      run: nix-shell --run "make clean_tests"
-    - name: Test suite
-      run: nix-shell --run "make test"
-    - name: Test synthesis
-      run: nix-shell --run "make verilog"
-    - name: Create netlist
-      run: nix-shell --run "make netlist"
-    - name: Create Place and Route
-      run: nix-shell --run "make pnr"
+      - name: git checkout
+        uses: actions/checkout@v4 
+      - name: check formatting 
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            # check formating 
+            cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
+            echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
+            stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests
+            rm ./.stylish-haskell-check.yaml
+      - name: test-library
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            cabal test test-library --verbose=0
+      - name: place and route
+        uses: addnab/docker-run-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image: baublesaurus/clockbox:latest
+          options: -v ${{ github.workspace }}:/work
+          run: |
+            mkdir /tmp
+            cd work
+            # make verilog
+            cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+            # make netlist 
+            dir -p netlist
+            yosys \
+              -m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
+              -p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
+              -p "ecp5_infer_bram_outreg" \
+              -p "write_json ${netlist}" \
+            # verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+            # nextpnr-ecp5 --json ${netlist} \
+            #   --lpf pinout.lpf \
+            #   --textcfg ${pnr} --25k \
+            #   --speed 6 \w
+            #   --package CABGA256 \
+            #   --randomize-seed --timing-allow-fail
+            rm -rf dist-newstyle
+            rm -rf verilog
+            rm -rf netlist2
+
+# name: "Place and route"
+# on: pull_request
+# jobs:
+#   build_and_synthesize:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - name: git checkout
+#       uses: actions/checkout@v4
+#     - name: install nix
+#       uses: cachix/install-nix-action@v22
+#       with:
+#         nix_path: nixpkgs=channel:nixos-unstable
+#     - name: cache nix
+#       uses: DeterminateSystems/magic-nix-cache-action@v2
+#     - name: build the nix environment
+#       run: nix-build
+#     - name: clean linting process
+#       run: nix-shell --run "make clean_tests"
+#     - name: Test suite
+#       run: nix-shell --run "make test"
+#     - name: Test synthesis
+#       run: nix-shell --run "make verilog"
+#     - name: Create netlist
+#       run: nix-shell --run "make netlist"
+#     - name: Create Place and Route
+#       run: nix-shell --run "make pnr"
