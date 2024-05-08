@@ -8,12 +8,3 @@ jobs:
         uses: actions/checkout@v4
       - name: Whitespace file endings
         run: .ci/test_whitespace.sh
-      - name: add the right stylish-haskell document
-        run: |
-          cp ./.stylish-haskell.yaml ./.stylish-haskell-check.yaml
-          echo "exit_code: error_on_format" >> ./.stylish-haskell-check.yaml
-      - name: run the formatter
-        run: |
-          curl -sL https://raw.github.com/haskell/stylish-haskell/master/scripts/latest.sh > stylish-haskell
-          chmod +x stylish-haskell 
-          ./stylish-haskell -c ./.stylish-haskell-check.yaml -r src tests

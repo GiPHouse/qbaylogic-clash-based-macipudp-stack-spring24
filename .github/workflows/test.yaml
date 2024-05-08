@@ -52,9 +52,9 @@ jobs:
               -p "write_json ${netlist}" \
               verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
             # place and route
-            nextpnr-ecp5 --json ${netlist} \
+            nextpnr-ecp5 --json netlist/synth.json \
               --lpf pinout.lpf \
-              --textcfg ${pnr} --25k \
-              --speed 6 \w
+              --textcfg netlist/pnr.cfg --25k \
+              --speed 6 \
               --package CABGA256 \
               --randomize-seed --timing-allow-fail
