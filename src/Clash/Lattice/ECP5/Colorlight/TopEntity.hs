@@ -51,7 +51,7 @@ topEntity
   -> "uart_rx" ::: Signal Dom50 Bit
   -> "sdram_dq" ::: BiSignalIn 'Floating Dom50 32
   -> "eth_mdio" ::: BiSignalIn 'Floating Dom50 1
-  -> "eth0" ::: RGMIIRXChannel DomEth0 DomDDREth0
+  -> "eth0" ::: RGMIIRXChannel DomEthTx DomDDREth0
   -> "eth1" ::: RGMIIRXChannel DomEth1 DomDDREth1
   -> ( "uart_tx" ::: Signal Dom50 Bit
      , "sdram" ::: SDRAMOut Dom50
@@ -63,10 +63,11 @@ topEntity
 topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
   let
     (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
+    (_, clkEthRx, _, rstEthRx) = crg clk25
     en50 = enableGen
     baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
 
-    uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
+    uartTxBit = exposeClockResetEnable (uartEthRxStack clkEthRx rstEthRx baudGen eth0_rx) clk50 rst50 en50
 
     eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
 

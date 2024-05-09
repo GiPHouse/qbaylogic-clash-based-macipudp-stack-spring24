@@ -13,8 +13,8 @@ import Clash.Prelude
 
 -- import ethernet
 import Clash.Cores.Ethernet.DownConverter
-import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..) )
-import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), rgmiiReceiver )
+import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..), fromPacketStream )
+import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), rgmiiReceiver, unsafeRgmiiRxC )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
 
 -- import uart
@@ -31,32 +31,29 @@ import Protocols.Internal ( CSignal(CSignal) )
 
 -- | Processes ethernet frames and turns it into a UART signal
 uartEthRxStack
-  :: forall dom domEth domDDREth.
-  ( KnownDomain dom
-  , KnownDomain domEth
-  , HiddenClockResetEnable dom
-  , KnownDomain domDDREth
-  , KnownConf domEth ~ 'DomainConfiguration domEth 8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
-  , KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
-  )
-  => BaudGenerator dom
+  :: forall (dom :: Domain) (domEth :: Domain) (domDDREth :: Domain)
+   . KnownDomain dom
+  => KnownDomain domEth
+  => KnownDomain domDDREth
+  => HiddenClockResetEnable dom
+  => KnownConf domEth    ~ 'DomainConfiguration domEth    8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
+  => KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
+  => Clock domEth
+  -- ^ Clock to pass on to the RGMII receiver
+  -> Reset domEth
+  -- ^ Reset to pass on to the RGMII receiver
+  -> BaudGenerator dom
+  -- ^ Baud generator for the UART sender
   -> RGMIIRXChannel domEth domDDREth
+  -- ^ Input channel
   -> Signal dom Bit
-uartEthRxStack baudGen channel = uartTxBitS
+  -- ^ Output signal
+uartEthRxStack clkEth rstEth baudGen uartTxS  = uartTxBitS
   where
-    rgmiiRx = rgmiiReceiver channel (delayg d80) iddrx1f
-    packetStream = fmap rgmiiRecvToPacketStream rgmiiRx
-
-    ckt :: Circuit (PacketStream domEth 1 ()) (CSignal dom Bit)
-    ckt = rxStack @4 (rgmii_rx_clk channel)
-           |> asyncFifoC d10 hasClock hasReset hasEnable hasClock hasReset hasEnable
-           |> downConverterC
-           |> uartTxNoBaudGenC baudGen
-
-    (_, CSignal uartTxBitS) = toSignals ckt (packetStream, CSignal $ pure ())
-
-
-rgmiiRecvToPacketStream :: (Bool, Maybe (BitVector 8)) -> Maybe (PacketStreamM2S 1 ())
-rgmiiRecvToPacketStream (err, Just dat) = Just $ PacketStreamM2S (singleton dat) Nothing () err
-rgmiiRecvToPacketStream (_, Nothing) = Nothing
-
+    ckt :: Circuit (RGMIIRXChannel domEth domDDREth) (CSignal dom Bit)
+    ckt = exposeClockResetEnable (unsafeRgmiiRxC (delayg d80) iddrx1f) clkEth rstEth enableGen
+       |> rxStack @4 (rgmii_rx_clk uartTxS)
+       |> asyncFifoC d10 hasClock hasReset hasEnable hasClock hasReset hasEnable
+       |> downConverterC
+       |> uartTxNoBaudGenC baudGen
+    (_, CSignal uartTxBitS) = toSignals ckt (uartTxS, CSignal $ pure ())
