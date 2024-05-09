@@ -33,6 +33,9 @@ genVec gen = sequence (C.repeat gen)
 genWord :: Gen (C.BitVector 16)
 genWord = C.pack <$> genVec Gen.bool
 
+genWordVec ::  (C.KnownNat n, 1 <= n) => Gen (C.Vec n (C.BitVector 16))
+genWordVec = genVec genWord
+
 -- functions used to print the intermediate state for debugging
 showAsHex :: [C.BitVector 16] -> [String]
 showAsHex = fmap (showSToString . Numeric.showHex . toInteger)
@@ -55,6 +58,14 @@ flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
 
     fb Nothing = Nothing
     fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
+
+checkNothingAfterReset :: [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
+checkNothingAfterReset = checkCurValueAfterReset False
+  where
+    checkCurValueAfterReset _ [] _ = True
+    checkCurValueAfterReset _ _ [] = True
+    checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
+    checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
 
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
@@ -101,6 +112,18 @@ prop_checksum_specific_values =
     footnoteShow $ showAsHex result
     C.complement checkSum === 0xb861
 
+-- | testing whether the value returns to 0 after a reset
+prop_checksum_reset :: Property
+prop_checksum_reset =
+  property $ do
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWord <*> Gen.bool)
+
+    input <- forAll genInputList
+    let size = length input
+        result = take size $ C.simulate @C.System internetChecksum input
+
+    assert $ checkNothingAfterReset input result
+
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_reduce_specific_values :: Property
 prop_checksum_reduce_specific_values =
@@ -120,33 +143,29 @@ prop_checksum_reduce_specific_values =
 prop_checksum_reduce_succeed :: Property
 prop_checksum_reduce_succeed =
   property $ do
-    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWord <*> pure False)
+    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWordVec @5 <*> pure False)
 
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
 
-    let checkSum = C.complement $ last $ take (size + 1) $ C.simulate @C.System internetChecksum input
-        input' = input ++ [Just (checkSum, False)]
-        checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
+    let result = C.simulate @C.System reduceToInternetChecksum input
+        checkSum = C.complement $ last $ take (size + 1) result
+        input' = input ++ [Just (checkSum C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> C.Nil, False)]
+        checkSum' = last $ take (size + 2) $ C.simulate @C.System reduceToInternetChecksum input'
 
     checkSum' === 0xFFFF
 
--- | testing whether the value returns to 0 after a reset
-prop_checksum_reset :: Property
-prop_checksum_reset =
+
+prop_checksum_reduce_reset :: Property
+prop_checksum_reduce_reset =
   property $ do
-    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWord <*> Gen.bool)
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
 
     input <- forAll genInputList
     let size = length input
-        result = take size $ C.simulate @C.System internetChecksum input
+        result = take size $ C.simulate @C.System reduceToInternetChecksum input
 
-    assert $ checkCurValueAfterReset False input result
-      where
-        checkCurValueAfterReset _ [] _ = True
-        checkCurValueAfterReset _ _ [] = True
-        checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
-        checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
+    assert $ checkNothingAfterReset input result
 
 tests :: TestTree
 tests =
