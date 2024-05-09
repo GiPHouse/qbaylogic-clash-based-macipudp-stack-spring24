@@ -39,6 +39,7 @@ calcChecksum bvA bvB = carry + truncated
     checkSum :: BitVector 17
     checkSum = add bvA bvB
 
+-- | Computes the internetChecksum of a vector of 16 bit words. Compared to internetChecksum this is quicker as you can load multiple words per cycle.
 reduceToInternetChecksum ::
   forall (dom :: Domain) (width :: Nat).
   HiddenClockResetEnable dom
