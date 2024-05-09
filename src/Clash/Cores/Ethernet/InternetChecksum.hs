@@ -9,25 +9,25 @@ module Clash.Cores.Ethernet.InternetChecksum
 
 import Clash.Prelude
 import Data.Maybe
-import Prelude qualified as P
 
-generalChecksum
-  :: forall (dom :: Domain) (dataWidth :: Nat).
+-- | computes the un-complimented internet checksum of a stream of 16-bit words according to https://datatracker.ietf.org/doc/html/rfc1071
+-- The checksum and reset are delayed by one clock cycle.
+-- Keep in mind that if "reset" is True in the input tuple, the checksum is reset to 0 the next cycle so the value of the bitvector is disgarded
+internetChecksum
+  :: forall (dom :: Domain).
   HiddenClockResetEnable dom
-  => KnownNat dataWidth
-  => 1 <= dataWidth
-  => Signal dom (Maybe (BitVector dataWidth, Bool))
+  => Signal dom (Maybe (BitVector 16, Bool))
   -- ^ Input data, adds the first data point of the checksum, if the second element of the tuple is True, the current checksum is reset to 0 the next cycle
-  -> Signal dom (BitVector dataWidth)
+  -> Signal dom (BitVector 16)
  -- ^ Resulting checksum
-generalChecksum inputM = checkSumWithCarry
+internetChecksum inputM = checkSumWithCarry
   where
     (inpX, resetX) = unbundle $ fromJustX <$> inputM
 
-    checkSum :: Signal dom (BitVector (dataWidth + 1))
+    checkSum :: Signal dom (BitVector 17)
     checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 nextCheckSum
 
-    (fmap (zeroExtend :: BitVector 1 -> BitVector ((dataWidth - 1) + 1)) -> carry, truncated) = unbundle $ split <$> checkSum
+    (fmap zeroExtend -> carry, truncated) = unbundle $ split <$> checkSum
 
     checkSumWithCarry = carry + truncated
     nextCheckSum = add <$> inpX <*> checkSumWithCarry
@@ -39,7 +39,6 @@ calcChecksum bvA bvB = carry + truncated
     checkSum :: BitVector 17
     checkSum = add bvA bvB
 
--- | Computes the internetChecksum of a vector of 16 bit words. Compared to internetChecksum this is quicker as you can load multiple words per cycle.
 reduceToInternetChecksum ::
   forall (dom :: Domain) (width :: Nat).
   HiddenClockResetEnable dom
@@ -54,14 +53,3 @@ reduceToInternetChecksum inputM = checkSum
     (inpX, resetX) = unbundle $ fromJustX <$> inputM
     checksumResult = fold calcChecksum <$> input
     input = (++) <$> (singleton <$> checkSum) <*> inpX
-
--- | computes the un-complimented internet checksum of a stream of 16-bit words according to https://datatracker.ietf.org/doc/html/rfc1071
--- The checksum and reset are delayed by one clock cycle.
--- Keep in mind that if "reset" is True in the input tuple, the checksum is reset to 0 the next cycle so the value of the bitvector is disgarded
-internetChecksum :: forall (dom :: Domain).
-  HiddenClockResetEnable dom
-  => Signal dom (Maybe (BitVector 16, Bool))
-  -- ^ Input data, adds the first data point of the checksum, if the second element of the tuple is True, the current checksum is reset to 0 the next cycle
-  -> Signal dom (BitVector 16)
-  -- ^ Resulting checksum
-internetChecksum = generalChecksum
