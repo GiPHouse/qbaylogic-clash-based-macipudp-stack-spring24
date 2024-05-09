@@ -8,10 +8,10 @@ module Clash.Cores.Ethernet.UpConverter
   ( upConverterC
   ) where
 
-import Clash.Prelude
-import Data.Maybe ( isJust, isNothing )
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util
+import Clash.Prelude
+import Data.Maybe ( isJust, isNothing )
 import Protocols ( Circuit(..), fromSignals, (|>) )
 
 -- | Upconverter state, consisting of at most p `BitVector 8`s and a vector indicating which bytes are valid

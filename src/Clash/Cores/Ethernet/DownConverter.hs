@@ -107,7 +107,8 @@ downConverter = mealyB go s0
         fwdOut = toMaybePacketStreamM2S st
 
 -- | Converts packet streams of arbitrary data widths to packet streams of single bytes.
--- Has one clock cycle of latency, but full throughput.
+-- Has one clock cycle of latency, but optimal throughput, i.e. a packet of n bytes is
+-- sent out in n clock cycles, even if `_last` is set.
 downConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom
