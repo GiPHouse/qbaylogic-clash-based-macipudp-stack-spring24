@@ -112,6 +112,18 @@ prop_checksum_specific_values =
     footnoteShow $ showAsHex result
     C.complement checkSum === 0xb861
 
+-- | testing whether the value returns to 0 after a reset
+prop_checksum_reset :: Property
+prop_checksum_reset =
+  property $ do
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWord <*> Gen.bool)
+
+    input <- forAll genInputList
+    let size = length input
+        result = take size $ C.simulate @C.System internetChecksum input
+
+    assert $ checkNothingAfterReset input result
+
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_reduce_specific_values :: Property
 prop_checksum_reduce_specific_values =
@@ -131,26 +143,27 @@ prop_checksum_reduce_specific_values =
 prop_checksum_reduce_succeed :: Property
 prop_checksum_reduce_succeed =
   property $ do
-    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWord <*> pure False)
+    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWordVec @5 <*> pure False)
 
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
 
-    let checkSum = C.complement $ last $ take (size + 1) $ C.simulate @C.System internetChecksum input
-        input' = input ++ [Just (checkSum, False)]
-        checkSum' = last $ take (size + 2) $ C.simulate @C.System internetChecksum input'
+    let result = C.simulate @C.System reduceToInternetChecksum input
+        checkSum = C.complement $ last $ take (size + 1) result
+        input' = input ++ [Just (checkSum C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> C.Nil, False)]
+        checkSum' = last $ take (size + 2) $ C.simulate @C.System reduceToInternetChecksum input'
 
     checkSum' === 0xFFFF
 
--- | testing whether the value returns to 0 after a reset
-prop_checksum_reset :: Property
-prop_checksum_reset =
+
+prop_checksum_reduce_reset :: Property
+prop_checksum_reduce_reset =
   property $ do
-    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWord <*> Gen.bool)
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
 
     input <- forAll genInputList
     let size = length input
-        result = take size $ C.simulate @C.System internetChecksum input
+        result = take size $ C.simulate @C.System reduceToInternetChecksum input
 
     assert $ checkZeroAfterReset input result
 
