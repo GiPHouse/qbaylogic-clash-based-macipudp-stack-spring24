@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.AsyncFIFO
+Description : Provides `asyncFifoC` for crossing clock domains in the packet stream protocol
+-}
 module Clash.Cores.Ethernet.AsyncFIFO
   (asyncFifoC) where
 
@@ -10,6 +14,7 @@ import Clash.Cores.Ethernet.PacketStream
 
 
 -- | Asynchronous FIFO circuit that can be used to safely cross clock domains.
+-- Uses `Clash.Explicit.Prelude.asyncFIFOSynchronizer` internally.
 asyncFifoC :: forall (depth     :: Nat)
                      (dataWidth :: Nat)
                      (wDom      :: Domain)
@@ -22,12 +27,19 @@ asyncFifoC :: forall (depth     :: Nat)
   , 1 <= dataWidth
   , NFDataX metaType)
   => SNat depth
+  -- ^ 2^depth is the number of elements this component can store
   -> Clock wDom
+  -- ^ Clock signal in the write domain
   -> Reset wDom
+  -- ^ Reset signal in the write domain
   -> Enable wDom
+  -- ^ Enable signal in the write domain
   -> Clock rDom
+  -- ^ Clock signal in the read domain
   -> Reset rDom
+  -- ^ Reset signal in the read domain
   -> Enable rDom
+  -- ^ Enable signal in the read domain
   -> Circuit (PacketStream wDom dataWidth metaType) (PacketStream rDom dataWidth metaType)
 asyncFifoC depth wClk wRst wEn rClk rRst rEn = fromSignals ckt where
   ckt (fwdIn, bwdIn) = (bwdOut, fwdOut) where

@@ -11,9 +11,7 @@ module Clash.Cores.Ethernet.EthernetTypes
   ) where
 
 import Clash.Prelude
-
 import Control.DeepSeq ( NFData )
-
 
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))

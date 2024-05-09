@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.PacketArbiter
+Description : Provides a packet arbiter, for merging packet streams
+-}
 module Clash.Cores.Ethernet.PacketArbiter
   ( packetArbiterC
   , ArbiterMode(..)

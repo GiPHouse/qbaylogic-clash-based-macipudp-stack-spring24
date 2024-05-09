@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.InternetChecksum
+Description : Functions for computing the RFC1071 internet checksum
+-}
 module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum
   ) where
@@ -5,9 +9,11 @@ module Clash.Cores.Ethernet.InternetChecksum
 import Clash.Prelude
 import Data.Maybe
 
--- | computes the un-complimented internet checksum of a stream of 16-bit words according to https://datatracker.ietf.org/doc/html/rfc1071
--- The checksum and reset are delayed by one clock cycle.
--- Keep in mind that if "reset" is True in the input tuple, the checksum is reset to 0 the next cycle so the value of the bitvector is disgarded
+-- | Computes the uncomplimented internet checksum of a stream of 16-bit words
+-- according to https://datatracker.ietf.org/doc/html/rfc1071. The checksum and
+-- reset are delayed by one clock cycle. Keep in mind that if "reset" is True in
+-- the input tuple, the checksum is reset to 0 the next cycle so the value of
+-- the `BitVector` is disgarded.
 internetChecksum
   :: forall (dom :: Domain).
   HiddenClockResetEnable dom

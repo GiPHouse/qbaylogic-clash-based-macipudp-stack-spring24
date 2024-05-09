@@ -1,18 +1,20 @@
 {-# language RecordWildCards #-}
+
+{-|
+Module      : Clash.Cores.Ethernet.UpConverter
+Description : Provides an up converter, for changing the data width of packet streams
+-}
 module Clash.Cores.Ethernet.UpConverter
-  ( upConverter
-  , upConverterC
+  ( upConverterC
   ) where
 
+import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Util
 import Clash.Prelude
 import Data.Maybe ( isJust, isNothing )
-
-import Clash.Cores.Ethernet.PacketStream
-
 import Protocols ( Circuit(..), fromSignals, (|>) )
 
-
-
+-- | Upconverter state, consisting of at most p `BitVector 8`s and a vector indicating which bytes are valid
 data UpConverterState (dataWidth :: Nat) =
   UpConverterState {
     _ucBuf     :: Vec dataWidth (BitVector 8),
@@ -27,12 +29,6 @@ data UpConverterState (dataWidth :: Nat) =
     -- ^ If true the current buffer contains the last byte of the current packet
   }
   deriving (Generic, NFDataX)
--- ^ Upconverter state, consisting of at most p (BitVector 8)'s and a vector indicating which bytes are valid
-
--- | Maybe put this in a utility module?
-toMaybe :: Bool -> a -> Maybe a
-toMaybe True x = Just x
-toMaybe False _ = Nothing
 
 toPacketStream :: UpConverterState dataWidth -> Maybe (PacketStreamM2S dataWidth ())
 toPacketStream UpConverterState{..} = toMaybe _ucFlush (PacketStreamM2S _ucBuf _ucLastIdx () _ucAborted)
@@ -111,6 +107,8 @@ upConverter = mealyB go s0
         where
           outReady = not _ucFlush || (_ready bwdIn)
 
+-- | Converts packet streams of single bytes to packet streams of a higher data widths.
+-- Has one cycle of latency, but optimal throughput.
 upConverterC
   :: forall (dataWidth :: Nat) (dom :: Domain).
   HiddenClockResetEnable dom

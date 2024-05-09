@@ -1,5 +1,9 @@
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Lattice.ECP5.Colorlight.UartEthRxStack
+Description : Complete transmit stack from an ethernet tx channel to a UART signal for debugging the receive stack from the ethernet core
+-}
 module Clash.Lattice.ECP5.Colorlight.UartEthRxStack
 ( uartEthRxStack
 ) where
@@ -25,6 +29,7 @@ import Clash.Cores.Ethernet.AsyncFIFO
 import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.Internal ( CSignal(CSignal) )
 
+-- | Processes ethernet frames and turns it into a UART signal
 uartEthRxStack
   :: forall dom domEth domDDREth.
   ( KnownDomain dom

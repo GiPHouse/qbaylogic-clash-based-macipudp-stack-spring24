@@ -1,13 +1,16 @@
 {-# language FlexibleContexts #-}
 
-{- | This module contains the necessary functions and types to connect an RGMII PHY to an Axi4Stream interface.
+{- |
+Module      : Clash.Cores.Ethernet.RGMII
+Description : Functions and types to connect an RGMII PHY to a packet stream interface
 
 To keep this module generic users will have to provide their own "primitive" functions:
-1. `delay` functions set to the proper amount of delay (which can be different for RX and TX)
-2. `iddr` function to turn a single DDR (Double Data Rate) signal into 2 non-DDR signals
-2. `oddr` function to turn two non-DDR signals into a single DDR signal
 
-Note that clash models a DDR signal as being twice as fast, thus both facilitating
+    1. delay functions set to the proper amount of delay (which can be different for RX and TX)
+    2. iddr function to turn a single DDR (Double Data Rate) signal into 2 non-DDR signals
+    3. oddr function to turn two non-DDR signals into a single DDR signal
+
+Note that Clash models a DDR signal as being twice as fast, thus both facilitating
 and requiring type-level separation between the two "clock domains".
 -}
 
@@ -51,7 +54,7 @@ instance Protocol (RGMIITXChannel ddrDomain) where
   type Fwd (RGMIITXChannel ddrDomain) = RGMIITXChannel ddrDomain
   type Bwd (RGMIITXChannel ddrDomain) = Signal ddrDomain ()
 
--- | sender component of RGMII -> NOTE: for now transmission error is not considered
+-- | RGMII sender. Does not consider transmission error.
 rgmiiSender
   :: forall dom domDDR
    . 2 * DomainPeriod domDDR ~ DomainPeriod dom
@@ -65,9 +68,9 @@ rgmiiSender
   -> Signal dom (Maybe (BitVector 8))
   -- ^ Maybe the byte we have to output
   -> Signal dom Bool
-  -- ^ Error signal whether the current packet is corrupt
+  -- ^ Error signal indicating whether the current packet is corrupt
   -> RGMIITXChannel domDDR
-  -- ^ tx channel to the phy
+  -- ^ Tx channel to the PHY
 rgmiiSender txClk rst txdelay oddr input err = channel
   where
     txEn, txErr :: Signal dom Bit
@@ -93,18 +96,18 @@ rgmiiSender txClk rst txdelay oddr input err = channel
                 , rgmii_tx_data = txdelay txData
                 }
 
--- | receiver component of RGMII
+-- | RGMII receiver.
 rgmiiReceiver
   :: forall dom domDDR
    . (2 * DomainPeriod domDDR ~ DomainPeriod dom, KnownDomain dom)
   => RGMIIRXChannel dom domDDR
-  -- ^ rx channel from phy
+  -- ^ rx channel from PHY
   -> (forall a. Signal domDDR a -> Signal domDDR a)
   -- ^ rx delay function
   -> (forall a. (NFDataX a, BitPack a) => Clock dom -> Reset dom -> Signal domDDR a -> Signal dom (a, a))
   -- ^ iddr function
   -> Signal dom (Bool, Maybe (BitVector 8))
-  -- ^ received data
+  -- ^ Received data and error bit
 rgmiiReceiver channel rxdelay iddr = bundle (ethRxErr, byteStream)
   where
     ethRxClk :: Clock dom

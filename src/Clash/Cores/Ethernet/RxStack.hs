@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.RxStack
+Description : Provides the entire receive stack as a circuit
+-}
 module Clash.Cores.Ethernet.RxStack
 ( rxStack
 ) where
@@ -9,7 +13,7 @@ import Clash.Cores.Ethernet.UpConverter ( upConverterC )
 import Clash.Prelude
 import Protocols
 
-
+-- | Processes received ethernet frames
 rxStack
   :: forall
   (dataWidth :: Nat)

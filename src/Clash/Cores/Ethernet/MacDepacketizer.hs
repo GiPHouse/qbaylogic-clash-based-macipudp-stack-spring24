@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.MacDepacketizer
+Description : Specialized depacketizer for ethernet header
+-}
 module Clash.Cores.Ethernet.MacDepacketizer
   ( macDepacketizerC ) where
 

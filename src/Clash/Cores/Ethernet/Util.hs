@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Cores.Ethernet.Util
+Description : Utility module, only for very small util functions
+-}
 module Clash.Cores.Ethernet.Util
     ( toMaybe
     ) where

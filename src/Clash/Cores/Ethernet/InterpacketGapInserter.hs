@@ -1,5 +1,9 @@
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Cores.Ethernet.InterpacketGapInserter
+Description : Circuit for inserting the interpacket gap between ethernet frames
+-}
 module Clash.Cores.Ethernet.InterpacketGapInserter
   (interpacketGapInserterC) where
 
@@ -32,7 +36,7 @@ gapInserterT :: forall (gapSize :: Nat) .
        )
      )
   -- ^ Output packetstream to PHY tx and output backpressure to DownConverter
--- Assert backpressure for `gapSize` clock cycles. During these cycles, the output is Nothing.
+-- Assert backpressure for a given number of clock cycles. During these cycles, the output is Nothing.
 gapInserterT Insert { cycles = c } (_, _) = (nextState, (PacketStreamS2M False, Nothing))
   where
     nextState = if c == maxBound then Forward else Insert { cycles = c + 1 }
@@ -43,7 +47,7 @@ gapInserterT Forward (Just inp, inReady) = (nextState, (inReady, Just inp))
 gapInserterT s (Nothing, inReady) = (s, (inReady, Nothing))
 
 -- | Inserts the interpacket gap between packets. More specifically,
--- this component asserts backpressure for `gapSize` clock cyles after receiving a frame with _last set.
+-- this component asserts backpressure for a given number of clock cyles after receiving a frame with _last set.
 -- During these cycles, the output of this component is Nothing.
 interpacketGapInserterC :: forall (dom :: Domain) (gapSize :: Nat) .
   ( HiddenClockResetEnable dom
