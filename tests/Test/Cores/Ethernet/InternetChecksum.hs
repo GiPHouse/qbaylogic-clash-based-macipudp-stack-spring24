@@ -59,8 +59,8 @@ flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
     fb Nothing = Nothing
     fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
 
-checkNothingAfterReset :: [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
-checkNothingAfterReset = checkCurValueAfterReset False
+checkZeroAfterReset :: [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
+checkZeroAfterReset = checkCurValueAfterReset False
   where
     checkCurValueAfterReset _ [] _ = True
     checkCurValueAfterReset _ _ [] = True
@@ -122,7 +122,7 @@ prop_checksum_reset =
     let size = length input
         result = take size $ C.simulate @C.System internetChecksum input
 
-    assert $ checkNothingAfterReset input result
+    assert $ checkZeroAfterReset input result
 
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_reduce_specific_values :: Property
@@ -165,7 +165,7 @@ prop_checksum_reduce_reset =
     let size = length input
         result = take size $ C.simulate @C.System reduceToInternetChecksum input
 
-    assert $ checkNothingAfterReset input result
+    assert $ checkZeroAfterReset input result
 
 tests :: TestTree
 tests =
