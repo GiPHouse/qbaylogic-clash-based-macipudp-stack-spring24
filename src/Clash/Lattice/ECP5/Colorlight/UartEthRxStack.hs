@@ -12,9 +12,8 @@ module Clash.Lattice.ECP5.Colorlight.UartEthRxStack
 import Clash.Prelude
 
 -- import ethernet
-import Clash.Cores.Ethernet.DownConverter
-import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(..), fromPacketStream )
-import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), rgmiiReceiver, unsafeRgmiiRxC )
+import Clash.Cores.Ethernet.DownConverter ( downConverterC )
+import Clash.Cores.Ethernet.RGMII ( RGMIIRXChannel(rgmii_rx_clk), unsafeRgmiiRxC )
 import Clash.Cores.Ethernet.RxStack ( rxStack )
 
 -- import uart
@@ -25,7 +24,7 @@ import Clash.Lattice.ECP5.Prims ( delayg, iddrx1f )
 import Clash.Lattice.ECP5.UART ( uartTxNoBaudGenC )
 
 -- import protocols
-import Clash.Cores.Ethernet.AsyncFIFO
+import Clash.Cores.Ethernet.AsyncFIFO ( asyncFifoC )
 import Protocols ( Circuit, toSignals, (|>) )
 import Protocols.Internal ( CSignal(CSignal) )
 
@@ -38,22 +37,18 @@ uartEthRxStack
   => HiddenClockResetEnable dom
   => KnownConf domEth    ~ 'DomainConfiguration domEth    8000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
   => KnownConf domDDREth ~ 'DomainConfiguration domDDREth 4000 'Rising 'Asynchronous 'Unknown 'ActiveHigh
-  => Clock domEth
-  -- ^ Clock to pass on to the RGMII receiver
-  -> Reset domEth
-  -- ^ Reset to pass on to the RGMII receiver
-  -> BaudGenerator dom
+  => BaudGenerator dom
   -- ^ Baud generator for the UART sender
   -> RGMIIRXChannel domEth domDDREth
   -- ^ Input channel
   -> Signal dom Bit
   -- ^ Output signal
-uartEthRxStack clkEth rstEth baudGen uartTxS  = uartTxBitS
+uartEthRxStack baudGen ethRxChannel  = uartTxBitS
   where
     ckt :: Circuit (RGMIIRXChannel domEth domDDREth) (CSignal dom Bit)
-    ckt = exposeClockResetEnable (unsafeRgmiiRxC (delayg d80) iddrx1f) clkEth rstEth enableGen
-       |> rxStack @4 (rgmii_rx_clk uartTxS)
+    ckt = exposeClockResetEnable (unsafeRgmiiRxC (delayg d80) iddrx1f) (rgmii_rx_clk ethRxChannel) resetGen enableGen
+       |> rxStack @4 (rgmii_rx_clk ethRxChannel)
        |> asyncFifoC d10 hasClock hasReset hasEnable hasClock hasReset hasEnable
        |> downConverterC
        |> uartTxNoBaudGenC baudGen
-    (_, CSignal uartTxBitS) = toSignals ckt (uartTxS, CSignal $ pure ())
+    (_, CSignal uartTxBitS) = toSignals ckt (ethRxChannel, CSignal $ pure ())
