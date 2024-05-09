@@ -7,6 +7,8 @@ Description : Provides various data types, aliases and constants for the Etherne
 module Clash.Cores.Ethernet.EthernetTypes
   ( MacAddress(..)
   , EthernetHeader(..)
+  , fromLite
+  , fromLiteC
   , Preamble
   , broadcastMac
   , preamble
@@ -23,7 +25,6 @@ import Clash.Prelude
 
 import Protocols
 
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.IPv4Types
 import Control.DeepSeq ( NFData )
@@ -117,3 +118,26 @@ toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4Heade
 toLiteC = Circuit (swap . unbundle . go . bundle)
   where
     go = fmap $ B.first $ fmap $ fmap toLite
+
+fromLite :: IPv4HeaderLite -> IPv4Header
+fromLite header = IPv4Header { _ipv4Version = 4
+                             , _ipv4Ihl = 5
+                             , _ipv4Dscp = 0
+                             , _ipv4Ecn = 0
+                             , _ipv4Length = 20
+                             , _ipv4Id = 0
+                             , _ipv4Flags = 0
+                             , _ipv4FragmentOffset = 0
+                             , _ipv4Ttl = 64
+                             , _ipv4Protocol = 0
+                             , _ipv4Checksum = 0
+                             , _ipv4Source = _ipv4lSource header
+                             , _ipv4Destination = _ipv4lDestination header
+                             }
+
+-- | Produce a full IPv4 header from a lite one.
+--   Note that this does *not* compute the checksum.
+fromLiteC :: Circuit (PacketStream dom n IPv4HeaderLite) (PacketStream dom n IPv4Header)
+fromLiteC = Circuit (swap . unbundle . go . bundle)
+  where
+    go = fmap $ B.first $ fmap $ fmap fromLite

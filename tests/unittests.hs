@@ -11,6 +11,7 @@ import Test.Cores.Ethernet.EthernetTypes qualified
 import Test.Cores.Ethernet.FrameCheckSequence qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
+import Test.Cores.Ethernet.IpPacketizer qualified
 import Test.Cores.Ethernet.MacDepacketizer qualified
 import Test.Cores.Ethernet.MacPacketizer qualified
 import Test.Cores.Ethernet.PacketArbiter qualified
@@ -46,4 +47,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
     , Test.Cores.Ethernet.EthernetTypes.tests
     , Test.Cores.IP.IPDepacketizer.tests
+    , Test.Cores.Ethernet.IpPacketizer.tests
   ]
