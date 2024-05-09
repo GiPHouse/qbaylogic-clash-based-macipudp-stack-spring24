@@ -122,7 +122,7 @@ prop_checksum_reset =
     let size = length input
         result = take size $ C.simulate @C.System internetChecksum input
 
-    assert $ checkNothingAfterReset input result
+    assert $ checkZeroAfterReset input result
 
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_reduce_specific_values :: Property
@@ -155,17 +155,6 @@ prop_checksum_reduce_succeed =
 
     checkSum' === 0xFFFF
 
-
-prop_checksum_reduce_reset :: Property
-prop_checksum_reduce_reset =
-  property $ do
-    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
-
-    input <- forAll genInputList
-    let size = length input
-        result = take size $ C.simulate @C.System reduceToInternetChecksum input
-
-    assert $ checkZeroAfterReset input result
 
 prop_checksum_reduce_reset :: Property
 prop_checksum_reduce_reset =
