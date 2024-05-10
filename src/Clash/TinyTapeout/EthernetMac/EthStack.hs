@@ -8,7 +8,6 @@ import qualified Clash.Explicit.Prelude as E
 import Data.Proxy
 
 import Protocols
-import qualified Protocols.DfConv as DfConv
 
 import Clash.Cores.Crc (deriveHardwareCrc)
 import Clash.Cores.Crc.Catalog (Crc32_ethernet)
@@ -26,51 +25,36 @@ import Clash.Cores.Ethernet.MacPacketizer
 import Clash.Cores.Ethernet.PacketArbiter
 import Clash.Cores.Ethernet.PacketDispatcher
 import Clash.Cores.Ethernet.AsyncFIFO
-
 import Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.UpConverter
 
-import Data.Maybe (isNothing, isJust, catMaybes)
+import Clash.TinyTapeout.EthernetMac.Credits
+
+import Data.Maybe (isNothing, isJust)
 import Clash.Cores.Ethernet.Util (toMaybe)
-import Prelude (unlines)
-import Data.Char (ord, chr)
-import qualified Data.List as L
 
-import Data.Bifunctor (bimap)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
 
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d1)
-
-type CreditsBlobWords = 163
-
-creditsBlob :: MemBlob CreditsBlobWords 8
-creditsBlob = $(memBlobTH Nothing $ fmap (fromIntegral @Int @(BitVector 8) . ord) $ unlines
-  [ "Designed by:"
-  , "Jasper Laumen"
-  , "Mart Koster"
-  , "Daan Weessies"
-  , "Cato van Ojen"
-  , "Jasmijn Bookelmann"
-  , "Tim Wallet"
-  , "Bryan Rinders"
-  , "Matthijs Muis"
-  , "Rowan Goemans"
-  , "\nSponsored by QbayLogic"
-  ])
+type CreditsBlobWords = 91
+creditsBlob :: MemBlob CreditsBlobWords 16
+creditsBlob = $(memBlobTH Nothing $ creditsBV d2)
 
 creditsC
   :: HiddenClockResetEnable dom
-  => Circuit (PacketStream dom 1 EthernetHeader) (PacketStream dom 1 EthernetHeader)
+  => Circuit (PacketStream dom 2 EthernetHeader) (PacketStream dom 2 EthernetHeader)
 creditsC = fromSignals go
   where
     goT cnt (_, Nothing, bwdIn) = (cnt, (cnt, bwdIn, Nothing))
     goT cnt (bv, Just fwdIn, bwdIn) = (nextCnt, (nextCnt, PacketStreamS2M readyOut, fwdOut))
       where
+        lastWord = cnt == maxBound
+
         lastIn = isJust $ _last fwdIn
         readyIn = _ready bwdIn
         nextCnt = if lastIn && readyIn then satSucc SatWrap cnt else cnt
-        readyOut = isNothing (_last fwdIn) || (cnt == maxBound && readyIn)
+        readyOut = isNothing (_last fwdIn) || (lastWord && readyIn)
 
-        fwdOut = toMaybe lastIn $ fwdIn { _data = singleton bv }
+        fwdOut = toMaybe lastIn $ fwdIn { _data = unpack bv, _last = toMaybe lastWord maxBound }
 
     go (fwdIn, bwdIn) = (bwdOut, fwdOut)
       where
@@ -79,10 +63,11 @@ creditsC = fromSignals go
 
 ethernetEndpoints
   :: HiddenClockResetEnable dom
-  => Circuit (PacketStream dom 1 EthernetHeader) (PacketStream dom 1 EthernetHeader)
+  => Circuit (PacketStream dom 2 EthernetHeader) (PacketStream dom 2 EthernetHeader)
 ethernetEndpoints = circuit $ \eth -> do
-  let dispatch = (\h -> 0x2001 == _etherType h) :> (\h -> 0x2002 == _etherType h) :> Nil
-  [echoEth, creditsEth] <- packetDispatcherC dispatch -< eth
+  let withEthType typ hdr = typ == _etherType hdr
+
+  [echoEth, creditsEth] <- packetDispatcherC (withEthType 0x2001 :> withEthType 0x2002 :> Nil) -< eth
 
   credits <- creditsC -< creditsEth
 
@@ -100,12 +85,14 @@ stack clkRx rstRx = ckt
     ckt = (exposeClockResetEnable (unsafeMiiRxC (E.dflipflop clkRx)) clkRx rstRx enRx)
             |> (exposeClockResetEnable preambleStripperC clkRx rstRx enRx)
             -- |> fcsValidator
-            |> asyncFifoC d6 clkRx rstRx enRx hasClock hasReset hasEnable
+            |> (exposeClockResetEnable (upConverterC @2) clkRx rstRx enRx)
+            |> asyncFifoC d4 clkRx rstRx enRx hasClock hasReset hasEnable
             |> macDepacketizerC
             |> ethernetEndpoints
             |> macPacketizerC
             |> paddingInserterC d60
             |> fcsInserterC
             |> preambleInserterC
+            |> downConverterC
             |> interpacketGapInserterC d12
             |> miiTxC dflipflop
