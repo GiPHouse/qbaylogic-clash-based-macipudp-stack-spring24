@@ -155,7 +155,6 @@ prop_checksum_reduce_succeed =
 
     checkSum' === 0xFFFF
 
-
 prop_checksum_reduce_reset :: Property
 prop_checksum_reduce_reset =
   property $ do
@@ -167,8 +166,57 @@ prop_checksum_reduce_reset =
 
     assert $ checkZeroAfterReset input result
 
+-- Actually use pipeline
+-- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
+prop_checksum_pipeline_specific_values :: Property
+prop_checksum_pipeline_specific_values =
+  property $ do
+    let input = Just . (,False)  <$> [
+          0x4500 C.:> 0x0073 C.:> 0x0000 C.:> C.Nil,
+          0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil,
+          0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
+          ]
+        delay = 3
+        size = length input
+        result = take (size + delay) $ C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)
+        checkSum = last result
+
+    footnote $ "full output: " ++ show (showAsHex result)
+    checkSum === 0x479e
+
+-- TODO: Actually use pipeline
+prop_checksum_pipeline_succeed :: Property
+prop_checksum_pipeline_succeed =
+  property $ do
+    let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWordVec @5 <*> pure False)
+        delay = 4
+
+    input <- forAll $ genInputList (Range.linear 1 100)
+    let size = length input
+
+    let result = C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)
+        checkSum = C.complement $ last $ take (size + delay) result
+        input' = input ++ [Just (checkSum C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> 0x0 C.:> C.Nil, False)] ++ replicate delay Nothing
+        checkSum' = last $ take (size + delay + 1) $ C.simulate @C.System pipelinedInternetChecksum input'
+
+    footnoteShow $ showAsHex $ take (size + delay) result
+
+    checkSum' === 0xFFFF
+
+-- -- TODO: Actually use pipeline
+-- prop_checksum_pipeline_reset :: Property
+-- prop_checksum_pipeline_reset =
+--   property $ do
+--     let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
+
+--     input <- forAll genInputList
+--     let size = length input
+--         result = take size $ C.simulate @C.System reduceToInternetChecksum input
+
+--     assert $ checkZeroAfterReset input result
+
 tests :: TestTree
 tests =
-    localOption (mkTimeout 10_000_000 {- 12 seconds -})
+    localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)
