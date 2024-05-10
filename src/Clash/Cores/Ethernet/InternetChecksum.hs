@@ -2,10 +2,13 @@
 Module      : Clash.Cores.Ethernet.InternetChecksum
 Description : Functions for computing the RFC1071 internet checksum
 -}
+
+
 module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum,
     reduceToInternetChecksum,
-    pipelinedInternetChecksum
+    pipelinedInternetChecksum,
+    PipeLineDelay
   ) where
 
 import Clash.Prelude
@@ -69,10 +72,9 @@ pipelinedInternetChecksum ::
   -- ^ Resulting checksum
 pipelinedInternetChecksum inputM = checkSum
   where
-    checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 checksumResult
-    (inpX, resetX) = unbundle $ fromJustX <$> inputM
-    checksumResult = foldChecksum input
-    input = (++) <$> (singleton <$> checkSum) <*> inpX
+    checkSum = register 0 $ mux reset 0 checksumResult
+    (inp, reset) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
+    checksumResult = calcChecksum <$> foldChecksum inp <*> checkSum
 
 foldChecksum ::
   forall (dom :: Domain) (n::Nat).
@@ -105,7 +107,7 @@ foldChecksum inp = case sameNat (Proxy :: Proxy n ) (Proxy :: Proxy 1) of
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 1)
           ) of
           (Just Refl, Nothing) -> layerCalc inps
-          (Nothing, Just Refl) -> (++) <$> (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
+          (Nothing, Just Refl) -> (++) <$> register (repeat 0) (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
           _ -> error "p > 1 impossible"
           where
             layerCalc :: Signal dom (Vec (2*m) (BitVector 16)) -> Signal dom (Vec m (BitVector 16))
@@ -114,3 +116,6 @@ foldChecksum inp = case sameNat (Proxy :: Proxy n ) (Proxy :: Proxy 1) of
             calcChecksum2 :: Vec 2 (BitVector 16) -> BitVector 16
             calcChecksum2 (a :> b :> _) = calcChecksum a b
             calcChecksum2 _ = error "calcChecksum2: impossible"
+
+-- -- Define a type to determine the needed delay
+type PipeLineDelay (n :: Nat) = 1 + CLog 2 n
