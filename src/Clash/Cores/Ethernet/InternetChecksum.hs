@@ -8,9 +8,10 @@ module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum,
     reduceToInternetChecksum,
     pipelinedInternetChecksum,
-    PipeLineDelay
+    PipelineDelay
   ) where
 
+import Clash.Cores.Ethernet.Util qualified as U
 import Clash.Prelude
 import Data.Maybe
 import Data.Proxy
@@ -73,8 +74,10 @@ pipelinedInternetChecksum ::
 pipelinedInternetChecksum inputM = checkSum
   where
     checkSum = register 0 $ mux reset 0 checksumResult
-    (inp, reset) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
+    (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
     checksumResult = calcChecksum <$> foldChecksum inp <*> checkSum
+    reset = U.registerN (SNat :: SNat (PipelineDelay width-1)) False resetInp
+
 
 foldChecksum ::
   forall (dom :: Domain) (n::Nat).
@@ -117,5 +120,5 @@ foldChecksum inp = case sameNat (Proxy :: Proxy n ) (Proxy :: Proxy 1) of
             calcChecksum2 (a :> b :> _) = calcChecksum a b
             calcChecksum2 _ = error "calcChecksum2: impossible"
 
--- -- Define a type to determine the needed delay
-type PipeLineDelay (n :: Nat) = 1 + CLog 2 n
+-- Define a type to determine the needed delay
+type PipelineDelay (n :: Nat) = 1 + CLog 2 n

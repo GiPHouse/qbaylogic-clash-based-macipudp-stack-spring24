@@ -26,6 +26,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-cores
 import Clash.Cores.Ethernet.InternetChecksum
+import Data.Proxy
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -45,9 +46,6 @@ showAsHex = fmap (showSToString . Numeric.showHex . toInteger)
 showComplementAsHex :: [C.BitVector 16] -> [String]
 showComplementAsHex = showAsHex . fmap C.complement
 
-genVecWord :: Gen (C.Vec 5 (C.BitVector 16))
-genVecWord = sequence $ C.repeat genWord
-
 flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
 flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
   where
@@ -59,13 +57,17 @@ flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
     fb Nothing = Nothing
     fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
 
-checkZeroAfterReset :: [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
-checkZeroAfterReset = checkCurValueAfterReset False
+checkZeroAfterReset :: Int -> [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
+checkZeroAfterReset _ [] _ = True
+checkZeroAfterReset _ _ [] = False
+checkZeroAfterReset d (Just (_, True):xs) yl@(_:ys) = checkZeroAfterDelay d yl && checkZeroAfterReset d xs ys
   where
-    checkCurValueAfterReset _ [] _ = True
-    checkCurValueAfterReset _ _ [] = True
-    checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
-    checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
+    checkZeroAfterDelay :: Int -> [C.BitVector 16] -> Bool
+    checkZeroAfterDelay _ [] = False
+    checkZeroAfterDelay 0 (z:_) = z == 0x0
+    checkZeroAfterDelay r (_:zs) = checkZeroAfterDelay (r-1) zs
+checkZeroAfterReset d (_:xs) (_:ys) = checkZeroAfterReset d xs ys
+
 
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
@@ -120,9 +122,9 @@ prop_checksum_reset =
 
     input <- forAll genInputList
     let size = length input
-        result = take size $ C.simulate @C.System internetChecksum input
+        result = take (size + 1) $ C.simulate @C.System internetChecksum input
 
-    assert $ checkZeroAfterReset input result
+    assert $ checkZeroAfterReset 1 input result
 
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_reduce_specific_values :: Property
@@ -158,13 +160,13 @@ prop_checksum_reduce_succeed =
 prop_checksum_reduce_reset :: Property
 prop_checksum_reduce_reset =
   property $ do
-    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWordVec @5 <*> Gen.bool)
 
     input <- forAll genInputList
     let size = length input
-        result = take size $ C.simulate @C.System reduceToInternetChecksum input
+        result = take (size + 1) $ C.simulate @C.System reduceToInternetChecksum input
 
-    assert $ checkZeroAfterReset input result
+    assert $ checkZeroAfterReset 1 input result
 
 -- Actually use pipeline
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
@@ -176,7 +178,7 @@ prop_checksum_pipeline_specific_values =
           0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil,
           0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
           ]
-        delay = 3
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineDelay 4))
         size = length input
         result = take (size + delay) $ C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)
         checkSum = last result
@@ -189,7 +191,7 @@ prop_checksum_pipeline_succeed :: Property
 prop_checksum_pipeline_succeed =
   property $ do
     let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWordVec @5 <*> pure False)
-        delay = 4
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineDelay 5))
 
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
@@ -204,16 +206,18 @@ prop_checksum_pipeline_succeed =
     checkSum' === 0xFFFF
 
 -- -- TODO: Actually use pipeline
--- prop_checksum_pipeline_reset :: Property
--- prop_checksum_pipeline_reset =
---   property $ do
---     let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genVecWord <*> Gen.bool)
+prop_checksum_pipeline_reset :: Property
+prop_checksum_pipeline_reset =
+  property $ do
+    let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWordVec @7 <*> Gen.bool)
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineDelay 7))
+    input <- forAll genInputList
+    let size = length input
+        result = take (size + delay) $ C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)
 
---     input <- forAll genInputList
---     let size = length input
---         result = take size $ C.simulate @C.System reduceToInternetChecksum input
+    footnoteShow $ showAsHex result
 
---     assert $ checkZeroAfterReset input result
+    assert $ checkZeroAfterReset delay input result
 
 tests :: TestTree
 tests =
