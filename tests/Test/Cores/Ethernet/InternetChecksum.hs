@@ -54,7 +54,7 @@ flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
     replaceAtIndex :: Int -> a -> [a] -> [a]
     replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
 
-    newWord =fb (bitList !! listIndex)
+    newWord = fb (bitList !! listIndex)
 
     fb Nothing = Nothing
     fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
