@@ -1,0 +1,14 @@
+@startuml
+[*] --> PacketDispatcher : PacketStream dom n EthernetHeader
+PacketDispatcher --> ArpReceive : PacketStream dom n EthernetHeader
+PacketDispatcher -left-> IPPackets : PacketStream dom n EthernetHeader
+ArpReceive --> fanOut : Df dom ArpEntry
+ArpReceive --> roundRobinCollect : Df dom ArpLite
+roundRobinCollect --> ArpTransmit : Df dom ArpLite
+fanOut --> ArpTable : Df dom ArpEntry
+fanOut --> ArpManager : Df dom ArpEntry
+ArpManager --> roundRobinCollect : Df dom ArpLite
+ArpManager --> ArpTable : Df dom ArpLookup
+ArpTransmit --> [*] : PacketStream dom n EthernetHeader
+User --> ArpManager : ArpLookup
+@enduml
