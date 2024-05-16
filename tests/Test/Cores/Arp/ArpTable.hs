@@ -60,7 +60,7 @@ arpEntry2 = ArpEntry {
 -- | Tests proper expiration and overwriting of ARP entries in the table.
 prop_arp_table :: Property
 prop_arp_table = property $
-  do L.map fst (sampleN 32 (bundle bwdOut)) === expectedBwdOut
+  do L.map fst (sampleN 33 (bundle bwdOut)) === expectedBwdOut
     where
       fwdIn :: [(Maybe IPv4Address, Data ArpEntry)]
       fwdIn = [ (Nothing, NoData)
@@ -79,9 +79,9 @@ prop_arp_table = property $
       expectedBwdOut = [ Nothing
                        , Nothing
                        , Just (ArpEntryFound (_arpMac arpEntry2))]
-                       -- For 28 ticks (2.8 seconds), the entry should be found. Not 30, because the counter
+                       -- For 29 ticks (2.9 seconds), the entry should be found. Not 30, because the counter
                        -- has already counted a couple ticks once we add the arp entry. This inaccuracy is correct.
-                       L.++ L.replicate 28 (Just (ArpEntryFound (_arpMac arpEntry1)))
+                       L.++ L.replicate 29 (Just (ArpEntryFound (_arpMac arpEntry1)))
                        L.++ [Just ArpEntryNotFound]
 
 tests :: TestTree

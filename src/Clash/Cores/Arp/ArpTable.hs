@@ -30,8 +30,9 @@ secondTimer = isRising 0 $ msb <$> counter
     counter = register maxBound (satPred SatWrap <$> counter)
 
 -- | ARP table that stores one ARP entry in a register. `maxAgeSeconds` is the number of seconds before the
---   entry will be removed from the table (lazily). The timeout is inaccurate for up to one second, because
---   the circuit uses a constant counter for efficiency.
+--   entry will be removed from the table (lazily). The timeout is inaccurate for up to one second less, because
+--   the circuit uses a constant counter for efficiency. For example, when `maxAgeSeconds` is set to 30,
+--   an entry will expire in 29-30 seconds.
 arpTable
   :: forall (dom :: Domain) (maxAgeSeconds :: Nat) .
   ( HiddenClockResetEnable dom
