@@ -90,8 +90,8 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Clash.Cores.Arp.ArpTypes
     Clash.Cores.Arp.ArpTransmitter
+    Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.Depacketizer
     Clash.Cores.Ethernet.EthernetTypes

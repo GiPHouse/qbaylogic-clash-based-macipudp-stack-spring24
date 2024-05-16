@@ -62,7 +62,7 @@ arpTransmitterPropertyGenerator SNat =
         _macSrc = ourMac,
         _etherType = arpEtherType
       }
-      
+
       toArpPkt arpLite = newArpPacket ourMac ourIP (_targetMac arpLite) (_targetIPv4 arpLite) (_isRequest arpLite)
 
 -- | headerBytes mod dataWidth ~ 0

@@ -41,6 +41,6 @@ arpTransmitter ourMacS ourIPv4S = fromSignals bundleWithSrc |> packetizeFromDfC 
         _macSrc = ourMac,
         _etherType = arpEtherType
       }
-    
+
     constructArpPkt (ourMac, ourIPv4, arpLite)
       = newArpPacket ourMac ourIPv4 (_targetMac arpLite) (_targetIPv4 arpLite) (_isRequest arpLite)
