@@ -40,24 +40,24 @@ appendVec valid xs ys = results !! valid
                      extra = repeat 0
                   _ -> error "appendVec: Absurd"
     results = smap (\s _ -> go s) xs
-    
+
 foldPipeline ::
   forall (dom :: Domain) (n::Nat) (a::Type).
   HiddenClockResetEnable dom
   => KnownNat n
   => 1 <= n
   => NFDataX a
-  => a
-  -> (a -> a -> a)
+  => Default a
+  => (a -> a -> a)
   -> Signal dom (Vec n a)
   -> Signal dom a
-foldPipeline initial func inp  = case (
+foldPipeline func inp  = case (
     sameNat (Proxy :: Proxy n) (Proxy :: Proxy 1),
     compareSNat d1 (SNat @(n `Div` 2 + n `Mod` 2))
     ) of
     (_, SNatGT) -> error "n `Div` 2 + n `Mod` 2 <= 1 impossible"
     (Just Refl, _) -> head <$> inp
-    (Nothing, SNatLE) -> foldPipeline initial func foldValues
+    (Nothing, SNatLE) -> foldPipeline func foldValues
       where
         foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) a)
         foldValues =
@@ -80,16 +80,19 @@ foldPipeline initial func inp  = case (
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 0),
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 1)
           ) of
-          (Just Refl, Nothing) -> layerCalc inps
-          (Nothing, Just Refl) -> (++) <$> register (repeat initial) (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
+          (Just Refl, Nothing) -> regVec $ layerCalc inps
+          (Nothing, Just Refl) -> regVec $ (++) <$> (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
           _ -> error "p > 1 impossible"
           where
             layerCalc :: Signal dom (Vec (2*m) a) -> Signal dom (Vec m a)
-            layerCalc inl = register (repeat initial) $ fmap (fmap calcChecksum2 . unconcatI) inl
+            layerCalc inl = register (repeat def) $ fmap (fmap calcChecksum2 . unconcatI) inl
 
             calcChecksum2 :: Vec 2 a -> a
             calcChecksum2 (a :> b :> _) = func a b
             calcChecksum2 _ = error "calcChecksum2: impossible"
+
+            regVec :: KnownNat q => Signal dom (Vec q a) -> Signal dom (Vec q a)
+            regVec vs = bundle (register def <$> unbundle vs)
 
 -- Define a type to determine the needed delay
 type PipelineDelay (n :: Nat) = 1 + CLog 2 n

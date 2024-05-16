@@ -78,5 +78,5 @@ pipelinedInternetChecksum inputM = checkSum
   where
     checkSum = register 0 $ mux reset 0 checksumResult
     (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
-    checksumResult = calcChecksum <$> foldPipeline 0 calcChecksum inp <*> checkSum
+    checksumResult = calcChecksum <$> foldPipeline calcChecksum inp <*> checkSum
     reset = U.registerN (SNat :: SNat (PipelineDelay width-1)) False resetInp
