@@ -19,7 +19,8 @@ import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
-
+import Test.Lattice.ECP5.UART qualified
+import Test.Cores.Ethernet.EthernetTypes qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."

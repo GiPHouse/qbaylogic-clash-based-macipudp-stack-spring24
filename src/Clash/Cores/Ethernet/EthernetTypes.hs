@@ -11,6 +11,7 @@ module Clash.Cores.Ethernet.EthernetTypes
   , startFrameDelimiter
   , IPv4Address
   , toEthernetC
+  , toEthernet
   ) where
 
 import Clash.Prelude
