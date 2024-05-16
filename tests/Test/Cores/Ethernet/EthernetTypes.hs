@@ -29,8 +29,8 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.Ethernet.PacketStream
 
 
 
