@@ -70,7 +70,7 @@ foldPipeline initial f inp  = case (nIs1, foldWidthBiggerThan1) of
         case (atLeast1mod2, nEqualsN) of
         (SNatLE, Just Refl) -> (step @(n `Div` 2) @(n `Mod` 2)) (Proxy::Proxy (n `Div` 2)) initial f inp
         _ -> error "'n % 2 > 1', or '2*(n/2)+n%2 != x': impossible"
-      
+
       atLeast1mod2 = compareSNat (SNat @(n `Mod` 2)) d1
       nEqualsN = sameNat (Proxy :: Proxy (2 * (n `Div` 2) + n `Mod` 2)) (Proxy :: Proxy n)
 

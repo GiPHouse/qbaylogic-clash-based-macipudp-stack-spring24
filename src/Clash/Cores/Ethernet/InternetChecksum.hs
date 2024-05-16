@@ -10,8 +10,8 @@ module Clash.Cores.Ethernet.InternetChecksum
   ) where
 
 import Clash.Cores.Ethernet.Util qualified as U
-import Clash.Sized.Vector.Extra (foldPipeline, PipelineLatency)
 import Clash.Prelude
+import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
 import Data.Maybe
 
 -- | computes the un-complimented internet checksum of a stream of 16-bit words
@@ -39,8 +39,8 @@ internetChecksum inputM = checkSumWithCarry
     checkSumWithCarry = carry + truncated
     nextCheckSum = add <$> inpX <*> checkSumWithCarry
 
-calcChecksum :: BitVector 16 -> BitVector 16 -> BitVector 16
-calcChecksum bvA bvB = carry + truncated
+onesComplementAdd :: BitVector 16 -> BitVector 16 -> BitVector 16
+onesComplementAdd bvA bvB = carry + truncated
   where
     (zeroExtend -> carry, truncated) = split checkSum
     checkSum :: BitVector 17
@@ -61,7 +61,7 @@ reduceToInternetChecksum inputM = checkSum
   where
     checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 checksumResult
     (inpX, resetX) = unbundle $ fromJustX <$> inputM
-    checksumResult = fold calcChecksum <$> input
+    checksumResult = fold onesComplementAdd <$> input
     input = (++) <$> (singleton <$> checkSum) <*> inpX
 
 pipelinedInternetChecksum ::
@@ -78,5 +78,5 @@ pipelinedInternetChecksum inputM = checkSum
   where
     checkSum = register 0 $ mux reset 0 checksumResult
     (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
-    checksumResult = calcChecksum <$> foldPipeline calcChecksum inp <*> checkSum
+    checksumResult = onesComplementAdd <$> foldPipeline 0 onesComplementAdd inp <*> checkSum
     reset = U.registerN (SNat :: SNat (PipelineLatency width-1)) False resetInp
