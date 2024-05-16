@@ -43,9 +43,9 @@ createDomain vSystem
   , vResetPolarity=ActiveHigh
   }
 
-ip1, ip2 :: IPAddress
-ip1 = IPAddress $ 0xDE :> 0xAD :> 0xBE :> 0xEF :> Nil
-ip2 = IPAddress $ 0xDE :> 0xAD :> 0xBE :> 0xEE :> Nil
+ip1, ip2 :: IPv4Address
+ip1 = IPv4Address $ 0xDE :> 0xAD :> 0xBE :> 0xEF :> Nil
+ip2 = IPv4Address $ 0xDE :> 0xAD :> 0xBE :> 0xEE :> Nil
 
 arpEntry1, arpEntry2 :: ArpEntry
 arpEntry1 = ArpEntry {
@@ -62,7 +62,7 @@ prop_arp_table :: Property
 prop_arp_table = property $
   do L.map fst (sampleN 32 (bundle bwdOut)) === expectedBwdOut
     where
-      fwdIn :: [(Maybe IPAddress, Data ArpEntry)]
+      fwdIn :: [(Maybe IPv4Address, Data ArpEntry)]
       fwdIn = [ (Nothing, NoData)
               , (Nothing, Data arpEntry2)
               , (Just ip2, Data arpEntry1)]
