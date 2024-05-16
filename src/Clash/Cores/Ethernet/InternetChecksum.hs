@@ -79,28 +79,30 @@ pipelinedInternetChecksum inputM = checkSum
   where
     checkSum = register 0 $ mux reset 0 checksumResult
     (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
-    checksumResult = calcChecksum <$> foldPipeline calcChecksum inp <*> checkSum
+    checksumResult = calcChecksum <$> foldPipeline 0 calcChecksum inp <*> checkSum
     reset = U.registerN (SNat :: SNat (PipelineDelay width-1)) False resetInp
 
 
 foldPipeline ::
-  forall (dom :: Domain) (n::Nat).
-  HiddenClockResetEnable dom 
+  forall (dom :: Domain) (n::Nat) (a::Type).
+  HiddenClockResetEnable dom
   => KnownNat n
-  => 1 <= n 
-  => (BitVector 16 -> BitVector 16 -> BitVector 16) 
-  -> Signal dom (Vec n (BitVector 16))
-  -> Signal dom (BitVector 16)
-foldPipeline func inp  = case (
-    sameNat (Proxy :: Proxy n) (Proxy :: Proxy 1), 
+  => 1 <= n
+  => NFDataX a
+  => a
+  -> (a -> a -> a)
+  -> Signal dom (Vec n a)
+  -> Signal dom a
+foldPipeline initial func inp  = case (
+    sameNat (Proxy :: Proxy n) (Proxy :: Proxy 1),
     compareSNat d1 (SNat @(n `Div` 2 + n `Mod` 2))
     ) of
     (_, SNatGT) -> error "n `Div` 2 + n `Mod` 2 <= 1 impossible"
     (Just Refl, _) -> head <$> inp
-    (Nothing, SNatLE) -> foldPipeline func foldValues
+    (Nothing, SNatLE) -> foldPipeline initial func foldValues
       where
-        foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) (BitVector 16))
-        foldValues = 
+        foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) a)
+        foldValues =
           case (
               compareSNat (SNat @(n `Mod` 2)) d1,
               sameNat (Proxy :: Proxy (2 * (n `Div` 2) + n `Mod` 2)) (Proxy:: Proxy n)
@@ -114,21 +116,21 @@ foldPipeline func inp  = case (
           => KnownNat p
           => p <= 1
           => Proxy m
-          -> Signal dom (Vec (2 * m + p) (BitVector 16))
-          -> Signal dom (Vec (m + p) (BitVector 16))
+          -> Signal dom (Vec (2 * m + p) a)
+          -> Signal dom (Vec (m + p) a)
         step _ inps = case (
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 0),
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 1)
           ) of
           (Just Refl, Nothing) -> layerCalc inps
-          (Nothing, Just Refl) -> (++) <$> register (repeat 0) (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
+          (Nothing, Just Refl) -> (++) <$> register (repeat initial) (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
           _ -> error "p > 1 impossible"
           where
-            layerCalc :: Signal dom (Vec (2*m) (BitVector 16)) -> Signal dom (Vec m (BitVector 16))
-            layerCalc inl = register (repeat 0) $ fmap (fmap calcChecksum2 . unconcatI) inl
+            layerCalc :: Signal dom (Vec (2*m) a) -> Signal dom (Vec m a)
+            layerCalc inl = register (repeat initial) $ fmap (fmap calcChecksum2 . unconcatI) inl
 
-            calcChecksum2 :: Vec 2 (BitVector 16) -> BitVector 16
-            calcChecksum2 (a :> b :> _) = calcChecksum a b
+            calcChecksum2 :: Vec 2 a -> a
+            calcChecksum2 (a :> b :> _) = func a b
             calcChecksum2 _ = error "calcChecksum2: impossible"
 
 -- Define a type to determine the needed delay
