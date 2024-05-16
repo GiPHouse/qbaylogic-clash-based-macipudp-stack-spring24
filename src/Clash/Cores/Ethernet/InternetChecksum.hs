@@ -107,8 +107,8 @@ foldChecksum inp = case sameNat (Proxy :: Proxy n ) (Proxy :: Proxy 1) of
           => KnownNat p
           => p <= 1
           => Proxy m
-          -> Signal dom (Vec (2*m+p) (BitVector 16))
-          -> Signal dom (Vec (m+p) (BitVector 16))
+          -> Signal dom (Vec (2 * m + p) (BitVector 16))
+          -> Signal dom (Vec (m + p) (BitVector 16))
         step _ inps = case (
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 0),
             sameNat (Proxy :: Proxy p) (Proxy :: Proxy 1)
