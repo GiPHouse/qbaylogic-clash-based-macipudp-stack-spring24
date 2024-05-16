@@ -90,12 +90,15 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Arp.ArpTransmitter
+    Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.Depacketizer
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.MacPacketizer
+    Clash.Cores.Ethernet.PacketizeFromDf
     Clash.Cores.Ethernet.Packetizer
     Clash.Cores.Ethernet.PacketArbiter
     Clash.Cores.Ethernet.PacketBuffer
@@ -113,6 +116,7 @@ library
     Clash.Cores.Ethernet.AsyncFIFO
     Clash.Cores.Ethernet.InternetChecksum
     Clash.Cores.Ethernet.FcsInserter
+    Clash.Cores.IP.IPv4Types
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.UART
     Clash.Lattice.ECP5.Colorlight.CRG
@@ -151,6 +155,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.MacDepacketizer
     Test.Cores.Ethernet.Util
