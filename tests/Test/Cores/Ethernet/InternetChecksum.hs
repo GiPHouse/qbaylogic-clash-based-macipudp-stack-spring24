@@ -168,7 +168,6 @@ prop_checksum_reduce_reset =
 
     assert $ checkZeroAfterReset 1 input result
 
--- Actually use pipeline
 -- | testing the example from wikipedia: https://en.wikipedia.org/wiki/Internet_checksum
 prop_checksum_pipeline_specific_values :: Property
 prop_checksum_pipeline_specific_values =
@@ -186,7 +185,6 @@ prop_checksum_pipeline_specific_values =
     footnote $ "full output: " ++ show (showAsHex result)
     checkSum === 0x479e
 
--- TODO: Actually use pipeline
 prop_checksum_pipeline_succeed :: Property
 prop_checksum_pipeline_succeed =
   property $ do
@@ -205,7 +203,6 @@ prop_checksum_pipeline_succeed =
 
     checkSum' === 0xFFFF
 
--- -- TODO: Actually use pipeline
 prop_checksum_pipeline_reset :: Property
 prop_checksum_pipeline_reset =
   property $ do
