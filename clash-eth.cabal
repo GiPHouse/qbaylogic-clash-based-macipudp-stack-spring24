@@ -94,6 +94,7 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Arp.ArpManager
     Clash.Cores.Arp.ArpTable
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
