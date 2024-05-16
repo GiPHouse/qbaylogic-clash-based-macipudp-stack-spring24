@@ -85,15 +85,15 @@ pipelinedInternetChecksum inputM = checkSum
 
 foldChecksum ::
   forall (dom :: Domain) (n::Nat).
-  HiddenClockResetEnable dom =>
-  KnownNat n
-  => Signal dom ((Vec n) (BitVector 16))
+  HiddenClockResetEnable dom 
+  => KnownNat n
+  => Signal dom (Vec n (BitVector 16))
   -> Signal dom (BitVector 16)
 foldChecksum inp = case sameNat (Proxy :: Proxy n ) (Proxy :: Proxy 1) of
     Just Refl -> head <$> inp
     Nothing -> foldChecksum foldValues
       where
-        foldValues :: Signal dom ((Vec (n `Div` 2 + n `Mod` 2)) (BitVector 16))
+        foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) (BitVector 16))
         foldValues = case (
               compareSNat (SNat @(n `Mod` 2)) d1,
               sameNat (Proxy :: Proxy (2 * (n `Div` 2) + n `Mod` 2)) (Proxy:: Proxy n)
