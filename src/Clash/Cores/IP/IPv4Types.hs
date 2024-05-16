@@ -9,5 +9,6 @@ import Clash.Prelude
 import Control.DeepSeq ( NFData )
 
 
-newtype IPAddress = IPAddress (Vec 4 (BitVector 8))
+-- | IPv4 address.
+newtype IPv4Address = IPv4Address (Vec 4 (BitVector 8))
   deriving (Generic, Show, ShowX, NFDataX, NFData, Eq, BitPack)

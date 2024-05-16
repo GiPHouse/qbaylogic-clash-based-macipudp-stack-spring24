@@ -31,6 +31,12 @@ import Test.Cores.Ethernet.Packetizer
 genVec :: (KnownNat n, 1 <= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)
 
+genArpLite :: Gen ArpLite
+genArpLite = ArpLite <$>
+          (MacAddress <$> genVec Gen.enumBounded) <*>
+          (IPv4Address <$> genVec Gen.enumBounded) <*>
+          Gen.enumBounded
+
 arpTransmitterPropertyGenerator
   :: forall (dataWidth :: Nat)
    . 1 <= dataWidth
@@ -40,24 +46,24 @@ arpTransmitterPropertyGenerator SNat =
   propWithModelSingleDomain
     @System
     defExpectOptions
-    (Gen.list (Range.linear 1 100) genIPAddress)
+    (Gen.list (Range.linear 1 100) genArpLite)
     (exposeClockResetEnable model)
-    (exposeClockResetEnable @System (arpTransmitter (pure myMac) (pure myIP)))
+    (exposeClockResetEnable @System (arpTransmitter (pure ourMac) (pure ourIP)))
     (===)
     where
-      genIPAddress = IPAddress <$> genVec Gen.enumBounded
+      ourMac = MacAddress (0xDE :> 0xAD :> 0xBE :> 0xEF :> 0x01 :> 0x02 :> Nil)
+      ourIP = IPv4Address (0x33 :> 0x44 :> 0x55 :> 0x66 :> Nil)
 
-      model :: [IPAddress] -> [PacketStreamM2S dataWidth EthernetHeader]
+      model :: [ArpLite] -> [PacketStreamM2S dataWidth EthernetHeader]
       model = packetizeFromDfModel toEthernetHdr toArpPkt
 
-      myMac = MacAddress (0xDE :> 0xAD :> 0xBE :> 0xEF :> 0x01 :> 0x02 :> Nil)
-      myIP = IPAddress (0x33 :> 0x44 :> 0x55 :> 0x66 :> Nil)
-      toEthernetHdr _ = EthernetHeader {
-        _macDst = broadcastMac,
-        _macSrc = myMac,
+      toEthernetHdr arpLite = EthernetHeader {
+        _macDst = _targetMac arpLite,
+        _macSrc = ourMac,
         _etherType = arpEtherType
       }
-      toArpPkt tpa = newArpRequest myMac myIP tpa
+      
+      toArpPkt arpLite = newArpPacket ourMac ourIP (_targetMac arpLite) (_targetIPv4 arpLite) (_isRequest arpLite)
 
 -- | headerBytes mod dataWidth ~ 0
 prop_arp_transmitter_d1 :: Property

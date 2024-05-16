@@ -18,8 +18,7 @@ import Clash.Cores.Ethernet.PacketizeFromDf
 import Clash.Cores.IP.IPv4Types
 
 
--- | Upon receiving an IPv4 address, this component broadcasts an ARP request
---   to fetch the MAC address corresponding to this IP address.
+-- | Transmits ARP packets upon request.
 arpTransmitter
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
@@ -28,17 +27,20 @@ arpTransmitter
   => KnownNat dataWidth
   => Signal dom MacAddress
   -- ^ Our MAC address
-  -> Signal dom IPAddress
+  -> Signal dom IPv4Address
   -- ^ Our IPv4 address
-  -> Circuit (Df dom IPAddress) (PacketStream dom dataWidth EthernetHeader)
-arpTransmitter shaS spaS = fromSignals arpBundle |> packetizeFromDfC toEthernetHdr (uncurry $ uncurry newArpRequest)
+  -> Circuit (Df dom ArpLite) (PacketStream dom dataWidth EthernetHeader)
+arpTransmitter ourMacS ourIPv4S = fromSignals bundleWithSrc |> packetizeFromDfC toEthernetHdr constructArpPkt
   where
-    arpBundle (fwdIn, bwdIn) = (bwdIn, fmap go (bundle (bundle (shaS, spaS), fwdIn)))
-    go ((sha, spa), maybeTha) = maybeTha >>= \tha -> Data ((sha, spa), tha)
+    bundleWithSrc (fwdIn, bwdIn) = (bwdIn, go <$> bundle (ourMacS, ourIPv4S, fwdIn))
+    go (ourMac, ourIPv4, maybeArpLite) = maybeArpLite >>= \arpLite -> Data (ourMac, ourIPv4, arpLite)
 
-    toEthernetHdr ((sha, _), _)
+    toEthernetHdr (ourMac, _, arpLite)
       = EthernetHeader {
-          _macDst = broadcastMac,
-          _macSrc = sha,
-          _etherType = arpEtherType
-        }
+        _macDst = _targetMac arpLite,
+        _macSrc = ourMac,
+        _etherType = arpEtherType
+      }
+    
+    constructArpPkt (ourMac, ourIPv4, arpLite)
+      = newArpPacket ourMac ourIPv4 (_targetMac arpLite) (_targetIPv4 arpLite) (_isRequest arpLite)
