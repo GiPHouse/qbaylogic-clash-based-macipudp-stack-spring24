@@ -175,6 +175,7 @@ test-suite test-library
     Test.Cores.Ethernet.InternetChecksum
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
+    Test.Cores.Ethernet.EthernetTypes
   build-depends:
     clash-eth,
     QuickCheck,
