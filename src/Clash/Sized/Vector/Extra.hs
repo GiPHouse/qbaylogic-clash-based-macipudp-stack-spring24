@@ -2,7 +2,7 @@ module Clash.Sized.Vector.Extra (
     takeLe
   , appendVec
   , foldPipeline
-  , PipelineDelay
+  , PipelineLatency
 ) where
 
 import Clash.Prelude
@@ -41,23 +41,26 @@ appendVec valid xs ys = results !! valid
                   _ -> error "appendVec: Absurd"
     results = smap (\s _ -> go s) xs
 
+-- | Fold a vector of 'n' elements into a single element using a binary function. Between every "layer" of the fold, there is a register
+-- | This means there is a latency between input and output of 'PipelineDelay width' cycles. This is equal to CLog2(width) + 1
 foldPipeline ::
   forall (dom :: Domain) (n::Nat) (a::Type).
   HiddenClockResetEnable dom
   => KnownNat n
   => 1 <= n
   => NFDataX a
-  => Default a
   => (a -> a -> a)
+  -- ^ Associative binary operation to apply
   -> Signal dom (Vec n a)
+  -- ^ Input values
   -> Signal dom a
-foldPipeline func inp  = case (
+foldPipeline f inp  = case (
     sameNat (Proxy :: Proxy n) (Proxy :: Proxy 1),
     compareSNat d1 (SNat @(n `Div` 2 + n `Mod` 2))
     ) of
     (_, SNatGT) -> error "n `Div` 2 + n `Mod` 2 <= 1 impossible"
     (Just Refl, _) -> head <$> inp
-    (Nothing, SNatLE) -> foldPipeline func foldValues
+    (Nothing, SNatLE) -> foldPipeline f foldValues
       where
         foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) a)
         foldValues =
@@ -85,14 +88,14 @@ foldPipeline func inp  = case (
           _ -> error "p > 1 impossible"
           where
             layerCalc :: Signal dom (Vec (2*m) a) -> Signal dom (Vec m a)
-            layerCalc inl = register (repeat def) $ fmap (fmap calcChecksum2 . unconcatI) inl
+            layerCalc inl = register (repeat undefined) $ fmap (fmap applyF . unconcatI) inl
 
-            calcChecksum2 :: Vec 2 a -> a
-            calcChecksum2 (a :> b :> _) = func a b
-            calcChecksum2 _ = error "calcChecksum2: impossible"
+            applyF :: Vec 2 a -> a
+            applyF (a :> b :> _) = f a b
+            applyF _ = error "calcChecksum2: impossible"
 
             regVec :: KnownNat q => Signal dom (Vec q a) -> Signal dom (Vec q a)
-            regVec vs = bundle (register def <$> unbundle vs)
+            regVec vs = bundle (register undefined <$> unbundle vs)
 
--- Define a type to determine the needed delay
-type PipelineDelay (n :: Nat) = 1 + CLog 2 n
+-- | The latency of the pipeline
+type PipelineLatency (n :: Nat) = 1 + CLog 2 n

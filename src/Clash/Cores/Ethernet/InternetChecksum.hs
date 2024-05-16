@@ -6,11 +6,11 @@ module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum,
     reduceToInternetChecksum,
     pipelinedInternetChecksum,
-    PipelineDelay
+    PipelineLatency
   ) where
 
 import Clash.Cores.Ethernet.Util qualified as U
-import Clash.Sized.Vector.Extra (foldPipeline, PipelineDelay)
+import Clash.Sized.Vector.Extra (foldPipeline, PipelineLatency)
 import Clash.Prelude
 import Data.Maybe
 
@@ -79,4 +79,4 @@ pipelinedInternetChecksum inputM = checkSum
     checkSum = register 0 $ mux reset 0 checksumResult
     (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
     checksumResult = calcChecksum <$> foldPipeline calcChecksum inp <*> checkSum
-    reset = U.registerN (SNat :: SNat (PipelineDelay width-1)) False resetInp
+    reset = U.registerN (SNat :: SNat (PipelineLatency width-1)) False resetInp
