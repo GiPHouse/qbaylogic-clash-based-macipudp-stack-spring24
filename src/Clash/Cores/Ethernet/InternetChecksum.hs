@@ -64,6 +64,9 @@ reduceToInternetChecksum inputM = checkSum
     checksumResult = fold onesComplementAdd <$> input
     input = (++) <$> (singleton <$> checkSum) <*> inpX
 
+-- | Computes the internetChecksum of a vector of 16 bit words. Same as reduceToInternetChecksum
+-- but with registers between each layer of the fold. Thus the critical path is shorter, but the
+-- latency is higher.
 pipelinedInternetChecksum ::
   forall (dom :: Domain) (width :: Nat).
   HiddenClockResetEnable dom
