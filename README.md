@@ -52,3 +52,14 @@ namspace with `sudo ip netns exec colorlight sudo wireshark`.
 The test suite can then be ran as normal.
 Alternatively, Python files can be ran manually with
 `sudo ip netns exec colorlight sudo ./<filename>`.
+
+# Building the CI docker image.
+
+To build a docker image that has all dependencies to build this project run:
+
+```
+nix-build build-ci-image.nix
+```
+
+Make sure you have enough space inside `/tmp`, the build might fail if it runs
+out of space.
