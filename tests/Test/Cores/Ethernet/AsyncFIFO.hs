@@ -1,6 +1,6 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.AsyncFIFO where
 
@@ -17,9 +17,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols
@@ -27,28 +27,33 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.AsyncFIFO
-import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(PacketStreamM2S) )
+import Clash.Cores.Ethernet.PacketStream
+  ( PacketStream
+  , PacketStreamM2S (PacketStreamM2S)
+  )
 
 genVec :: (KnownNat n, 1 C.<= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)
 
-createDomain vSystem
-  { vName="TestDom50"
-  , vPeriod=20_000
-  , vActiveEdge=Rising
-  , vResetKind=Asynchronous
-  , vInitBehavior=Unknown
-  , vResetPolarity=ActiveHigh
-  }
+createDomain
+  vSystem
+    { vName = "TestDom50"
+    , vPeriod = 20_000
+    , vActiveEdge = Rising
+    , vResetKind = Asynchronous
+    , vInitBehavior = Unknown
+    , vResetPolarity = ActiveHigh
+    }
 
-createDomain vSystem
-  { vName="TestDom125"
-  , vPeriod=8_000
-  , vActiveEdge=Rising
-  , vResetKind=Asynchronous
-  , vInitBehavior=Unknown
-  , vResetPolarity=ActiveHigh
-  }
+createDomain
+  vSystem
+    { vName = "TestDom125"
+    , vPeriod = 8_000
+    , vActiveEdge = Rising
+    , vResetKind = Asynchronous
+    , vInitBehavior = Unknown
+    , vResetPolarity = ActiveHigh
+    }
 
 clk50 :: Clock TestDom50
 clk50 = clockGen
@@ -68,9 +73,10 @@ en50 = enableGen
 en125 :: Enable TestDom125
 en125 = enableGen
 
-generateAsyncFifoIdProp :: forall (wDom :: Domain) (rDom :: Domain) .
-  (KnownDomain wDom, KnownDomain rDom) =>
-  Clock wDom
+generateAsyncFifoIdProp
+  :: forall (wDom :: Domain) (rDom :: Domain)
+   . (KnownDomain wDom, KnownDomain rDom)
+  => Clock wDom
   -> Reset wDom
   -> Enable wDom
   -> Clock rDom
@@ -84,18 +90,20 @@ generateAsyncFifoIdProp wClk wRst wEn rClk rRst rEn =
     id
     ckt
     (===)
-    where
-      ckt :: (KnownDomain wDom, KnownDomain rDom) => Circuit
-              (PacketStream wDom 1 Int)
-              (PacketStream rDom 1 Int)
-      ckt = asyncFifoC (C.SNat @8) wClk wRst wEn rClk rRst rEn
-      -- This is used to generate
-      genPackets =
-          PacketStreamM2S <$>
-          genVec Gen.enumBounded <*>
-          Gen.maybe Gen.enumBounded <*>
-          Gen.enumBounded <*>
-          Gen.enumBounded
+ where
+  ckt
+    :: (KnownDomain wDom, KnownDomain rDom)
+    => Circuit
+        (PacketStream wDom 1 Int)
+        (PacketStream rDom 1 Int)
+  ckt = asyncFifoC (C.SNat @8) wClk wRst wEn rClk rRst rEn
+  -- This is used to generate
+  genPackets =
+    PacketStreamM2S
+      <$> genVec Gen.enumBounded
+      <*> Gen.maybe Gen.enumBounded
+      <*> Gen.enumBounded
+      <*> Gen.enumBounded
 
 -- | The async FIFO circuit should forward all of its input data without loss and without producing extra data.
 --   This property tests whether this is true, when the clock of the writer and reader is equally fast (50 MHz).
@@ -114,6 +122,7 @@ prop_asyncfifo_writer_speed_faster_than_reader_id = generateAsyncFifoIdProp clk1
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 12_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1_000))
+      $(testGroupGenerator)

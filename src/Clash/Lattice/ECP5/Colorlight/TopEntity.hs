@@ -1,48 +1,49 @@
-{-# language FlexibleContexts #-}
-{-# language NoMonomorphismRestriction #-}
-{-# language NumericUnderscores #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {-|
 Module      : Clash.Lattice.ECP5.Colorlight.TopEntity
 Description : Contains the top entity
 -}
-module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
+module Clash.Lattice.ECP5.Colorlight.TopEntity (topEntity) where
 
 import Clash.Annotations.TH
 import Clash.Cores.Ethernet.RGMII
-    ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
-import Clash.Cores.UART ( baudGenerator )
+  ( RGMIIRXChannel (..)
+  , RGMIITXChannel (..)
+  , rgmiiReceiver
+  , rgmiiSender
+  )
+import Clash.Cores.UART (baudGenerator)
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
-import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
+import Clash.Lattice.ECP5.Colorlight.UartEthTxStack (uartEthTxStack)
 import Clash.Lattice.ECP5.Prims
-import Clash.Prelude ( exposeClockResetEnable )
+import Clash.Prelude (exposeClockResetEnable)
 
 data SDRAMOut domain = SDRAMOut
-  {
-    sdram_clock :: "clk" :::Clock domain,
-    sdram_a :: "a" ::: Signal domain (BitVector 11),
-    sdram_we_n :: "we_n" ::: Signal domain Bit,
-    sdram_ras_n :: "ras_n" :::Signal domain Bit,
-    sdram_cas_n :: "cas_n" ::: Signal domain Bit,
-    sdram_ba :: "ba" ::: Signal domain (BitVector 2),
-    sdram_dq :: "dq" ::: BiSignalOut 'Floating domain 32
+  { sdram_clock :: "clk" ::: Clock domain
+  , sdram_a :: "a" ::: Signal domain (BitVector 11)
+  , sdram_we_n :: "we_n" ::: Signal domain Bit
+  , sdram_ras_n :: "ras_n" ::: Signal domain Bit
+  , sdram_cas_n :: "cas_n" ::: Signal domain Bit
+  , sdram_ba :: "ba" ::: Signal domain (BitVector 2)
+  , sdram_dq :: "dq" ::: BiSignalOut 'Floating domain 32
   }
 
 data MDIOOut domain = MDIOOut
-  {
-    mdio_out :: "mdio" ::: BiSignalOut 'Floating domain 1,
-    mdio_mdc :: "mdc" ::: Signal domain Bit
+  { mdio_out :: "mdio" ::: BiSignalOut 'Floating domain 1
+  , mdio_mdc :: "mdc" ::: Signal domain Bit
   }
 
 data HubOut domain = HubOut
-  {
-    hub_clk :: "clk" ::: Signal domain Bit,
-    hub_line_select :: "line_select" ::: Signal domain (BitVector 5),
-    hub_latch :: "latch" ::: Signal domain Bit,
-    hub_output_enable :: "output_enable" ::: Signal domain Bit,
-    hub_data :: "data" ::: Signal domain (BitVector 48)
+  { hub_clk :: "clk" ::: Signal domain Bit
+  , hub_line_select :: "line_select" ::: Signal domain (BitVector 5)
+  , hub_latch :: "latch" ::: Signal domain Bit
+  , hub_output_enable :: "output_enable" ::: Signal domain Bit
+  , hub_data :: "data" ::: Signal domain (BitVector 48)
   }
 
 -- | The top entity
@@ -61,22 +62,24 @@ topEntity
      , "hub" ::: HubOut Dom50
      )
 topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
-  let
-    (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
-    en50 = enableGen
-    baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
+  let (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
+      en50 = enableGen
+      baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
 
-    uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
+      uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
 
-    eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
+      eth0Tx =
+        exposeClockResetEnable
+          (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit)
+          clk50
+          rst50
+          en50
 
-    {- ETH1 ~ RGMII transceivers -}
-    eth1Txclk = rgmii_rx_clk eth1_rx
-    (eth1Err, eth1Data) = unbundle $ rgmiiReceiver eth1_rx (delayg d80) iddrx1f
-    eth1Tx = rgmiiSender eth1Txclk resetGen (delayg d0) oddrx1f eth1Data eth1Err
-
-    in
-      ( uartTxBit
+      {- ETH1 ~ RGMII transceivers -}
+      eth1Txclk = rgmii_rx_clk eth1_rx
+      (eth1Err, eth1Data) = unbundle $ rgmiiReceiver eth1_rx (delayg d80) iddrx1f
+      eth1Tx = rgmiiSender eth1Txclk resetGen (delayg d0) oddrx1f eth1Data eth1Err
+   in ( uartTxBit
       , SDRAMOut
           { sdram_clock = clk50
           , sdram_a = pure 0

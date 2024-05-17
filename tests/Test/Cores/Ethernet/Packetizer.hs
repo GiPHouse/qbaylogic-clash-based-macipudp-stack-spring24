@@ -1,4 +1,4 @@
-{-# language FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Test.Cores.Ethernet.Packetizer
   ( packetizerModel
@@ -14,14 +14,14 @@ import Clash.Cores.Ethernet.PacketStream
 
 import Test.Cores.Ethernet.Util
 
-
 -- | Model of the generic `packetizerC`.
 packetizerModel
-  :: forall (dataWidth :: Nat)
-            (headerBytes :: Nat)
-            (metaIn :: Type)
-            (header :: Type)
-            (metaOut :: Type)
+  :: forall
+    (dataWidth :: Nat)
+    (headerBytes :: Nat)
+    (metaIn :: Type)
+    (header :: Type)
+    (metaOut :: Type)
    . KnownNat dataWidth
   => KnownNat headerBytes
   => 1 <= dataWidth
@@ -33,25 +33,26 @@ packetizerModel
   -> [PacketStreamM2S dataWidth metaIn]
   -> [PacketStreamM2S dataWidth metaOut]
 packetizerModel toMetaOut toHeader ps = L.concat (upConvert <$> L.map prependHdr bytePackets)
-  where
-    prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
-    prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = metaOut}) fragments
-      where
-        h = L.head fragments
-        metaOut = toMetaOut (_meta h)
-        hdr = L.map go (toList $ bitCoerce (toHeader (_meta h)))
-        go byte = PacketStreamM2S (singleton byte) Nothing metaOut (_abort h)
+ where
+  prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
+  prependHdr fragments = hdr L.++ L.map (\f -> f{_meta = metaOut}) fragments
+   where
+    h = L.head fragments
+    metaOut = toMetaOut (_meta h)
+    hdr = L.map go (toList $ bitCoerce (toHeader (_meta h)))
+    go byte = PacketStreamM2S (singleton byte) Nothing metaOut (_abort h)
 
-    bytePackets :: [[PacketStreamM2S 1 metaIn]]
-    bytePackets = downConvert . smearAbort <$> chunkByPacket ps
+  bytePackets :: [[PacketStreamM2S 1 metaIn]]
+  bytePackets = downConvert . smearAbort <$> chunkByPacket ps
 
 -- | Model of the generic `packetizeFromDfC`.
 packetizeFromDfModel
-  :: forall (dataWidth :: Nat)
-            (headerBytes :: Nat)
-            (a :: Type)
-            (header :: Type)
-            (metaOut :: Type)
+  :: forall
+    (dataWidth :: Nat)
+    (headerBytes :: Nat)
+    (a :: Type)
+    (header :: Type)
+    (metaOut :: Type)
    . KnownNat dataWidth
   => KnownNat headerBytes
   => 1 <= dataWidth
@@ -63,7 +64,10 @@ packetizeFromDfModel
   -> [a]
   -> [PacketStreamM2S dataWidth metaOut]
 packetizeFromDfModel toMetaOut toHeader ps = L.concat (upConvert <$> L.map packetize ps)
-  where
-    packetize :: a -> [PacketStreamM2S 1 metaOut]
-    packetize d = fullPackets $ L.map (\byte -> PacketStreamM2S (byte :> Nil) Nothing (toMetaOut d) False)
-                                      (toList $ bitCoerce (toHeader d))
+ where
+  packetize :: a -> [PacketStreamM2S 1 metaOut]
+  packetize d =
+    fullPackets $
+      L.map
+        (\byte -> PacketStreamM2S (byte :> Nil) Nothing (toMetaOut d) False)
+        (toList $ bitCoerce (toHeader d))

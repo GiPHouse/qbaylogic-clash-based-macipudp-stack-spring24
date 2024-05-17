@@ -6,8 +6,7 @@ module Clash.Cores.IP.IPv4Types where
 
 import Clash.Prelude
 
-import Control.DeepSeq ( NFData )
-
+import Control.DeepSeq (NFData)
 
 -- | IPv4 address.
 newtype IPv4Address = IPv4Address (Vec 4 (BitVector 8))

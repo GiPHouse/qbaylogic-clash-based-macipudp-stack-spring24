@@ -1,16 +1,16 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.InternetChecksum where
 
 -- base
 import Data.Maybe
-import Numeric ( showHex )
+import Numeric (showHex)
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude ( type (<=) )
+import Clash.Prelude (type (<=))
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -20,9 +20,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-cores
 import Clash.Cores.Ethernet.InternetChecksum
@@ -33,14 +33,14 @@ genVec gen = sequence (C.repeat gen)
 genWord :: Gen (C.BitVector 16)
 genWord = C.pack <$> genVec Gen.bool
 
-genWordVec ::  (C.KnownNat n, 1 <= n) => Gen (C.Vec n (C.BitVector 16))
+genWordVec :: (C.KnownNat n, 1 <= n) => Gen (C.Vec n (C.BitVector 16))
 genWordVec = genVec genWord
 
 -- functions used to print the intermediate state for debugging
 showAsHex :: [C.BitVector 16] -> [String]
 showAsHex = fmap (showSToString . Numeric.showHex . toInteger)
-  where
-    showSToString showS = showS ""
+ where
+  showSToString showS = showS ""
 
 showComplementAsHex :: [C.BitVector 16] -> [String]
 showComplementAsHex = showAsHex . fmap C.complement
@@ -48,24 +48,24 @@ showComplementAsHex = showAsHex . fmap C.complement
 genVecWord :: Gen (C.Vec 5 (C.BitVector 16))
 genVecWord = sequence $ C.repeat genWord
 
-flipBit :: Int -> Int ->  [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
+flipBit :: Int -> Int -> [Maybe (C.BitVector 16, Bool)] -> [Maybe (C.BitVector 16, Bool)]
 flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
-  where
-    replaceAtIndex :: Int -> a -> [a] -> [a]
-    replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
+ where
+  replaceAtIndex :: Int -> a -> [a] -> [a]
+  replaceAtIndex n item ls = a ++ (item : b) where (a, _ : b) = splitAt n ls
 
-    newWord = fb (bitList !! listIndex)
+  newWord = fb (bitList !! listIndex)
 
-    fb Nothing = Nothing
-    fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
+  fb Nothing = Nothing
+  fb (Just (word, flag)) = Just (C.complementBit word bitIndex, flag)
 
 checkZeroAfterReset :: [Maybe (a, Bool)] -> [C.BitVector 16] -> Bool
 checkZeroAfterReset = checkCurValueAfterReset False
-  where
-    checkCurValueAfterReset _ [] _ = True
-    checkCurValueAfterReset _ _ [] = True
-    checkCurValueAfterReset lastReset (Nothing:xs) (y:ys)           = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
-    checkCurValueAfterReset lastReset (Just (_, reset):xs) (y:ys)   = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
+ where
+  checkCurValueAfterReset _ [] _ = True
+  checkCurValueAfterReset _ _ [] = True
+  checkCurValueAfterReset lastReset (Nothing : xs) (y : ys) = (y == 0x0000 || not lastReset) && checkCurValueAfterReset False xs ys
+  checkCurValueAfterReset lastReset (Just (_, reset) : xs) (y : ys) = (y == 0x0000 || not lastReset) && checkCurValueAfterReset reset xs ys
 
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
@@ -104,7 +104,9 @@ prop_checksum_fail =
 prop_checksum_specific_values :: Property
 prop_checksum_specific_values =
   property $ do
-    let input = Just . (, False) <$> [0x4500, 0x0073, 0x0000, 0x4000, 0x4011, 0x0000, 0xc0a8, 0x0001, 0xc0a8, 0x00c7]
+    let input =
+          Just . (,False)
+            <$> [0x4500, 0x0073, 0x0000, 0x4000, 0x4011, 0x0000, 0xc0a8, 0x0001, 0xc0a8, 0x00c7]
         size = length input
         result = take (size + 1) $ C.simulate @C.System internetChecksum input
         checkSum = last result
@@ -128,11 +130,12 @@ prop_checksum_reset =
 prop_checksum_reduce_specific_values :: Property
 prop_checksum_reduce_specific_values =
   property $ do
-    let input = Just . (, False) <$> [
-          0x4500 C.:> 0x0073 C.:> 0x0000 C.:> C.Nil,
-          0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil,
-          0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
-          ]
+    let input =
+          Just . (,False)
+            <$> [ 0x4500 C.:> 0x0073 C.:> 0x0000 C.:> C.Nil
+                , 0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil
+                , 0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
+                ]
         size = length input
         result = take (size + 1) $ C.simulate @C.System reduceToInternetChecksum input
         checkSum = last result
@@ -155,7 +158,6 @@ prop_checksum_reduce_succeed =
 
     checkSum' === 0xFFFF
 
-
 prop_checksum_reduce_reset :: Property
 prop_checksum_reduce_reset =
   property $ do
@@ -169,6 +171,7 @@ prop_checksum_reduce_reset =
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 10_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 10_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1_000))
+      $(testGroupGenerator)

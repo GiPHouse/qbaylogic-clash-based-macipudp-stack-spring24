@@ -1,8 +1,8 @@
-{-# language BangPatterns #-}
-{-# language MagicHash #-}
-{-# language OverloadedStrings #-}
-{-# language QuasiQuotes #-}
-{-# language ViewPatterns #-}
+{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE MagicHash #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ViewPatterns #-}
 
 {-|
 Module      : Clash.Lattice.ECP5.Prims
@@ -22,20 +22,21 @@ module Clash.Lattice.ECP5.Prims
   ) where
 
 import Clash.Annotations.Primitive
-import Clash.Explicit.DDR ( ddrIn, ddrOut )
+import Clash.Explicit.DDR (ddrIn, ddrOut)
 import Clash.Explicit.Prelude
 import Clash.Signal.BiSignal
-import Data.String.Interpolate ( i )
-import Data.String.Interpolate.Util ( unindent )
-import GHC.Stack ( HasCallStack )
+import Data.String.Interpolate (i)
+import Data.String.Interpolate.Util (unindent)
+import GHC.Stack (HasCallStack)
 
-import Data.Kind ( Type )
+import Data.Kind (Type)
 
 -- | Bidirectional buffer primitive
 bb
-  :: forall (ds :: BiSignalDefault)
-            (dom :: Domain)
-            (a :: Type)
+  :: forall
+    (ds :: BiSignalDefault)
+    (dom :: Domain)
+    (a :: Type)
    . HasCallStack
   => KnownDomain dom
   => HasBiSignalDefault ds
@@ -47,39 +48,44 @@ bb
   -- ^ Output enable, active low
   -> Signal dom a
   -- ^ Data to write if output enable is low
-  -> ( BiSignalOut ds dom (BitSize a)     -- output BiSignal
+  -> ( BiSignalOut ds dom (BitSize a) -- output BiSignal
      , Signal dom a -- input
      )
 bb pkgPinOut nOE output = bb# primName pkgPinOut nOE output
-  where
-    primName = case pullUpMode pkgPinOut of
-                      SFloating -> "BB"
-                      SPullUp   -> "BBPU"
-                      SPullDown -> "BBPD"
+ where
+  primName = case pullUpMode pkgPinOut of
+    SFloating -> "BB"
+    SPullUp -> "BBPU"
+    SPullDown -> "BBPD"
 
 bb#
-  :: forall (ds :: BiSignalDefault)
-            (dom :: Domain)
-            (a :: Type)
-   . HasCallStack                   -- 0
-  => KnownDomain dom                -- 1
-  => BitPack a                      -- 2
-  => NFDataX a                      -- 3
-  => String                         -- 4
-  -> BiSignalIn ds dom (BitSize a)  -- 5
-  -> Signal dom Bit                 -- 6
-  -> Signal dom a                   -- 7
+  :: forall
+    (ds :: BiSignalDefault)
+    (dom :: Domain)
+    (a :: Type)
+   . HasCallStack -- 0
+  => KnownDomain dom -- 1
+  => BitPack a -- 2
+  => NFDataX a -- 3
+  => String -- 4
+  -> BiSignalIn ds dom (BitSize a) -- 5
+  -> Signal dom Bit -- 6
+  -> Signal dom a -- 7
   -> ( BiSignalOut ds dom (BitSize a)
      , Signal dom a
      )
 bb# !_ pkgPinIn nOE output = (pkgPinOut, dIn)
-   where
-     dIn = readFromBiSignal pkgPinIn
-     toMaybe True a = Just a
-     toMaybe False _ = Nothing
-     pkgPinOut = writeToBiSignal pkgPinIn (toMaybe . not . bitToBool <$> nOE <*> output)
+ where
+  dIn = readFromBiSignal pkgPinIn
+  toMaybe True a = Just a
+  toMaybe False _ = Nothing
+  pkgPinOut = writeToBiSignal pkgPinIn (toMaybe . not . bitToBool <$> nOE <*> output)
 {-# NOINLINE bb# #-}
-{-# ANN bb# (InlinePrimitive [Verilog] $ unindent [i|
+{-# ANN
+  bb#
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.bb#"
       , "kind"     : "Declaration"
@@ -107,7 +113,9 @@ bb# !_ pkgPinIn nOE output = (pkgPinOut, dIn)
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 
 -- | PIC output flip flop with Asynchronous clear
 ofs1p3bx
@@ -141,27 +149,37 @@ ifs1p3bx
 ifs1p3bx clk rst en inp = fs1p3bx# "I" clk (unsafeToHighPolarity rst) (fromEnable en) inp
 
 fs1p3bx#
-  :: KnownDomain dom        -- 0
-  => BitPack a              -- 1
-  => NFDataX a              -- 2
-  => String                 -- 3
+  :: KnownDomain dom -- 0
+  => BitPack a -- 1
+  => NFDataX a -- 2
+  => String -- 3
+
   -- ^ I or O depending on input or output
-  -> Clock dom              -- 4
+  -> Clock dom -- 4
+
   -- ^ Clock
-  -> Signal dom Bool        -- 5
+  -> Signal dom Bool -- 5
+
   -- ^ Reset, active high
-  -> Signal dom Bool        -- 6
+  -> Signal dom Bool -- 6
+
   -- ^ enable, active high
-  -> Signal dom a           -- 7
+  -> Signal dom a -- 7
+
   -- ^ Data input from pin or output register block
   -> Signal dom a
   -- ^ Output
-fs1p3bx# !_ clk rst en inp = let rst' = unsafeFromHighPolarity rst
-                                 en' = toEnable en
-                                 -- Reset value is defined as 1
-                                 resetVal = unpack $ complement 0
-                             in register clk rst' en' resetVal inp
-{-# ANN fs1p3bx# (InlinePrimitive [Verilog] $ unindent [i|
+fs1p3bx# !_ clk rst en inp =
+  let rst' = unsafeFromHighPolarity rst
+      en' = toEnable en
+      -- Reset value is defined as 1
+      resetVal = unpack $ complement 0
+   in register clk rst' en' resetVal inp
+{-# ANN
+  fs1p3bx#
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.fs1p3bx#"
       , "kind"     : "Declaration"
@@ -191,26 +209,34 @@ fs1p3bx# !_ clk rst en inp = let rst' = unsafeFromHighPolarity rst
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 {-# NOINLINE fs1p3bx# #-}
-
 
 -- | x1 input DDR
 iddrx1f
-  :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity)     -- 0
-  => KnownConfiguration slow ('DomainConfiguration slow (2*fPeriod) edge reset init polarity) -- 1
-  => NFDataX a     -- 2
-  => BitPack a     -- 3
-  => Clock slow    -- 4
+  :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity) -- 0
+  => KnownConfiguration slow ('DomainConfiguration slow (2 * fPeriod) edge reset init polarity) -- 1
+  => NFDataX a -- 2
+  => BitPack a -- 3
+  => Clock slow -- 4
+
   -- ^ Clock
-  -> Reset slow    -- 5
+  -> Reset slow -- 5
+
   -- ^ Reset
   -> Signal fast a -- 6
+
   -- ^ Input
   -> Signal slow (a, a)
   -- ^ Output on rising/falling edge
 iddrx1f clk rst xs = ddrIn clk rst enableGen (unpack 0, unpack 0, unpack 0) xs
-{-# ANN iddrx1f (InlinePrimitive [Verilog] $ unindent [i|
+{-# ANN
+  iddrx1f
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.iddrx1f"
       , "kind"     : "Declaration"
@@ -245,27 +271,37 @@ iddrx1f clk rst xs = ddrIn clk rst enableGen (unpack 0, unpack 0, unpack 0) xs
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 {-# NOINLINE iddrx1f #-}
 
 -- | x1 output DDR
 oddrx1f
-  :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity)     -- 0
-  => KnownConfiguration slow ('DomainConfiguration slow (2*fPeriod) edge reset init polarity) -- 1
-  => NFDataX a     -- 2
-  => BitPack a     -- 3
-  => Clock slow    -- 4
+  :: KnownConfiguration fast ('DomainConfiguration fast fPeriod edge reset init polarity) -- 0
+  => KnownConfiguration slow ('DomainConfiguration slow (2 * fPeriod) edge reset init polarity) -- 1
+  => NFDataX a -- 2
+  => BitPack a -- 3
+  => Clock slow -- 4
+
   -- ^ Clock
-  -> Reset slow    -- 5
+  -> Reset slow -- 5
+
   -- ^ Reset
   -> Signal slow a -- 6
+
   -- ^ Data to clock out on rising edge
   -> Signal slow a -- 7
+
   -- ^ Data to clock out on falling edge
   -> Signal fast a
   -- ^ Output
 oddrx1f clk rst xs ys = ddrOut clk rst enableGen (unpack 0) ((,) <$> xs <*> ys)
-{-# ANN oddrx1f (InlinePrimitive [Verilog] $ unindent [i|
+{-# ANN
+  oddrx1f
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.oddrx1f"
       , "kind"     : "Declaration"
@@ -295,26 +331,37 @@ oddrx1f clk rst xs ys = ddrOut clk rst enableGen (unpack 0) ((,) <$> xs <*> ys)
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 {-# NOINLINE oddrx1f #-}
 
 -- | Dynamic delay element
 delayf
-  :: delValue <= 127     -- 0
-  => SNat delValue       -- 1
+  :: delValue <= 127 -- 0
+  => SNat delValue -- 1
+
   -- ^ Initial delay in 25ps increments
   -> Signal domLogic Bit -- 2
+
   -- ^ LOADN: 0 on this line resets to 0 delay setting
   -> Signal domLogic Bit -- 3
+
   -- ^ MOVE: Pulsing changes delay on falling edge according to DIRECTION
   -> Signal domLogic Bit -- 4
+
   -- ^ DIRECTION: 0 to increase delay by 25ps, 1 to decrease delay by 25ps
   -- Delay min is 0(0ps) max is 127(3175ps) and it's saturating.
-  -> Signal domDelay a   -- 5
+  -> Signal domDelay a -- 5
+
   -- ^ Data input from pin or output register block
   -> Signal domDelay a
 delayf !_ !_ !_ !_ inp = inp
-{-# ANN delayf (InlinePrimitive [Verilog] $ unindent [i|
+{-# ANN
+  delayf
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.delayf"
       , "kind"     : "Declaration"
@@ -350,19 +397,27 @@ delayf !_ !_ !_ !_ inp = inp
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 {-# NOINLINE delayf #-}
 
 -- | Static delay element
 delayg
-  :: delValue <= 127     -- 0
-  => SNat delValue       -- 1
+  :: delValue <= 127 -- 0
+  => SNat delValue -- 1
+
   -- ^ Delay in 25ps increments
-  -> Signal domDelay a   -- 2
+  -> Signal domDelay a -- 2
+
   -- ^ Data input from pin or output register block
   -> Signal domDelay a
 delayg !_ inp = inp
-{-# ANN delayg (InlinePrimitive [Verilog] $ unindent [i|
+{-# ANN
+  delayg
+  ( InlinePrimitive [Verilog]
+      $ unindent
+        [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Prims.delayg"
       , "kind"     : "Declaration"
@@ -392,5 +447,7 @@ delayg !_ inp = inp
       }
     }
   ]
-  |]) #-}
+  |]
+  )
+  #-}
 {-# NOINLINE delayg #-}

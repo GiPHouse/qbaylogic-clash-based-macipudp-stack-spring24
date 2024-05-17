@@ -1,6 +1,6 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.PacketStream where
 
@@ -9,7 +9,7 @@ import Data.Proxy
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude ( type (<=) )
+import Clash.Prelude (type (<=))
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -19,9 +19,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols
@@ -46,22 +46,24 @@ prop_packetstream_fifo_id =
     (C.exposeClockResetEnable @C.System ckt)
     (\a b -> a === b)
  where
-  ckt :: (C.HiddenClockResetEnable dom) =>
-    Circuit
-      (PacketStream dom 1 Int)
-      (PacketStream dom 1 Int)
+  ckt
+    :: C.HiddenClockResetEnable dom
+    => Circuit
+        (PacketStream dom 1 Int)
+        (PacketStream dom 1 Int)
   ckt = DfConv.fifo Proxy Proxy (C.SNat @10)
 
   -- This is used to generate
   genPackets =
-    PacketStreamM2S <$>
-    (genVec Gen.enumBounded) <*>
-    (Gen.maybe Gen.enumBounded) <*>
-    Gen.enumBounded <*>
-    Gen.enumBounded
+    PacketStreamM2S
+      <$> (genVec Gen.enumBounded)
+      <*> (Gen.maybe Gen.enumBounded)
+      <*> Gen.enumBounded
+      <*> Gen.enumBounded
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 12_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1000))
+      $(testGroupGenerator)

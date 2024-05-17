@@ -1,5 +1,5 @@
-{-# language FlexibleContexts #-}
-{-# language NamedFieldPuns #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-|
 Module      : Clash.Lattice.ECP5.UART
@@ -21,13 +21,15 @@ import Clash.Prelude
 import Protocols
 import Protocols.Internal
 
-convertToTx :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
+convertToTx
+  :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
 convertToTx = fmap $ fmap (head . _data)
 
 -- | UART transmitter circuit
 uartTxC
-  :: forall (dom :: Domain)
-            (baud :: Nat)
+  :: forall
+    (dom :: Domain)
+    (baud :: Nat)
    . HiddenClockResetEnable dom
   => ValidBaud dom baud
   => SNat baud
@@ -47,19 +49,19 @@ uartTxNoBaudGenC
   -> Circuit (PacketStream dom 1 ()) (CSignal dom Bit)
   -- ^ This component receives a PacketStream and converts it to the UART transmitter input while relaying backpressure from the UART
 uartTxNoBaudGenC baudGen = fromSignals ckt
-  where
-    ckt (fwd, _) =  (PacketStreamS2M <$> ack, CSignal txBit)
-      where
-        (txBit, ack) = uartTxNoBaudGen baudGen (convertToTx fwd)
+ where
+  ckt (fwd, _) = (PacketStreamS2M <$> ack, CSignal txBit)
+   where
+    (txBit, ack) = uartTxNoBaudGen baudGen (convertToTx fwd)
 
 -- | State for `toPacketsC`
 data ToPacketsState
-  = ReadSize1
-  -- ^ Reading first size byte
-  | ReadSize2 (BitVector 8)
-  -- ^ Reading second size byte
-  | ReadData (BitVector 16)
-  -- ^ Reading data
+  = -- | Reading first size byte
+    ReadSize1
+  | -- | Reading second size byte
+    ReadSize2 (BitVector 8)
+  | -- | Reading data
+    ReadData (BitVector 16)
   deriving (Generic, NFDataX)
 
 -- | Turns a stream of raw bytes into a stream of packets according to the following "protocol":
@@ -72,19 +74,24 @@ toPacketsC
   :: forall (dom :: Domain) (metaType :: Type)
    . HiddenClockResetEnable dom
   => KnownDomain dom
-  => Circuit (CSignal dom (Maybe (PacketStreamM2S 1 metaType))) (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+  => Circuit
+      (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+      (CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
 toPacketsC = fromSignals ckt
-  where
-    ckt
-      :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
-      -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
-    ckt (CSignal fwdInS, _) = (CSignal $ pure (), CSignal (mealy go ReadSize1 fwdInS))
-    go :: ToPacketsState -> Maybe (PacketStreamM2S 1 metaType) -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
-    go s Nothing = (s, Nothing)
-    go ReadSize1 (Just (PacketStreamM2S {_data})) = (ReadSize2 (head _data), Nothing)
-    go (ReadSize2 size) (Just (PacketStreamM2S {_data})) = (ReadData (head _data ++# size), Nothing)
-    go (ReadData 0) (Just packetStream) = (ReadSize1, Just packetStream {_last = Just 0})
-    go (ReadData size) (Just packetStream) = (ReadData (size - 1), Just packetStream {_last = Nothing})
+ where
+  ckt
+    :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
+    -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
+  ckt (CSignal fwdInS, _) = (CSignal $ pure (), CSignal (mealy go ReadSize1 fwdInS))
+  go
+    :: ToPacketsState
+    -> Maybe (PacketStreamM2S 1 metaType)
+    -> (ToPacketsState, Maybe (PacketStreamM2S 1 metaType))
+  go s Nothing = (s, Nothing)
+  go ReadSize1 (Just (PacketStreamM2S{_data})) = (ReadSize2 (head _data), Nothing)
+  go (ReadSize2 size) (Just (PacketStreamM2S{_data})) = (ReadData (head _data ++# size), Nothing)
+  go (ReadData 0) (Just packetStream) = (ReadSize1, Just packetStream{_last = Just 0})
+  go (ReadData size) (Just packetStream) = (ReadData (size - 1), Just packetStream{_last = Nothing})
 
 -- | UART receiver circuit
 uartRxC
@@ -104,12 +111,14 @@ uartRxNoBaudGenC
   => BaudGenerator dom
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
 uartRxNoBaudGenC baudGen = fromSignals ckt
-  where
-    ckt :: (CSignal dom Bit, CSignal dom ()) -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
-    ckt (CSignal rxBit, _) = (def, CSignal $ convert $ uartRxNoBaudGen baudGen rxBit)
+ where
+  ckt
+    :: (CSignal dom Bit, CSignal dom ())
+    -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
+  ckt (CSignal rxBit, _) = (def, CSignal $ convert $ uartRxNoBaudGen baudGen rxBit)
 
-    convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
-    convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
+  convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
+  convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False
 
 -- | UART receiver circuit interpreting packets with `toPacketsC`.
 uartRxC'
@@ -117,7 +126,7 @@ uartRxC'
   => ValidBaud dom baud
   => SNat baud
   -> Circuit (CSignal dom Bit) (CSignal dom (Maybe (PacketStreamM2S 1 ())))
-uartRxC' baud =  uartRxC baud |> toPacketsC
+uartRxC' baud = uartRxC baud |> toPacketsC
 
 -- | UART receiver circuit interpreting packets with `toPacketsC`.
 --

@@ -29,8 +29,8 @@ packetDispatcherC
   -- dispatches the current packet to that sink.
   -> Circuit (PacketStream dom n a) (Vec p (PacketStream dom n a))
 packetDispatcherC fs = Circuit (second unbundle . unbundle . fmap go . bundle . second bundle)
-  where
-    go (Just x, bwds) = case findIndex id $ zipWith ($) fs (pure $ _meta x) of
-      Just i -> (bwds !! i, replace i (Just x) (repeat Nothing))
-      _ -> (PacketStreamS2M True, repeat Nothing)
-    go _ = (PacketStreamS2M False, repeat Nothing)
+ where
+  go (Just x, bwds) = case findIndex id $ zipWith ($) fs (pure $ _meta x) of
+    Just i -> (bwds !! i, replace i (Just x) (repeat Nothing))
+    _ -> (PacketStreamS2M True, repeat Nothing)
+  go _ = (PacketStreamS2M False, repeat Nothing)

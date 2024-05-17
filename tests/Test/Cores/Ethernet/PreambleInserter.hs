@@ -1,6 +1,6 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.PreambleInserter where
 
@@ -8,7 +8,7 @@ module Test.Cores.Ethernet.PreambleInserter where
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude hiding ( concatMap )
+import Clash.Prelude hiding (concatMap)
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -18,9 +18,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols.Hedgehog
@@ -30,18 +30,17 @@ import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.PreambleInserter
 
-import Test.Cores.Ethernet.Packetizer ( packetizerModel )
+import Test.Cores.Ethernet.Packetizer (packetizerModel)
 import Test.Cores.Ethernet.Util
 
 import Data.List qualified as L
-
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 preambleInserterPropertyGenerator
-  :: forall (dataWidth :: Nat) .
-     1 <= dataWidth
+  :: forall (dataWidth :: Nat)
+   . 1 <= dataWidth
   => SNat dataWidth
   -> Property
 preambleInserterPropertyGenerator SNat =
@@ -52,15 +51,15 @@ preambleInserterPropertyGenerator SNat =
     (C.exposeClockResetEnable model)
     (C.exposeClockResetEnable @C.System preambleInserterC)
     (===)
-    where
-      model :: [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
-      model = packetizerModel (const ()) id . L.map (\x -> x { _meta = preamble })
-      genPackets =
-          PacketStreamM2S <$>
-          genVec Gen.enumBounded <*>
-          Gen.maybe Gen.enumBounded <*>
-          Gen.enumBounded <*>
-          Gen.enumBounded
+ where
+  model :: [PacketStreamM2S dataWidth ()] -> [PacketStreamM2S dataWidth ()]
+  model = packetizerModel (const ()) id . L.map (\x -> x{_meta = preamble})
+  genPackets =
+    PacketStreamM2S
+      <$> genVec Gen.enumBounded
+      <*> Gen.maybe Gen.enumBounded
+      <*> Gen.enumBounded
+      <*> Gen.enumBounded
 
 -- | n mod dataWidth ~ 1
 prop_preamble_inserter_d1 :: Property
@@ -88,6 +87,7 @@ prop_preamble_inserter_d15 = preambleInserterPropertyGenerator d15
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 12_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1_000))
+      $(testGroupGenerator)

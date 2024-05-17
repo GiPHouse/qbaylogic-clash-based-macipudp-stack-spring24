@@ -1,15 +1,15 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.PacketArbiter where
 
 -- base
-import Data.List ( groupBy, sortOn )
+import Data.List (groupBy, sortOn)
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude ( type (<=) )
+import Clash.Prelude (type (<=))
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -19,9 +19,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols.Hedgehog
@@ -64,28 +64,31 @@ makePropPacketArbiter
   -> C.SNat n
   -> ArbiterMode
   -> Property
-makePropPacketArbiter _ _ mode = propWithModelSingleDomain
-  @C.System
-  defExpectOptions
-  genSources
-  (C.exposeClockResetEnable concat)
-  (C.exposeClockResetEnable (packetArbiterC mode))
-  (\xs ys -> partitionPackets xs === partitionPackets ys)
-  where
-    genSources = mapM (fmap fullPackets . Gen.list (Range.linear 0 100) . genPacket) (C.indicesI @p)
-    -- TODO use util function from client review branch
-    genPacket i =
-      PacketStreamM2S <$>
-      genVec @n Gen.enumBounded <*>
-      Gen.maybe Gen.enumBounded <*>
-      pure i <*>
-      Gen.enumBounded
+makePropPacketArbiter _ _ mode =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    genSources
+    (C.exposeClockResetEnable concat)
+    (C.exposeClockResetEnable (packetArbiterC mode))
+    (\xs ys -> partitionPackets xs === partitionPackets ys)
+ where
+  genSources = mapM (fmap fullPackets . Gen.list (Range.linear 0 100) . genPacket) (C.indicesI @p)
+  -- TODO use util function from client review branch
+  genPacket i =
+    PacketStreamM2S
+      <$> genVec @n Gen.enumBounded
+      <*> Gen.maybe Gen.enumBounded
+      <*> pure i
+      <*> Gen.enumBounded
 
-    partitionPackets packets = sortOn (_meta . head . head) $
+  partitionPackets packets =
+    sortOn (_meta . head . head) $
       groupBy (\a b -> _meta a == _meta b) <$> chunkByPacket packets
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 12_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1_000))
+      $(testGroupGenerator)

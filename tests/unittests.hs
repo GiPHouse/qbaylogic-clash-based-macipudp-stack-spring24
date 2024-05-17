@@ -22,23 +22,26 @@ import Test.Cores.Ethernet.UpConverter qualified
 import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
-main = defaultMain $ testGroup "."
-  [ Test.Cores.Arp.ArpTransmitter.tests
-    , Test.Cores.Ethernet.AsyncFIFO.tests
-    , Test.Cores.Ethernet.PacketArbiter.tests
-    , Test.Cores.Ethernet.PacketStream.tests
-    , Test.Cores.Ethernet.PaddingInserter.tests
-    , Test.Lattice.ECP5.UART.tests
-    , Test.Cores.Ethernet.UpConverter.tests
-    , Test.Cores.Ethernet.DownConverter.tests
-    , Test.Cores.Ethernet.PacketBuffer.tests
-    , Test.Cores.Ethernet.PacketDispatcher.tests
-    , Test.Cores.Ethernet.PreambleInserter.tests
-    , Test.Cores.Ethernet.PreambleStripper.tests
-    , Test.Cores.Ethernet.InterpacketGapInserter.tests
-    , Test.Cores.Ethernet.Depacketizer.tests
-    , Test.Cores.Ethernet.MacDepacketizer.tests
-    , Test.Cores.Ethernet.MacPacketizer.tests
-    , Test.Cores.Ethernet.InternetChecksum.tests
-    , Test.Cores.Ethernet.FcsInserter.tests
-  ]
+main =
+  defaultMain $
+    testGroup
+      "."
+      [ Test.Cores.Arp.ArpTransmitter.tests
+      , Test.Cores.Ethernet.AsyncFIFO.tests
+      , Test.Cores.Ethernet.PacketArbiter.tests
+      , Test.Cores.Ethernet.PacketStream.tests
+      , Test.Cores.Ethernet.PaddingInserter.tests
+      , Test.Lattice.ECP5.UART.tests
+      , Test.Cores.Ethernet.UpConverter.tests
+      , Test.Cores.Ethernet.DownConverter.tests
+      , Test.Cores.Ethernet.PacketBuffer.tests
+      , Test.Cores.Ethernet.PacketDispatcher.tests
+      , Test.Cores.Ethernet.PreambleInserter.tests
+      , Test.Cores.Ethernet.PreambleStripper.tests
+      , Test.Cores.Ethernet.InterpacketGapInserter.tests
+      , Test.Cores.Ethernet.Depacketizer.tests
+      , Test.Cores.Ethernet.MacDepacketizer.tests
+      , Test.Cores.Ethernet.MacPacketizer.tests
+      , Test.Cores.Ethernet.InternetChecksum.tests
+      , Test.Cores.Ethernet.FcsInserter.tests
+      ]

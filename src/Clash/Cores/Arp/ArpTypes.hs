@@ -2,7 +2,6 @@
 Module      : Clash.Cores.Arp.ArpTypes
 Description : Provides various data types, aliases, constructors and constants for the Address Resolution Protocol. This module only provides the most common use case of ARP, which is mapping IPv4 addresses to MAC addresses.
 -}
-
 module Clash.Cores.Arp.ArpTypes where
 
 import Clash.Cores.Ethernet.EthernetTypes
@@ -11,16 +10,16 @@ import Clash.Prelude
 
 import Protocols
 
-import Control.DeepSeq ( NFData )
-
+import Control.DeepSeq (NFData)
 
 -- | An entry for our ARP table, which maps an IPv4 address to a MAC address.
 --   A timestamp should be kept separately from this type.
 data ArpEntry
-  = ArpEntry {
-    _arpMac :: MacAddress,
-    _arpIP :: IPv4Address
-    } deriving (Generic, Show, ShowX, NFDataX, NFData, Eq)
+  = ArpEntry
+  { _arpMac :: MacAddress
+  , _arpIP :: IPv4Address
+  }
+  deriving (Generic, Show, ShowX, NFDataX, NFData, Eq)
 
 -- | An ARP response. Either the IPv4 address is not found in the table, or it is and its
 --   corresponding MAC address is returned.
@@ -37,34 +36,36 @@ instance Protocol (ArpLookup dom) where
 -- | Structure that contains enough information to construct an outgoing request or reply for IPv4,
 --   given that we already have access to our own MAC- and IPv4 address.
 data ArpLite
-  = ArpLite {
-    _targetMac :: MacAddress,
-    _targetIPv4 :: IPv4Address,
-    _isRequest :: Bool
-    } deriving (Generic, Show, ShowX, NFDataX, NFData, Eq)
+  = ArpLite
+  { _targetMac :: MacAddress
+  , _targetIPv4 :: IPv4Address
+  , _isRequest :: Bool
+  }
+  deriving (Generic, Show, ShowX, NFDataX, NFData, Eq)
 
 -- | ARP packet structure. The first four fields are constant for our use case.
 data ArpPacket
-  = ArpPacket {
-    _htype :: BitVector 16,
-    -- ^ Hardware type. 0x0001 for Ethernet.
-    _ptype :: BitVector 16,
-    -- ^ Protocol type. 0x0800 for IPv4.
-    _hlen :: BitVector 8,
-    -- ^ Length of the hardware adresses. 0x06 for Ethernet.
-    _plen :: BitVector 8,
-    -- ^ Length of the protocol (internet) addresses. 0x04 for IPv4.
-    _oper :: BitVector 16,
-    -- ^ Operation that the sender is performing: 0x0001 for request, 0x0002 for reply.
-    _sha :: MacAddress,
-    -- ^ Sender hardware address
-    _spa :: IPv4Address,
-    -- ^ Sender protocol address
-    _tha :: MacAddress,
-    -- ^ Target hardware address
-    _tpa :: IPv4Address
-    -- ^ Target protocol address
-  } deriving (Generic, Show, ShowX, NFDataX, BitPack)
+  = ArpPacket
+  { _htype :: BitVector 16
+  -- ^ Hardware type. 0x0001 for Ethernet.
+  , _ptype :: BitVector 16
+  -- ^ Protocol type. 0x0800 for IPv4.
+  , _hlen :: BitVector 8
+  -- ^ Length of the hardware adresses. 0x06 for Ethernet.
+  , _plen :: BitVector 8
+  -- ^ Length of the protocol (internet) addresses. 0x04 for IPv4.
+  , _oper :: BitVector 16
+  -- ^ Operation that the sender is performing: 0x0001 for request, 0x0002 for reply.
+  , _sha :: MacAddress
+  -- ^ Sender hardware address
+  , _spa :: IPv4Address
+  -- ^ Sender protocol address
+  , _tha :: MacAddress
+  -- ^ Target hardware address
+  , _tpa :: IPv4Address
+  -- ^ Target protocol address
+  }
+  deriving (Generic, Show, ShowX, NFDataX, BitPack)
 
 -- | ARP's EtherType for multiplexing purposes.
 arpEtherType :: BitVector 16
@@ -83,15 +84,15 @@ newArpPacket
   -> Bool
   -- ^ We construct a request if this is @True@. Else, we construct a reply
   -> ArpPacket
-newArpPacket myMac myIP targetMac targetIP isRequest
-  = ArpPacket {
-      _htype = 0x0001,
-      _ptype = 0x0800,
-      _hlen = 0x06,
-      _plen = 0x04,
-      _oper = if isRequest then 0x0001 else 0x0002,
-      _sha = myMac,
-      _spa = myIP,
-      _tha = targetMac,
-      _tpa = targetIP
+newArpPacket myMac myIP targetMac targetIP isRequest =
+  ArpPacket
+    { _htype = 0x0001
+    , _ptype = 0x0800
+    , _hlen = 0x06
+    , _plen = 0x04
+    , _oper = if isRequest then 0x0001 else 0x0002
+    , _sha = myMac
+    , _spa = myIP
+    , _tha = targetMac
+    , _tpa = targetIP
     }

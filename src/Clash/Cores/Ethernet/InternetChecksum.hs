@@ -3,8 +3,8 @@ Module      : Clash.Cores.Ethernet.InternetChecksum
 Description : Functions for computing the RFC1071 internet checksum
 -}
 module Clash.Cores.Ethernet.InternetChecksum
-  ( internetChecksum,
-    reduceToInternetChecksum
+  ( internetChecksum
+  , reduceToInternetChecksum
   ) where
 
 import Clash.Prelude
@@ -16,37 +16,37 @@ import Data.Maybe
 -- the input tuple, the checksum is reset to 0 the next cycle so the value of
 -- the `BitVector` is disgarded.
 internetChecksum
-  :: forall (dom :: Domain).
-  HiddenClockResetEnable dom
+  :: forall (dom :: Domain)
+   . HiddenClockResetEnable dom
   => Signal dom (Maybe (BitVector 16, Bool))
   -- ^ Input data, adds the first data point of the checksum,
   -- if the second element of the tuple is True, the current checksum is reset to 0 the next cycle
   -> Signal dom (BitVector 16)
- -- ^ Resulting checksum
+  -- ^ Resulting checksum
 internetChecksum inputM = checkSumWithCarry
-  where
-    (inpX, resetX) = unbundle $ fromJustX <$> inputM
+ where
+  (inpX, resetX) = unbundle $ fromJustX <$> inputM
 
-    checkSum :: Signal dom (BitVector 17)
-    checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 nextCheckSum
+  checkSum :: Signal dom (BitVector 17)
+  checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 nextCheckSum
 
-    (fmap zeroExtend -> carry, truncated) = unbundle $ split <$> checkSum
+  (fmap zeroExtend -> carry, truncated) = unbundle $ split <$> checkSum
 
-    checkSumWithCarry = carry + truncated
-    nextCheckSum = add <$> inpX <*> checkSumWithCarry
+  checkSumWithCarry = carry + truncated
+  nextCheckSum = add <$> inpX <*> checkSumWithCarry
 
 calcChecksum :: BitVector 16 -> BitVector 16 -> BitVector 16
 calcChecksum bvA bvB = carry + truncated
-  where
-    (zeroExtend -> carry, truncated) = split checkSum
-    checkSum :: BitVector 17
-    checkSum = add bvA bvB
+ where
+  (zeroExtend -> carry, truncated) = split checkSum
+  checkSum :: BitVector 17
+  checkSum = add bvA bvB
 
 -- | Computes the internetChecksum of a vector of 16 bit words.
 -- Compared to internetChecksum this is quicker as you can load multiple words per cycle.
-reduceToInternetChecksum ::
-  forall (dom :: Domain) (width :: Nat).
-  HiddenClockResetEnable dom
+reduceToInternetChecksum
+  :: forall (dom :: Domain) (width :: Nat)
+   . HiddenClockResetEnable dom
   => 1 <= width
   => Signal dom (Maybe (Vec width (BitVector 16), Bool))
   -- ^ Input data, adds the first data point of the checksum,
@@ -54,8 +54,8 @@ reduceToInternetChecksum ::
   -> Signal dom (BitVector 16)
   -- ^ Resulting checksum
 reduceToInternetChecksum inputM = checkSum
-  where
-    checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 checksumResult
-    (inpX, resetX) = unbundle $ fromJustX <$> inputM
-    checksumResult = fold calcChecksum <$> input
-    input = (++) <$> (singleton <$> checkSum) <*> inpX
+ where
+  checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 checksumResult
+  (inpX, resetX) = unbundle $ fromJustX <$> inputM
+  checksumResult = fold calcChecksum <$> input
+  input = (++) <$> (singleton <$> checkSum) <*> inpX

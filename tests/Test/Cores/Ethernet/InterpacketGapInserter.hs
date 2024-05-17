@@ -1,6 +1,6 @@
-{-# language FlexibleContexts #-}
-{-# language NumericUnderscores #-}
-{-# language RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Cores.Ethernet.InterpacketGapInserter where
 
@@ -10,7 +10,7 @@ import Prelude
 import Data.List qualified as L
 
 -- clash-prelude
-import Clash.Prelude hiding ( repeat )
+import Clash.Prelude hiding (repeat)
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -20,9 +20,9 @@ import Hedgehog.Range qualified as Range
 
 -- tasty
 import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
+import Test.Tasty.Hedgehog (HedgehogTestLimit (HedgehogTestLimit))
+import Test.Tasty.Hedgehog.Extra (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
 -- clash-protocols
 import Protocols
@@ -46,18 +46,18 @@ prop_interpacket_gap_inserter_id =
     (exposeClockResetEnable id)
     (exposeClockResetEnable @System (interpacketGapInserterC d12))
     (===)
-    where
-      -- This is used to generate
-      genPackets =
-        PacketStreamM2S <$>
-        genVec Gen.enumBounded <*>
-        Gen.maybe Gen.enumBounded <*>
-        Gen.enumBounded <*>
-        Gen.enumBounded
+ where
+  -- This is used to generate
+  genPackets =
+    PacketStreamM2S
+      <$> genVec Gen.enumBounded
+      <*> Gen.maybe Gen.enumBounded
+      <*> Gen.enumBounded
+      <*> Gen.enumBounded
 
 fwdIn :: [Maybe (PacketStreamM2S 1 ())]
-fwdIn = [
-  Just (PacketStreamM2S (0xAB :> Nil) Nothing () False)
+fwdIn =
+  [ Just (PacketStreamM2S (0xAB :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0xCD :> Nil) (Just 0) () False)
   , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
@@ -71,17 +71,20 @@ fwdIn = [
   , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
   , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)] L.++ L.repeat Nothing
+  , Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)
+  ]
+    L.++ L.repeat Nothing
 
 bwdIn :: [PacketStreamS2M]
 bwdIn = fmap PacketStreamS2M (L.repeat True)
 
 expectedFwdOut :: [Maybe (PacketStreamM2S 1 ())]
-expectedFwdOut = [
-    Just (PacketStreamM2S (0xAB :> Nil) Nothing () False)
-  , Just (PacketStreamM2S (0xCD :> Nil) (Just 0) () False)]
-  L.++ L.replicate 12 Nothing
-  L.++ [Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)]
+expectedFwdOut =
+  [ Just (PacketStreamM2S (0xAB :> Nil) Nothing () False)
+  , Just (PacketStreamM2S (0xCD :> Nil) (Just 0) () False)
+  ]
+    L.++ L.replicate 12 Nothing
+    L.++ [Just (PacketStreamM2S (0x01 :> Nil) Nothing () False)]
 
 expectedBwdOut :: [PacketStreamS2M]
 expectedBwdOut = fmap PacketStreamS2M ([True, True] L.++ L.replicate 12 False L.++ [True])
@@ -98,7 +101,8 @@ en = enableGen
 fwdOut :: Signal System (Maybe (PacketStreamM2S 1 ()))
 bwdOut :: Signal System PacketStreamS2M
 (bwdOut, fwdOut) = toSignals ckt (fromList fwdIn, fromList bwdIn)
-  where ckt = exposeClockResetEnable (interpacketGapInserterC d12) clk rst en
+ where
+  ckt = exposeClockResetEnable (interpacketGapInserterC d12) clk rst en
 
 prop_12_cycles_no_data_after_last :: Property
 prop_12_cycles_no_data_after_last = property $
@@ -110,6 +114,7 @@ prop_12_cycles_backpressure_after_last = property $
 
 tests :: TestTree
 tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+  localOption (mkTimeout 12_000_000 {- 12 seconds -}) $
+    localOption
+      (HedgehogTestLimit (Just 1_000))
+      $(testGroupGenerator)
