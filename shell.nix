@@ -9,7 +9,7 @@ in pkgs.haskellPackages.shellFor {
   packages = p: [ colorlight-eth ];
   nativeBuildInputs = [
     pkgs.haskellPackages.cabal-install
-    pkgs.haskellPackages.stylish-haskell
+    pkgs.fourmolu
     pkgs.haskellPackages.haskell-language-server
     pkgs.gtkwave
     pkgs.yosys

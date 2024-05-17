@@ -1,4 +1,38 @@
 {
+    "fourmolu": {
+        "branch": "master",
+        "description": "Fourmolu is a formatter for Haskell source code",
+        "homepage": null,
+        "owner": "fourmolu",
+        "repo": "fourmolu",
+        "rev": "768505e5a7895f296e3e0029e702b66f04dbf686",
+        "sha256": "108njmj7s69y303mksb3blycr6g93nk2vs9dk2z3zrgjmkj6qgfy",
+        "type": "tarball",
+        "url": "https://github.com/fourmolu/fourmolu/archive/768505e5a7895f296e3e0029e702b66f04dbf686.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "cabal": {
+        "branch": "3.10",
+        "description": "",
+        "homepage": null,
+        "owner": "haskell",
+        "repo": "cabal",
+        "rev": "1b243bd0057c23ad7ed41f6ed60e4c9c77bbc9f0",
+        "sha256": "0985l95bb0axhvsbb8vav4ccfb170fa8pffgqd1gjz1qi81nfbvr",
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/ghc-lib-parser-9.8.2.20240223/ghc-lib-parser-9.8.2.20240223.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "ghc-lib-parser": {
+        "branch": "9.8.2.20240223",
+        "description": "",
+        "homepage": null,
+        "rev": "9.8.2.20240223",
+        "sha256": "032yikzaf822a3ciln734g5r998il7z6b55bwrww7f8yqwhan1b1",
+        "type": "tarball",
+        "url": "https://hackage.haskell.org/package/ghc-lib-parser-9.8.2.20240223/ghc-lib-parser-9.8.2.20240223.tar.gz",
+        "url_template": "https://hackage.haskell.org/package/ghc-lib-parser-<rev>/ghc-lib-parser-<rev>.tar.gz"
+    },
     "clash-cores-crc": {
         "branch": "master",
         "description": "A CRC core for Clash",

@@ -31,8 +31,16 @@ let
     trellis = trellis;
     nextpnr = nextpnr;
 
+    # Newest fourmolu doesn't work with GHC 9.0
+    # check phase can't find executable for some reasonfou
+    fourmolu = pkgs.haskell.lib.dontCheck (pkgs.haskell.packages.ghc94.callCabal2nix "fourmolu" sources.fourmolu {
+      Cabal-syntax = pkgs.haskell.packages.ghc94.callCabal2nix "Cabal-syntax" (sources.cabal + /Cabal-syntax) { };
+      # Bytestring bounds relaxation
+      ghc-lib-parser = pkgs.haskell.lib.doJailbreak (pkgs.haskell.packages.ghc94.callCabal2nix "ghc-lib-parser" sources.ghc-lib-parser { });
+    });
+
     # Haskell overrides
-    haskellPackages = pkgs.haskellPackages.override {
+    haskellPackages = pkgs.haskell.packages.ghc90.override {
       overrides = self: super: {
         # Add overrides here
         circuit-notation = self.callCabal2nix "circuit-notation" sources.circuit-notation {};
