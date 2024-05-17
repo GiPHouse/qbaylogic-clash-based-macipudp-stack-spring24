@@ -25,8 +25,7 @@ import Clash.Lattice.ECP5.UART (uartTxNoBaudGenC)
 
 -- import protocols
 import Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC)
-import Protocols (Circuit, toSignals, (|>))
-import Protocols.Internal (CSignal (CSignal))
+import Protocols (CSignal, Circuit, toSignals, (|>))
 
 -- | Processes ethernet frames and turns it into a UART signal
 uartEthRxStack
@@ -45,7 +44,7 @@ uartEthRxStack
   -- ^ Input channel
   -> Signal dom Bit
   -- ^ Output signal
-uartEthRxStack baudGen ethRxChannel = uartTxBitS
+uartEthRxStack baudGen ethRxChannel = snd $ toSignals ckt (ethRxChannel, pure ())
  where
   ckt :: Circuit (RGMIIRXChannel domEth domDDREth) (CSignal dom Bit)
   ckt =
@@ -58,4 +57,3 @@ uartEthRxStack baudGen ethRxChannel = uartTxBitS
       |> asyncFifoC d10 hasClock hasReset hasEnable hasClock hasReset hasEnable
       |> downConverterC
       |> uartTxNoBaudGenC baudGen
-  (_, CSignal uartTxBitS) = toSignals ckt (ethRxChannel, CSignal $ pure ())

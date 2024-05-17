@@ -51,10 +51,10 @@
         "homepage": null,
         "owner": "cchalmers",
         "repo": "circuit-notation",
-        "rev": "618e37578e699df235f2e7150108b6401731919b",
-        "sha256": "158dnb3jga4c00ngyc9p57x4qsm7gba519gmfrazan91124v9q2p",
+        "rev": "19b386c4aa3ff690758ae089c7754303f3500cc9",
+        "sha256": "0qz2w6akxj51kq50rbl88bnjyxzd2798a9sn9jj1z2kak7a6kqbg",
         "type": "tarball",
-        "url": "https://github.com/cchalmers/circuit-notation/archive/618e37578e699df235f2e7150108b6401731919b.tar.gz",
+        "url": "https://github.com/cchalmers/circuit-notation/archive/19b386c4aa3ff690758ae089c7754303f3500cc9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "clash-compiler": {
@@ -76,10 +76,10 @@
         "homepage": null,
         "owner": "clash-lang",
         "repo": "clash-protocols",
-        "rev": "f7ea04834d396669fe4ef404b03541601a68b136",
-        "sha256": "1ngspljca2lq1gg3wg2m3sy54whrpnhp62x2w0sw7i446n9wsf1b",
+        "rev": "48b4b559511219356638a1cb8c7adc42c088352c",
+        "sha256": "0xgv2d72izq6dw5z7r97myqlpqgsl7xnrjxhky107vi36z0r722r",
         "type": "tarball",
-        "url": "https://github.com/clash-lang/clash-protocols/archive/f7ea04834d396669fe4ef404b03541601a68b136.tar.gz",
+        "url": "https://github.com/clash-lang/clash-protocols/archive/48b4b559511219356638a1cb8c7adc42c088352c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "doctest-parallel": {

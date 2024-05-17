@@ -25,7 +25,6 @@ import Clash.Lattice.ECP5.Prims (delayg, oddrx1f)
 import Clash.Lattice.ECP5.UART
 import Clash.Prelude
 import Protocols
-import Protocols.Internal (CSignal (CSignal))
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 
@@ -52,7 +51,7 @@ uartEthTxStack
   -- ^ Input signal
   -> RGMIITXChannel domDDREth
   -- ^ Output channel
-uartEthTxStack clkEth rstEth baudGen uartRxS = snd $ toSignals ckt (CSignal uartRxS, pure ())
+uartEthTxStack clkEth rstEth baudGen uartRxS = snd $ toSignals ckt (uartRxS, pure ())
  where
   ckt =
     uartRxNoBaudGenC' baudGen

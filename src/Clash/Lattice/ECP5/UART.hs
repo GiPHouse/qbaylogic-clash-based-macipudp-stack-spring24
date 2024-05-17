@@ -19,7 +19,6 @@ import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.UART
 import Clash.Prelude
 import Protocols
-import Protocols.Internal
 
 convertToTx
   :: Signal dom (Maybe (PacketStreamM2S 1 ())) -> Signal dom (Maybe (BitVector 8))
@@ -50,7 +49,7 @@ uartTxNoBaudGenC
   -- ^ This component receives a PacketStream and converts it to the UART transmitter input while relaying backpressure from the UART
 uartTxNoBaudGenC baudGen = fromSignals ckt
  where
-  ckt (fwd, _) = (PacketStreamS2M <$> ack, CSignal txBit)
+  ckt (fwd, _) = (PacketStreamS2M <$> ack, txBit)
    where
     (txBit, ack) = uartTxNoBaudGen baudGen (convertToTx fwd)
 
@@ -80,9 +79,9 @@ toPacketsC
 toPacketsC = fromSignals ckt
  where
   ckt
-    :: (CSignal dom (Maybe (PacketStreamM2S 1 metaType)), CSignal dom ())
-    -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 metaType)))
-  ckt (CSignal fwdInS, _) = (CSignal $ pure (), CSignal (mealy go ReadSize1 fwdInS))
+    :: (Signal dom (Maybe (PacketStreamM2S 1 metaType)), Signal dom ())
+    -> (Signal dom (), Signal dom (Maybe (PacketStreamM2S 1 metaType)))
+  ckt (fwdInS, _) = (pure (), mealy go ReadSize1 fwdInS)
   go
     :: ToPacketsState
     -> Maybe (PacketStreamM2S 1 metaType)
@@ -113,9 +112,9 @@ uartRxNoBaudGenC
 uartRxNoBaudGenC baudGen = fromSignals ckt
  where
   ckt
-    :: (CSignal dom Bit, CSignal dom ())
-    -> (CSignal dom (), CSignal dom (Maybe (PacketStreamM2S 1 ())))
-  ckt (CSignal rxBit, _) = (def, CSignal $ convert $ uartRxNoBaudGen baudGen rxBit)
+    :: (Signal dom Bit, Signal dom ())
+    -> (Signal dom (), Signal dom (Maybe (PacketStreamM2S 1 ())))
+  ckt (rxBit, _) = (def, convert $ uartRxNoBaudGen baudGen rxBit)
 
   convert :: Signal dom (Maybe (BitVector 8)) -> Signal dom (Maybe (PacketStreamM2S 1 ()))
   convert = fmap $ fmap $ \x -> PacketStreamM2S (repeat x) Nothing () False

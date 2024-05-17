@@ -7,7 +7,7 @@ module Clash.Cores.Ethernet.AsyncFIFO (asyncFifoC) where
 import Clash.Explicit.Prelude (asyncFIFOSynchronizer)
 import Clash.Prelude hiding (empty)
 
-import Protocols.Internal (Circuit, fromSignals)
+import Protocols (Circuit, fromSignals)
 
 import Clash.Cores.Ethernet.PacketStream
 

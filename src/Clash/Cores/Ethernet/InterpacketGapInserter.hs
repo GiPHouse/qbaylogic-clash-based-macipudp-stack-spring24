@@ -9,7 +9,7 @@ module Clash.Cores.Ethernet.InterpacketGapInserter (interpacketGapInserterC) whe
 import Data.Maybe
 
 import Clash.Prelude
-import Protocols.Internal (Circuit, fromSignals)
+import Protocols (Circuit, fromSignals)
 
 import Clash.Cores.Ethernet.PacketStream
 

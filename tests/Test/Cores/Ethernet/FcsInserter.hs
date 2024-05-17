@@ -32,15 +32,8 @@ import Protocols.Hedgehog
 -- util module
 import Test.Cores.Ethernet.Util
 
--- upconverter model
-import Test.Cores.Ethernet.UpConverter qualified as UC
-
--- downconverter model
-import Test.Cores.Ethernet.DownConverter qualified as DC
-
 -- data module
 import Data.List qualified as L
-import Data.Maybe
 
 -- crc module
 import Clash.Cores.Crc
