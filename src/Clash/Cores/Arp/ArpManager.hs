@@ -11,7 +11,7 @@ module Clash.Cores.Arp.ArpManager where
 import Clash.Prelude
 
 import Protocols
-import Protocols.Df
+import Protocols.Df hiding ( pure )
 
 import Clash.Cores.Arp.ArpTypes
 import Clash.Cores.Ethernet.EthernetTypes
@@ -46,12 +46,12 @@ arpManagerT
   => ArpManagerState maxWaitSeconds
   -> (Maybe IPv4Address, Data ArpEntry, Maybe ArpResponse, Ack, Bool)
   -> (ArpManagerState maxWaitSeconds
-     , ((Maybe ArpResponse, Ack), (Maybe IPv4Address, Data ArpLite)))
+     , (Maybe ArpResponse, (Maybe IPv4Address, Data ArpLite)))
 -- User issues a lookup request. Always acknowledge, because in this state we don't care incoming ARP replies.
 -- We don't have a timeout, because the ARP table should always respond within a reasonable time frame.
 -- If not, there is a bug in the ARP table.
 arpManagerT AwaitLookup (Just lookupIPv4, _, arpResponseIn, Ack readyIn, _)
-  = (nextSt, ((arpResponseOut, Ack True), (lookupOut, arpRequestOut)))
+  = (nextSt, (arpResponseOut, (lookupOut, arpRequestOut)))
     where
       (arpResponseOut, arpRequestOut, lookupOut, nextSt) = case arpResponseIn of
         Nothing
@@ -76,22 +76,22 @@ arpManagerT AwaitLookup (Just lookupIPv4, _, arpResponseIn, Ack readyIn, _)
 -- We don't care about incoming backpressure, because we do not send ARP requests in this state.
 -- We always acknowledge incoming ARP replies.
 arpManagerT AwaitArpReply{..} (Just lookupIPv4, entry, _, _, secondPassed)
-  = (nextSt, ((arpResponseOut, Ack True), (Nothing, NoData)))
+  = (nextSt, (arpResponseOut, (Nothing, NoData)))
     where
       newTimer = if secondPassed then pred _secondsLeft else _secondsLeft
 
       (nextSt, arpResponseOut)
         = case (entry, _secondsLeft == 0) of
-          (NoData, True)
+          (_, True)
             -> (AwaitLookup, Just ArpEntryNotFound)
-          (NoData, False)
+          (NoData, _)
             -> (AwaitArpReply newTimer, Nothing)
-          (Data e, timeUp)
+          (Data e, _)
             -> if _arpIP e == lookupIPv4
                then (AwaitLookup, Just (ArpEntryFound $ _arpMac e))
-               else (if timeUp then AwaitLookup else AwaitArpReply newTimer, Nothing)
+               else (AwaitArpReply newTimer, Nothing)
 
-arpManagerT st (Nothing, _, _, ackIn, _) = (st, ((Nothing, ackIn), (Nothing, NoData)))
+arpManagerT st (Nothing, _, _, _, _) = (st, (Nothing, (Nothing, NoData)))
 
 -- | This component handles ARP lookup requests by client components. If a lookup IPv4 address is not found
 --   in the ARP table, it will broadcast an ARP request to the local network and wait at most `maxWaitSeconds`
@@ -111,7 +111,7 @@ arpManagerC
   -> Circuit (ArpLookup dom, Df dom ArpEntry) (ArpLookup dom, Df dom ArpLite)
 arpManagerC SNat = fromSignals ckt
   where
-    ckt ((lookupIPv4S, entryS), (arpResponseInS, ackInS)) = (unbundle bwdOut, unbundle fwdOut)
+    ckt ((lookupIPv4S, entryS), (arpResponseInS, ackInS)) = ((bwdOut, pure $ Ack True), unbundle fwdOut)
       where
         (bwdOut, fwdOut)
           = mealyB arpManagerT (AwaitLookup @maxWaitSeconds) (lookupIPv4S, entryS, arpResponseInS, ackInS, secondTimer)
