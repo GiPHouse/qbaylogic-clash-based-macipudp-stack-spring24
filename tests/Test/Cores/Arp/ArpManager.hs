@@ -49,19 +49,19 @@ mac2 = MacAddress (C.repeat 0x02)
 --   Manual test, because circuits containing ArpLookup cannot be automatically tested.
 prop_arp_manager :: Property
 prop_arp_manager = property $
-  do sampleN 24 (bundle (fst bwdOut, bundle fwdOut)) === L.zip expectedBwdOut expectedFwdOut
+  do L.zip expectedBwdOut expectedFwdOut === sampleN 32 (bundle (bwdOut, bundle fwdOut))
     where
-      fwdIn :: [(Maybe IPv4Address, Data ArpEntry)]
-      fwdIn = [ (Nothing, NoData)
-              , (Nothing, NoData)
-              , (Just ip1, NoData)
-              , (Just ip1, NoData)
-              , (Nothing, NoData)
-              , (Just ip1, NoData)
-              , (Just ip1, NoData)
-              , (Just ip1, Data (ArpEntry mac2 ip2 ))
-              , (Just ip1, Data (ArpEntry mac1 ip1 ))
-              ] L.++ L.repeat (Just ip2, NoData)
+      fwdIn :: [Maybe IPv4Address]
+      fwdIn = [ Nothing
+              , Nothing
+              , Just ip1
+              , Just ip1
+              , Nothing
+              , Just ip1
+              , Just ip1
+              , Just ip1
+              , Just ip1
+              ] L.++ L.repeat (Just ip2)
 
       bwdIn :: [(Maybe ArpResponse, Ack)]
       bwdIn = L.map (, Ack True) $
@@ -73,12 +73,13 @@ prop_arp_manager = property $
               , Nothing
               , Just ArpEntryNotFound
               , Nothing
-              , Nothing
+              , Just (ArpEntryFound mac1)
               , Nothing
               , Just ArpEntryNotFound]
-              L.++ L.repeat Nothing
+              L.++ L.replicate 20 Nothing
+              L.++ [Just ArpEntryNotFound]
 
-      bwdOut :: (Signal TestDom10Hz (Maybe ArpResponse), Signal TestDom10Hz Ack)
+      bwdOut :: Signal TestDom10Hz (Maybe ArpResponse)
       fwdOut :: (Signal TestDom10Hz (Maybe IPv4Address), Signal TestDom10Hz (Data ArpLite))
       (bwdOut, fwdOut) = toSignals ckt inp
         where
@@ -95,29 +96,26 @@ prop_arp_manager = property $
           , Nothing
           , Nothing
           , Nothing
-          , Nothing -- Test that we don't accidentally relay ARP replies not tied to the actual query IP
-          , Just (ArpEntryFound mac1)] -- Relaying to client circuit from ARP reply
-          L.++ L.replicate 13 Nothing
-          L.++
-          [ Just ArpEntryNotFound -- We were waiting for an ARP reply, but we timed out.
           , Nothing
-          ]
+          , Just (ArpEntryFound mac1)] -- Relaying to client circuit from ARP reply
+          L.++ L.replicate 22 Nothing
+          L.++
+          [Just ArpEntryNotFound] -- We were waiting for an ARP reply, but we timed out.
 
       expectedFwdOut :: [(Maybe IPv4Address, Data ArpLite)]
       expectedFwdOut
         = [ (Nothing, NoData)
           , (Nothing, NoData)
           , (Just ip1, NoData) -- Relay IP lookup to ARP table
-          , (Nothing, NoData)
+          , (Just ip1, NoData)
           , (Nothing, NoData)
           , (Just ip1, NoData)
-          , (Nothing, Data (ArpLite broadcastMac ip1 True)) -- We received ArpEntryNotFound from the ARP table, so send request
-          , (Nothing, NoData)
-          , (Nothing, NoData)
+          , (Just ip1, Data (ArpLite broadcastMac ip1 True)) -- We received ArpEntryNotFound from the ARP table, so send request
+          , (Just ip1, NoData)
+          , (Just ip1, NoData) -- Received ArpEntryFound
           , (Just ip2, NoData)
-          , (Nothing, Data (ArpLite broadcastMac ip2 True))] -- We received ArpEntryNotFound from the ARP table, so send request
-          L.++ L.replicate 12 (Nothing, NoData)
-          L.++ [(Just ip2, NoData)] -- We were waiting for an ARP reply, but we timed out.
+          , (Just ip2, Data (ArpLite broadcastMac ip2 True))] -- We received ArpEntryNotFound from the ARP table, so send request
+          L.++ L.replicate 21 (Just ip2, NoData) -- We were waiting for an ARP reply, but we timed out.
 
 tests :: TestTree
 tests =
