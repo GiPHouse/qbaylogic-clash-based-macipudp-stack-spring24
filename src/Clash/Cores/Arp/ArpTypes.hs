@@ -64,7 +64,7 @@ data ArpPacket
     -- ^ Target hardware address
     _tpa :: IPv4Address
     -- ^ Target protocol address
-  } deriving (Generic, Show, ShowX, NFDataX, BitPack)
+  } deriving (Generic, Eq, Show, ShowX, NFDataX, NFData, BitPack)
 
 -- | ARP's EtherType for multiplexing purposes.
 arpEtherType :: BitVector 16
