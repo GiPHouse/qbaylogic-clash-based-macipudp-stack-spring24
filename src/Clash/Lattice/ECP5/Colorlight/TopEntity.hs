@@ -1,6 +1,7 @@
 {-# language FlexibleContexts #-}
-{-# language NoMonomorphismRestriction #-}
+{-# language MultiParamTypeClasses #-}
 {-# language NumericUnderscores #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 {-|
 Module      : Clash.Lattice.ECP5.Colorlight.TopEntity
@@ -9,15 +10,19 @@ Description : Contains the top entity
 module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 
 import Clash.Annotations.TH
+import Clash.Cores.Crc ( deriveHardwareCrc )
+import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
+import Clash.Cores.Ethernet.EchoStack ( echoStackC )
 import Clash.Cores.Ethernet.RGMII
-    ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiReceiver, rgmiiSender )
-import Clash.Cores.UART ( baudGenerator )
+    ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )
 import Clash.Explicit.Prelude
 import Clash.Lattice.ECP5.Colorlight.CRG
-import Clash.Lattice.ECP5.Colorlight.UartEthRxStack
-import Clash.Lattice.ECP5.Colorlight.UartEthTxStack ( uartEthTxStack )
 import Clash.Lattice.ECP5.Prims
 import Clash.Prelude ( exposeClockResetEnable )
+import Data.Proxy ( Proxy(Proxy) )
+import Protocols ( toSignals, (|>) )
+
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -60,20 +65,27 @@ topEntity
      , "eth1" ::: RGMIITXChannel DomDDREth1
      , "hub" ::: HubOut Dom50
      )
-topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx eth1_rx =
+topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx _eth1_rx =
   let
-    (clk50, clkEthTx, rst50, rstEthTx) = crg clk25
+    (clk50, ethTxClk, rst50, ethTxRst) = crg clk25
     en50 = enableGen
-    baudGen = exposeClockResetEnable (baudGenerator (SNat @115200)) clk50 rst50 en50
 
-    uartTxBit = exposeClockResetEnable (uartEthRxStack baudGen eth0_rx) clk50 rst50 en50
+    ethRxClk = rgmii_rx_clk eth0_rx
+    ethRxRst = resetGen @DomEth0
+    ethRxEn = enableGen @DomEth0
+    ethTxEn = enableGen @DomEthTx
 
-    eth0Tx = exposeClockResetEnable (uartEthTxStack clkEthTx rstEthTx baudGen uartRxBit) clk50 rst50 en50
+    phyStack
+      = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
+        |> exposeClockResetEnable (echoStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
+        |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
+
+    uartTxBit = uartRxBit
+
+    eth0Tx = snd $ toSignals phyStack (eth0_rx, pure ())
 
     {- ETH1 ~ RGMII transceivers -}
-    eth1Txclk = rgmii_rx_clk eth1_rx
-    (eth1Err, eth1Data) = unbundle $ rgmiiReceiver eth1_rx (delayg d80) iddrx1f
-    eth1Tx = rgmiiSender eth1Txclk resetGen (delayg d0) oddrx1f eth1Data eth1Err
+    eth1Tx = undefined
 
     in
       ( uartTxBit
