@@ -177,7 +177,7 @@ prop_checksum_pipeline_specific_values =
           0x4000 C.:> 0x4011 C.:> 0xc0a8 C.:> C.Nil,
           0x0001 C.:> 0xc0a8 C.:> 0x00c7 C.:> C.Nil
           ]
-        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineLatency 4))
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (InternetChecksumLatency 4)) + 1
         size = length input
         result = take (size + delay) $ C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)
         checkSum = last result
@@ -189,7 +189,7 @@ prop_checksum_pipeline_succeed :: Property
 prop_checksum_pipeline_succeed =
   property $ do
     let genInputList range = Gen.list range (Gen.maybe $ (,) <$> genWordVec @5 <*> pure False)
-        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineLatency 5))
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (InternetChecksumLatency 5))
 
     input <- forAll $ genInputList (Range.linear 1 100)
     let size = length input
@@ -207,7 +207,7 @@ prop_checksum_pipeline_reset :: Property
 prop_checksum_pipeline_reset =
   property $ do
     let genInputList = Gen.list (Range.linear 1 100) (Gen.maybe $ (,) <$> genWordVec @7 <*> Gen.bool)
-        delay = fromInteger $ C.natVal (Proxy :: Proxy (PipelineLatency 7))
+        delay = fromInteger $ C.natVal (Proxy :: Proxy (InternetChecksumLatency 7))
     input <- forAll genInputList
     let size = length input
         result = take (size + delay) $ C.simulate @C.System pipelinedInternetChecksum (input ++ replicate delay Nothing)

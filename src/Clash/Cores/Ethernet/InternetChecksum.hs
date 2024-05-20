@@ -6,7 +6,7 @@ module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum,
     reduceToInternetChecksum,
     pipelinedInternetChecksum,
-    PipelineLatency
+    InternetChecksumLatency
   ) where
 
 import Clash.Cores.Ethernet.Util qualified as U
@@ -66,7 +66,7 @@ reduceToInternetChecksum inputM = checkSum
 
 -- | Computes the internetChecksum of a vector of 16 bit words. Same as reduceToInternetChecksum
 -- but with registers between each layer of the fold. Thus the critical path is shorter, but the
--- latency is higher.
+-- latency is higher. The latency is equal to PipelinedICLatency width.
 pipelinedInternetChecksum ::
   forall (dom :: Domain) (width :: Nat).
   HiddenClockResetEnable dom
@@ -82,4 +82,7 @@ pipelinedInternetChecksum inputM = checkSum
     checkSum = register 0 $ mux reset 0 checksumResult
     (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
     checksumResult = onesComplementAdd <$> foldPipeline 0 onesComplementAdd inp <*> checkSum
-    reset = U.registerN (SNat :: SNat (PipelineLatency width-1)) False resetInp
+    reset = U.registerN (SNat :: SNat (PipelineLatency width)) False resetInp
+
+-- | The latency of pipelinedInternetChecksum
+type InternetChecksumLatency (n :: Nat)= PipelineLatency n + 1

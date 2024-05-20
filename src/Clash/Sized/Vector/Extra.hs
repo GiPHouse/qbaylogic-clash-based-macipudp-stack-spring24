@@ -104,4 +104,4 @@ step _ initial f inps = case (
     regVec vs = bundle $ register initial <$> unbundle vs
 
 -- | The latency of the pipeline
-type PipelineLatency (n :: Nat) = 1 + CLog 2 n
+type PipelineLatency (n :: Nat) = CLog 2 n
