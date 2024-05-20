@@ -7,14 +7,14 @@ module Clash.Cores.Ethernet.IPDepacketizer
   , ipDepacketizerLiteC
   ) where
 
-import Clash.Prelude
-import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Depacketizer ( depacketizerC )
 import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.InternetChecksum
-import Protocols
-import Clash.Cores.Ethernet.Depacketizer (depacketizerC)
+import Clash.Cores.Ethernet.PacketStream
+import Clash.Prelude
 import Data.Maybe
 import Data.Type.Equality
+import Protocols
 
 
 -- | Parses the IPv4 header. Does not support parsing options in the header.
@@ -51,6 +51,14 @@ ipDepacketizerLiteC
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
 ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
 
+data VerifyChecksumS n
+  = Check (BitVector 16) (Index (1 + 20 `Div` n)) (BitVector 8)
+  -- ^ Checking. Contains accumulator, remaining bytes, and byte from previous
+  -- packet in case of odd data widths
+  | Forward Bool
+  -- ^ Forwarding. Bool is True if checksum was invalid
+  deriving (Generic, NFDataX)
+
 -- | Verifies the internet checksum of the first 20 bytes of each packet. Sets
 -- the abort bit from byte 21 onwards if the checksum is invalid. Data is left
 -- intact.
@@ -63,16 +71,16 @@ verifyChecksum
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
 verifyChecksum = case sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)) of
-    Just Refl -> Circuit $ mealyB go (0, 0, undefined)
+    Just Refl -> Circuit $ mealyB go (Check 0 0 undefined)
     _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n"
   where
     go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n )
-      => (BitVector 16, Index (1 + 20 `Div` n), BitVector 8)
-      -- Accumulator for checksum, packet counter, extra byte for odd data widths
+      => VerifyChecksumS n
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
-      -> ((BitVector 16, Index (1 + 20 `Div` n), BitVector 8), (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
-    go s (Nothing, bwd) = (s, (bwd, Nothing))
-    go s@(acc, i, byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
+      -> (VerifyChecksumS n, (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
+    go (Forward invalid) (mp, bwd) = (Forward invalid, (bwd, (\p -> p {_abort = _abort p || invalid}) <$> mp))
+    go s@(Check {}) (Nothing, bwd) = (s, (bwd, Nothing))
+    go s@(Check acc i byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
       where
         containsData = i == maxBound
 
@@ -98,10 +106,11 @@ verifyChecksum = case sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)) of
                in (fold onesComplementAdd (acc :> xs), last header)
             _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: n `Mod` 2 not equal to 0 or 1"
 
+        invalid = acc' /= 0xFFFF -- Note that we haven't taken the complement
         i' = satSucc SatBound i
         s'
           | not inReady = s
-          | isJust (_last fwdIn) = (0, 0, undefined)
-          | otherwise = (acc', i', byte')
+          | isJust (_last fwdIn) = Forward invalid
+          | otherwise = Check acc' i' byte'
 
-        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || acc' /= 0 } else fwdIn
+        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || invalid } else fwdIn
