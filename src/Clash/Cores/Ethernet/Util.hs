@@ -12,4 +12,3 @@ import Clash.Prelude
 toMaybe :: Bool -> a -> Maybe a
 toMaybe True x = Just x
 toMaybe False _ = Nothing
-
