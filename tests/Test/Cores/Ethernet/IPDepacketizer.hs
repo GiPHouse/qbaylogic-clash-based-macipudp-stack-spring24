@@ -25,15 +25,16 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.IPDepacketizer
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.Ethernet.IPDepacketizer
+import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.IP.IPv4Types
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
 
+import Clash.Sized.Vector qualified as C
 import Test.Cores.Ethernet.InternetChecksum ( pureInternetChecksum )
-import qualified Clash.Sized.Vector as C
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -66,9 +67,9 @@ testIPDepacketizer _ = idWithModelSingleDomain
     genGarbage = fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets (C.unpack <$> Gen.enumBounded)))
     geb :: forall x . (Enum x, Bounded x) => Gen x
     geb = Gen.enumBounded
-    genIpAddr = C.sequence (C.repeat @4 geb)
-    genIPv4Header = IPv4Header <$> geb <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> genIpAddr <*> genIpAddr
-    genValidPacket = do
+    genIpAddr = IPv4Address <$> genVec geb
+    genIPv4Header = IPv4Header <$> pure 4 <*> pure 5 <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> geb <*> pure 0 <*> genIpAddr <*> genIpAddr
+    genValidHeaderPacket = do
       ethernetHeader :: EthernetHeader <- C.unpack <$> Gen.enumBounded
       rawHeader <- genIPv4Header
       let checksum = pureInternetChecksum (C.bitCoerce rawHeader :: C.Vec 10 (C.BitVector 16))
@@ -82,14 +83,18 @@ testIPDepacketizer _ = idWithModelSingleDomain
       let fragments'' = zipWith (\p abort -> p {_abort = abort}) fragments' aborts
       return fragments''
 
-    genValidHeaders = concat <$> Gen.list (Range.linear 1 50) genValidPacket
+    genValidHeaders = concat <$> Gen.list (Range.linear 1 50) genValidHeaderPacket
 
     model ps =
      let
        ps' = depacketizerModel const ps
-       invalidChecksums = (\h -> 0xFFFF /= pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16))) . _meta <$> ps'
-       invalidIHLs = (/= 5) . _ipv4Ihl . _meta <$> ps'
-       aborts = zipWith (||) invalidChecksums invalidIHLs
+       aborts = (\h ->
+         pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16)) /= 0 ||
+         _ipv4Ihl h /= 5 ||
+         _ipv4Version h /= 4 ||
+         _ipv4FlagReserved h ||
+         _ipv4FlagMF h || _ipv4FragmentOffset h /= 0
+         ) . _meta <$> ps'
       in
        concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps') (aborts ++ repeat False)
 

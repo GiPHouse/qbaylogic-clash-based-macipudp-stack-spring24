@@ -11,6 +11,7 @@ import Clash.Cores.Ethernet.Depacketizer ( depacketizerC )
 import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.InternetChecksum
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.IP.IPv4Types
 import Clash.Prelude
 import Data.Maybe
 import Data.Type.Equality
@@ -37,7 +38,7 @@ ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength
          _ipv4Version header /= 4 ||
          _ipv4Ihl header /= 5 ||
          _ipv4FlagReserved header ||
-         _ipv4FlagMF header
+         _ipv4FlagMF header || _ipv4FragmentOffset header /= 0 -- drop fragmented packets
       in p {_abort = _abort p || abort}
 
 -- | Version of `ipDepacketizerC` that only keeps some of the IPv4 header fields.
