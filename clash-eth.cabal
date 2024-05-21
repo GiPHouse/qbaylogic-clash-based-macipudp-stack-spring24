@@ -120,6 +120,7 @@ library
     Clash.Lattice.ECP5.Colorlight.UartEthTxStack
   other-modules:
     Clash.Sized.Vector.Extra
+    Clash.Signal.Extra
   default-language: Haskell2010
   build-depends:
     interpolate,

@@ -9,10 +9,11 @@ module Clash.Cores.Ethernet.InternetChecksum
     InternetChecksumLatency
   ) where
 
-import Clash.Cores.Ethernet.Util qualified as U
 import Clash.Prelude
-import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
 import Data.Maybe
+
+import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
+import Clash.Signal.Extra ( registerN )
 
 -- | computes the un-complimented internet checksum of a stream of 16-bit words
 -- according to https://datatracker.ietf.org/doc/html/rfc1071
@@ -86,7 +87,7 @@ pipelinedInternetChecksum resetInp inputM = checkSum
     checkSum = register 0 $ mux reset 0 checksumResult
     input = fromMaybe (repeat 0) <$> inputM
     checksumResult = onesComplementAdd <$> foldPipeline 0 onesComplementAdd input <*> checkSum
-    reset = U.registerN (SNat :: SNat (PipelineLatency width)) False resetInp
+    reset = registerN (SNat :: SNat (PipelineLatency width)) False resetInp
 
 -- | The latency of pipelinedInternetChecksum
 type InternetChecksumLatency (n :: Nat)= PipelineLatency n + 1
