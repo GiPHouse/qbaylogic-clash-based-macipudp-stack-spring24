@@ -65,7 +65,7 @@ flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
 checkZeroAfterReset :: Int -> [(Bool, Maybe a)] -> [C.BitVector 16] -> Bool
 checkZeroAfterReset _ [] _ = True
 checkZeroAfterReset _ _ [] = False
-checkZeroAfterReset d ((True, _):xs) yl@(_:ys) = 
+checkZeroAfterReset d ((True, _):xs) yl@(_:ys) =
   checkZeroAfterDelay d yl && checkZeroAfterReset d xs ys
   where
     checkZeroAfterDelay :: Int -> [C.BitVector 16] -> Bool

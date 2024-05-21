@@ -12,8 +12,8 @@ module Clash.Cores.Ethernet.InternetChecksum
 import Clash.Prelude
 import Data.Maybe
 
-import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
 import Clash.Signal.Extra ( registerN )
+import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
 
 -- | computes the un-complimented internet checksum of a stream of 16-bit words
 -- according to https://datatracker.ietf.org/doc/html/rfc1071
