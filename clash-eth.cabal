@@ -93,6 +93,7 @@ library
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Cores.Ethernet.ICMP
     Clash.Cores.Ethernet.Depacketizer
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
@@ -175,6 +176,7 @@ test-suite test-library
     Test.Cores.Ethernet.InternetChecksum
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
+    Test.Cores.Ethernet.ICMP
   build-depends:
     clash-eth,
     QuickCheck,
