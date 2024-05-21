@@ -35,7 +35,7 @@ import Test.Cores.Ethernet.Util
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
-  
+
 icmpReceiverPropertyGenerator
   :: forall (dataWidth :: Nat).
   ( KnownNat dataWidth
@@ -65,7 +65,7 @@ icmpReceiverPropertyGenerator _ =
         Gen.maybe Gen.enumBounded <*>
         genMeta <*>
         Gen.enumBounded
-        
+
       genIpAddr = C.sequence (C.repeat @4 Gen.enumBounded)
       genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> Gen.enumBounded
 

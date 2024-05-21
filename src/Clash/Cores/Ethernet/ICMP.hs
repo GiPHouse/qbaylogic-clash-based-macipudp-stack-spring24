@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# language RecordWildCards #-}
 {-|
 Module      : Clash.Cores.Ethernet.ICMP
 Description : Specialized function for parsing a partial ICMP header.
@@ -10,8 +10,8 @@ module Clash.Cores.Ethernet.ICMP
 import Clash.Prelude
 import Protocols
 
-import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.Depacketizer
+import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.PacketStream
 
 
