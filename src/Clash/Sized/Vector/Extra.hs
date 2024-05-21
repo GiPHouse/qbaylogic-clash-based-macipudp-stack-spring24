@@ -90,12 +90,11 @@ step _ initial f inps = case (sameNat (SNat @p) d0, sameNat (SNat @p) d1) of
   (Nothing, Just Refl) -> regVec $ (++) <$> (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
   _ -> error "p > 1 impossible"
   where
-    layerCalc :: Signal dom (Vec (2*m) a) -> Signal dom (Vec m a)
+    layerCalc :: Signal dom (Vec (2 * m) a) -> Signal dom (Vec m a)
     layerCalc = fmap (fmap applyF . unconcatI)
 
     applyF :: Vec 2 a -> a
-    applyF (a :> b :> _) = f a b
-    applyF _ = error "calcChecksum2: impossible"
+    applyF (a `Cons` b `Cons` _) = f a b
 
     regVec :: KnownNat q => Signal dom (Vec q a) -> Signal dom (Vec q a)
     regVec vs = bundle $ register initial <$> unbundle vs
