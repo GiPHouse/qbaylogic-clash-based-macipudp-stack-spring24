@@ -90,4 +90,4 @@ pipelinedInternetChecksum resetInp inputM = checkSum
     reset = registerN (SNat :: SNat (PipelineLatency width)) False resetInp
 
 -- | The latency of pipelinedInternetChecksum
-type InternetChecksumLatency (n :: Nat)= PipelineLatency n + 1
+type InternetChecksumLatency (n :: Nat) = PipelineLatency n + 1

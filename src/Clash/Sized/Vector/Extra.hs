@@ -6,6 +6,7 @@ module Clash.Sized.Vector.Extra (
 ) where
 
 import Clash.Prelude
+
 import Data.Proxy
 import Data.Type.Equality
 -- | Like 'take' but uses a 'Data.Type.Ord.<=' constraint
@@ -62,7 +63,7 @@ foldPipeline initial f inp  = case (nIs1, foldWidthBiggerThan1) of
     (Just Refl, _) -> head <$> inp
     (Nothing, SNatLE) -> foldPipeline initial f foldValues
     where
-      nIs1 = sameNat (Proxy :: Proxy n) (Proxy :: Proxy 1)
+      nIs1 = sameNat (SNat @n) d1
       foldWidthBiggerThan1 = compareSNat d1 (SNat @(n `Div` 2 + n `Mod` 2))
 
       foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) a)
@@ -72,11 +73,10 @@ foldPipeline initial f inp  = case (nIs1, foldWidthBiggerThan1) of
         _ -> error "'n % 2 > 1', or '2*(n/2)+n%2 != x': impossible"
 
       atLeast1mod2 = compareSNat (SNat @(n `Mod` 2)) d1
-      nEqualsN = sameNat (Proxy :: Proxy (2 * (n `Div` 2) + n `Mod` 2)) (Proxy :: Proxy n)
+      nEqualsN = sameNat (SNat @(2 * (n `Div` 2) + n `Mod` 2)) (SNat @n)
 
 step :: forall (m :: Nat) (p :: Nat) (dom :: Domain) (a :: Type).
   HiddenClockResetEnable dom
-  => KnownNat m
   => KnownNat p
   => p <= 1
   => NFDataX a
@@ -85,7 +85,7 @@ step :: forall (m :: Nat) (p :: Nat) (dom :: Domain) (a :: Type).
   -> (a -> a -> a)
   -> Signal dom (Vec (2 * m + p) a)
   -> Signal dom (Vec (m + p) a)
-step _ initial f inps = case (sameNat (SNat @p) d0, sameNat (SNat @p) d1) of
+step SNat initial f inps = case (sameNat (SNat @p) d0, sameNat (SNat @p) d1) of
   (Just Refl, Nothing) -> regVec $ layerCalc inps
   (Nothing, Just Refl) -> regVec $ (++) <$> (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
   _ -> error "p > 1 impossible"
