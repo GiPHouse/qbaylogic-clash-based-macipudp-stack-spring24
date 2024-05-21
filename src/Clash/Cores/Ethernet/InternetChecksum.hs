@@ -22,22 +22,23 @@ import Data.Maybe
 internetChecksum
   :: forall (dom :: Domain).
   HiddenClockResetEnable dom
-  => Signal dom (Maybe (BitVector 16, Bool))
-  -- ^ Input data, adds the first data point of the checksum, if the second
-  -- element of the tuple is True, the current checksum is reset to 0 the next cycle
+  => Signal dom Bool
+  -- ^ Reset signal, resets the checksum to 0 the next cycle
+  -> Signal dom (Maybe (BitVector 16))
+  -- ^ Input data which gets added to the checksum
   -> Signal dom (BitVector 16)
  -- ^ Resulting checksum
-internetChecksum inputM = checkSumWithCarry
+internetChecksum reset inputM = checkSumWithCarry
   where
-    (inpX, resetX) = unbundle $ fromJustX <$> inputM
+    inp = fromMaybe 0 <$> inputM
 
     checkSum :: Signal dom (BitVector 17)
-    checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 nextCheckSum
+    checkSum = register 0 $ mux reset 0 nextCheckSum
 
     (fmap zeroExtend -> carry, truncated) = unbundle $ split <$> checkSum
 
     checkSumWithCarry = carry + truncated
-    nextCheckSum = add <$> inpX <*> checkSumWithCarry
+    nextCheckSum = add <$> inp <*> checkSumWithCarry
 
 onesComplementAdd :: BitVector 16 -> BitVector 16 -> BitVector 16
 onesComplementAdd bvA bvB = carry + truncated
@@ -52,17 +53,19 @@ reduceToInternetChecksum ::
   forall (dom :: Domain) (width :: Nat).
   HiddenClockResetEnable dom
   => 1 <= width
-  => Signal dom (Maybe (Vec width (BitVector 16), Bool))
-  -- ^ Input data, adds the first data point of the checksum, if the second
-  -- element of the tuple is True, the current checksum is reset to 0 the next cycle
+  => KnownNat width
+  => Signal dom Bool
+  -- ^ Reset signal, resets the checksum to 0 the next cycle
+  -> Signal dom (Maybe (Vec width (BitVector 16)))
+  -- ^ Input data which gets added to the checksum
   -> Signal dom (BitVector 16)
   -- ^ Resulting checksum
-reduceToInternetChecksum inputM = checkSum
+reduceToInternetChecksum reset inputM = checkSum
   where
-    checkSum = regEn 0 (isJust <$> inputM) $ mux resetX 0 checksumResult
-    (inpX, resetX) = unbundle $ fromJustX <$> inputM
-    checksumResult = fold onesComplementAdd <$> input
-    input = (++) <$> (singleton <$> checkSum) <*> inpX
+    checkSum = register 0 $ mux reset 0 checksumResult
+    input = fromMaybe (repeat 0) <$> inputM
+    checksumResult = fold onesComplementAdd <$> toSum
+    toSum = (++) <$> (singleton <$> checkSum) <*> input
 
 -- | Computes the internetChecksum of a vector of 16 bit words. Same as reduceToInternetChecksum
 -- but with registers between each layer of the fold. Thus the critical path is shorter, but the
@@ -72,16 +75,17 @@ pipelinedInternetChecksum ::
   HiddenClockResetEnable dom
   => 1 <= width
   => KnownNat width
-  => Signal dom (Maybe (Vec width (BitVector 16), Bool))
-  -- ^ Input data, adds the first data point of the checksum, if the second
-  -- element of the tuple is True, the current checksum is reset to 0 the next cycle
+  => Signal dom Bool
+  -- ^ Reset signal, resets the checksum to 0 the next cycle
+  -> Signal dom (Maybe (Vec width (BitVector 16)))
+  -- ^ Input data which gets added to the checksum
   -> Signal dom (BitVector 16)
-  -- ^ Resulting checksum
-pipelinedInternetChecksum inputM = checkSum
+  -- ^ Resulting checksum, the latency between input and output is PipelinedICLatency width
+pipelinedInternetChecksum resetInp inputM = checkSum
   where
     checkSum = register 0 $ mux reset 0 checksumResult
-    (inp, resetInp) = unbundle $ fromMaybe (repeat 0, False) <$> inputM
-    checksumResult = onesComplementAdd <$> foldPipeline 0 onesComplementAdd inp <*> checkSum
+    input = fromMaybe (repeat 0) <$> inputM
+    checksumResult = onesComplementAdd <$> foldPipeline 0 onesComplementAdd input <*> checkSum
     reset = U.registerN (SNat :: SNat (PipelineLatency width)) False resetInp
 
 -- | The latency of pipelinedInternetChecksum
