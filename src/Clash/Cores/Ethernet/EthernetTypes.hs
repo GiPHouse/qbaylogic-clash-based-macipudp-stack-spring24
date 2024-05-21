@@ -12,10 +12,26 @@ module Clash.Cores.Ethernet.EthernetTypes
   , IPv4Header(..)
   , IPv4HeaderLite(..)
   , IPv4Address
+  , IcmpHeader(..)
+  , IcmpHeaderLite(..)
   ) where
 
 import Clash.Prelude
 import Control.DeepSeq ( NFData )
+
+-- | Full ICMP header
+data IcmpHeader = IcmpHeader {
+  _type :: BitVector 8,
+  _code :: BitVector 8,
+  _checksum :: BitVector 16,
+  _restofheader :: BitVector 32
+} deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
+
+-- | Small ICMP header with only the type
+newtype IcmpHeaderLite = IcmpHeaderLite {_typeL :: BitVector 8}
+  deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
 
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))

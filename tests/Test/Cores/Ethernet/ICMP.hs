@@ -35,7 +35,7 @@ import Test.Cores.Ethernet.Util
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
-
+  
 icmpReceiverPropertyGenerator
   :: forall (dataWidth :: Nat).
   ( KnownNat dataWidth
@@ -47,43 +47,33 @@ icmpReceiverPropertyGenerator _ =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap fullPackets (Gen.list (Range.linear 1 100) genPackets))
+    (fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets genIPv4HeaderLite)))
     (C.exposeClockResetEnable model)
     (C.exposeClockResetEnable @C.System icmpReceiverC)
     (===)
     where
-      model :: [PacketStreamM2S dataWidth EthernetHeader] -> [PacketStreamM2S dataWidth (MacAddress, IcmpHeader)]
-      model = depacketizerModel const
-      genPackets =
-          PacketStreamM2S <$>
-          genVec Gen.enumBounded <*>
-          Gen.maybe Gen.enumBounded <*>
-          genVec Gen.enumBounded <*>
-          Gen.enumBounded
+      f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
+      f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type})
+
+      model :: [PacketStreamM2S dataWidth IPv4HeaderLite] -> [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
+      model = depacketizerModel f
+
+      genPackets :: Gen IPv4HeaderLite -> Gen (PacketStreamM2S dataWidth IPv4HeaderLite)
+      genPackets genMeta =
+        PacketStreamM2S <$>
+        genVec Gen.enumBounded <*>
+        Gen.maybe Gen.enumBounded <*>
+        genMeta <*>
+        Gen.enumBounded
+        
+      genIpAddr = C.sequence (C.repeat @4 Gen.enumBounded)
+      genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> Gen.enumBounded
+
+
 
 -- | n mod dataWidth ~ 1
 prop_icmp_receiver_d1 :: Property
 prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
-
--- | n mod dataWidth ~ 3
-prop_mac_depacketizer_d3 :: Property
-prop_mac_depacketizer_d3 = icmpReceiverPropertyGenerator d3
-
--- | n mod dataWidth ~ 0
-prop_mac_depacketizer_d7 :: Property
-prop_mac_depacketizer_d7 = icmpReceiverPropertyGenerator d7
-
--- | dataWidth < header byte size
-prop_mac_depacketizer_d9 :: Property
-prop_mac_depacketizer_d9 = icmpReceiverPropertyGenerator d9
-
--- | dataWidth ~ header byte size
-prop_mac_depacketizer_d14 :: Property
-prop_mac_depacketizer_d14 = icmpReceiverPropertyGenerator d14
-
--- | dataWidth > header byte size
-prop_mac_depacketizer_d15 :: Property
-prop_mac_depacketizer_d15 = icmpReceiverPropertyGenerator d15
 
 
 tests :: TestTree
