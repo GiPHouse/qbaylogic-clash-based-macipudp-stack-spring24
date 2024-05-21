@@ -68,7 +68,7 @@ foldPipeline initial f inp  = case (nIs1, foldWidthBiggerThan1) of
       foldValues :: Signal dom (Vec (n `Div` 2 + n `Mod` 2) a)
       foldValues =
         case (atLeast1mod2, nEqualsN) of
-        (SNatLE, Just Refl) -> (step @(n `Div` 2) @(n `Mod` 2)) (Proxy::Proxy (n `Div` 2)) initial f inp
+        (SNatLE, Just Refl) -> (step @(n `Div` 2) @(n `Mod` 2)) (SNat @(n `Div` 2)) initial f inp
         _ -> error "'n % 2 > 1', or '2*(n/2)+n%2 != x': impossible"
 
       atLeast1mod2 = compareSNat (SNat @(n `Mod` 2)) d1
@@ -80,15 +80,12 @@ step :: forall (m :: Nat) (p :: Nat) (dom :: Domain) (a :: Type).
   => KnownNat p
   => p <= 1
   => NFDataX a
-  => Proxy m
+  => SNat m
   -> a
   -> (a -> a -> a)
   -> Signal dom (Vec (2 * m + p) a)
   -> Signal dom (Vec (m + p) a)
-step _ initial f inps = case (
-    sameNat (Proxy :: Proxy p) (Proxy :: Proxy 0),
-    sameNat (Proxy :: Proxy p) (Proxy :: Proxy 1)
-  ) of
+step _ initial f inps = case (sameNat (SNat @p) d0, sameNat (SNat @p) d1) of
   (Just Refl, Nothing) -> regVec $ layerCalc inps
   (Nothing, Just Refl) -> regVec $ (++) <$> (singleton . head <$> inps) <*> layerCalc (tail <$> inps)
   _ -> error "p > 1 impossible"
