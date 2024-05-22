@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.IPDepacketizer where
+module Test.Cores.IP.IPDepacketizer where
 
 -- base
 import Prelude
@@ -26,8 +26,8 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.IPDepacketizer
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.IP.IPDepacketizer
 import Clash.Cores.IP.IPv4Types
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )

@@ -2,7 +2,7 @@
 Module      : Clash.Cores.Ethernet.IPDepacketizer
 Description : Strips the IP header from packets
 -}
-module Clash.Cores.Ethernet.IPDepacketizer
+module Clash.Cores.IP.IPDepacketizer
   ( ipDepacketizerC
   , ipDepacketizerLiteC
   ) where
@@ -25,7 +25,6 @@ ipDepacketizerC
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
-     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4Header)
 ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength
@@ -47,7 +46,6 @@ ipDepacketizerLiteC
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
-     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4HeaderLite)
 ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
@@ -68,14 +66,13 @@ verifyChecksum
    . ( HiddenClockResetEnable dom
      , KnownNat n
      , 1 <= n
-     , 20 `Mod` n <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
-verifyChecksum = case sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)) of
-    Just Refl -> Circuit $ mealyB go (Check 0 0 undefined)
+verifyChecksum = case (sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)), compareSNat (SNat @(20 `Mod` n)) (SNat @n)) of
+    (Just Refl, SNatLE) -> Circuit $ mealyB go (Check 0 0 undefined)
     _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n"
   where
-    go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n )
+    go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n, 20 `Mod` n <= n)
       => VerifyChecksumS n
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
       -> (VerifyChecksumS n, (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))

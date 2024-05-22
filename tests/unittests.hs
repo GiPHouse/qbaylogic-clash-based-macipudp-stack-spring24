@@ -11,7 +11,6 @@ import Test.Cores.Ethernet.EthernetTypes qualified
 import Test.Cores.Ethernet.FrameCheckSequence qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
-import Test.Cores.Ethernet.IPDepacketizer qualified
 import Test.Cores.Ethernet.MacDepacketizer qualified
 import Test.Cores.Ethernet.MacPacketizer qualified
 import Test.Cores.Ethernet.PacketArbiter qualified
@@ -22,6 +21,7 @@ import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
+import Test.Cores.IP.IPDepacketizer qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -41,9 +41,9 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
     , Test.Cores.Ethernet.MacPacketizer.tests
-    , Test.Cores.Ethernet.IPDepacketizer.tests
     , Test.Cores.Ethernet.InternetChecksum.tests
     , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
     , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
     , Test.Cores.Ethernet.EthernetTypes.tests
+    , Test.Cores.IP.IPDepacketizer.tests
   ]

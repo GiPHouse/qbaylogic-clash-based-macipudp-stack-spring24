@@ -97,7 +97,6 @@ library
     Clash.Cores.Ethernet.Depacketizer
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
-    Clash.Cores.Ethernet.IPDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.MacPacketizer
     Clash.Cores.Ethernet.PacketizeFromDf
@@ -122,6 +121,7 @@ library
     Clash.Cores.IP.IPv4Types
     Clash.Cores.IP.IcmpTypes
     Clash.Cores.IP.Icmp
+    Clash.Cores.IP.IPDepacketizer
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   other-modules:
@@ -162,7 +162,6 @@ test-suite test-library
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.MacDepacketizer
-    Test.Cores.Ethernet.IPDepacketizer
     Test.Cores.Ethernet.Util
     Test.Cores.Ethernet.PacketArbiter
     Test.Cores.Ethernet.PacketStream
@@ -180,6 +179,7 @@ test-suite test-library
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
     Test.Cores.Ethernet.EthernetTypes
+    Test.Cores.IP.IPDepacketizer
   build-depends:
     clash-eth,
     QuickCheck,
