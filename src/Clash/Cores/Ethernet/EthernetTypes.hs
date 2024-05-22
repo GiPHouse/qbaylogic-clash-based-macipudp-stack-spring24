@@ -95,7 +95,9 @@ data IPv4Header = IPv4Header
   , _ipv4Ecn :: BitVector 2
   , _ipv4Length :: Unsigned 16
   , _ipv4Id :: BitVector 16
-  , _ipv4Flags :: BitVector 3
+  , _ipv4FlagReserved :: Bool
+  , _ipv4FlagDF :: Bool
+  , _ipv4FlagMF :: Bool
   , _ipv4FragmentOffset :: BitVector 13
   , _ipv4Ttl :: Unsigned 8
   , _ipv4Protocol :: Unsigned 8
@@ -108,10 +110,15 @@ data IPv4Header = IPv4Header
 data IPv4HeaderLite = IPv4HeaderLite
   { _ipv4lSource :: IPv4Address
   , _ipv4lDestination :: IPv4Address
+  , _ipv4lPayloadLength :: Unsigned 16
   } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
 toLite :: IPv4Header -> IPv4HeaderLite
-toLite IPv4Header {..} = IPv4HeaderLite _ipv4Source _ipv4Destination
+toLite IPv4Header {..} = IPv4HeaderLite
+  { _ipv4lSource = _ipv4Source
+  , _ipv4lDestination = _ipv4Destination
+  , _ipv4lPayloadLength = _ipv4Length - zeroExtend (4 * _ipv4Ihl)
+  }
 
 -- | Shrinks IPv4 headers
 toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4HeaderLite)
@@ -121,12 +128,14 @@ toLiteC = Circuit (swap . unbundle . go . bundle)
 
 fromLite :: IPv4HeaderLite -> IPv4Header
 fromLite header = IPv4Header { _ipv4Version = 4
-                             , _ipv4Ihl = 5
+                             , _ipv4Ihl = ipv4Ihl
                              , _ipv4Dscp = 0
                              , _ipv4Ecn = 0
-                             , _ipv4Length = 20
+                             , _ipv4Length = _ipv4lPayloadLength header + zeroExtend (4 * ipv4Ihl)
                              , _ipv4Id = 0
-                             , _ipv4Flags = 0
+                             , _ipv4FlagReserved = False
+                             , _ipv4FlagDF = False
+                             , _ipv4FlagMF = False
                              , _ipv4FragmentOffset = 0
                              , _ipv4Ttl = 64
                              , _ipv4Protocol = 0
@@ -134,6 +143,8 @@ fromLite header = IPv4Header { _ipv4Version = 4
                              , _ipv4Source = _ipv4lSource header
                              , _ipv4Destination = _ipv4lDestination header
                              }
+  where
+    ipv4Ihl = 5
 
 -- | Produce a full IPv4 header from a lite one.
 --   Note that this does *not* compute the checksum.
