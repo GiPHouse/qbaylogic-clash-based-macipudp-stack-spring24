@@ -11,7 +11,7 @@ import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.PacketStream
 
 import Protocols
-import Protocols.Df ( Data(..) )
+import Protocols.Df qualified as Df
 
 import Clash.Cores.Arp.ArpTypes
 import Clash.Cores.Ethernet.PacketizeFromDf
@@ -33,7 +33,7 @@ arpTransmitter
 arpTransmitter ourMacS ourIPv4S = fromSignals bundleWithSrc |> packetizeFromDfC toEthernetHdr constructArpPkt
   where
     bundleWithSrc (fwdIn, bwdIn) = (bwdIn, go <$> bundle (ourMacS, ourIPv4S, fwdIn))
-    go (ourMac, ourIPv4, maybeArpLite) = maybeArpLite >>= \arpLite -> Data (ourMac, ourIPv4, arpLite)
+    go (ourMac, ourIPv4, maybeArpLite) = maybeArpLite >>= \arpLite -> Df.Data (ourMac, ourIPv4, arpLite)
 
     toEthernetHdr (ourMac, _, arpLite)
       = EthernetHeader {

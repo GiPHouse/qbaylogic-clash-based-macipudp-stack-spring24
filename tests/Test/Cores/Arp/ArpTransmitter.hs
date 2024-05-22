@@ -70,8 +70,8 @@ prop_arp_transmitter_d1 :: Property
 prop_arp_transmitter_d1 = arpTransmitterPropertyGenerator d1
 
 -- | dataWidth < headerBytes
-prop_arp_transmitter_d11 :: Property
-prop_arp_transmitter_d11 = arpTransmitterPropertyGenerator d11
+prop_arp_transmitter_d15 :: Property
+prop_arp_transmitter_d15 = arpTransmitterPropertyGenerator d11
 
 -- | dataWidth ~ headerBytes
 prop_arp_transmitter_d28 :: Property
