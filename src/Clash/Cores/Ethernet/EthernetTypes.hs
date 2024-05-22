@@ -9,9 +9,7 @@ module Clash.Cores.Ethernet.EthernetTypes
   , broadcastMac
   , preamble
   , startFrameDelimiter
-  , IPv4Address
   , toEthernetC
-  , toEthernet
   ) where
 
 import Clash.Prelude
@@ -48,24 +46,32 @@ preamble = replicate d7 0x55 :< 0xD5
 startFrameDelimiter :: BitVector 8
 startFrameDelimiter = 0xD5
 
--- | Broadcast MAC address.
-broadcastMac :: MacAddress
-broadcastMac = MacAddress (repeat 0xFF)
-
-
 -- | Convert an IPv4Address to the corresponding EthernetHeader.
 toEthernetC :: HiddenClockResetEnable dom
   => Signal dom MacAddress
-  -> Circuit (PacketStream dom n IPv4Address) (PacketStream dom n EthernetHeader)
+  -> Circuit (PacketStream dom dataWidth IPv4Address) (PacketStream dom dataWidth EthernetHeader)
 toEthernetC macSrc = Circuit (swap . unbundle . helper macSrc . bundle)
   where
+    helper :: Signal dom MacAddress
+      -> Signal dom (Maybe (PacketStreamM2S dataWidth IPv4Address), PacketStreamS2M)
+      -> Signal dom (Maybe (PacketStreamM2S dataWidth EthernetHeader), PacketStreamS2M)
     helper mac pkt = go <$> mac <*> pkt
+
+    go :: MacAddress
+      -> (Maybe (PacketStreamM2S dataWidth IPv4Address), PacketStreamS2M)
+      -> (Maybe (PacketStreamM2S dataWidth EthernetHeader), PacketStreamS2M)
     go mac = B.first $ fmap $ fmap (toEthernet mac)
 
+    toEthernet :: MacAddress -> IPv4Address -> EthernetHeader
+    toEthernet src _ = EthernetHeader {
+      _macDst = hardCodedMac,
+      _macSrc = src,
+      _etherType = 0x0800 -- IPv4 EtherType
+    }
 
-toEthernet :: MacAddress -> IPv4Address -> EthernetHeader
-toEthernet macSrc _ = EthernetHeader {
-  _macDst = MacAddress (repeat 0x37),
-  _macSrc = macSrc,
-  _etherType = 0x0800 -- IPv4 EtherType
-}
+hardCodedMac :: MacAddress
+hardCodedMac = MacAddress (0x8C :> 0x8C :> 0xAA :> 0xC8 :> 0x2B :> 0xEE :> Nil)
+
+-- | Broadcast MAC address.
+broadcastMac :: MacAddress
+broadcastMac = MacAddress (repeat 0xFF)

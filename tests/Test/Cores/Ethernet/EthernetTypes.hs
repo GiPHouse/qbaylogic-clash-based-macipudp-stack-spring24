@@ -59,6 +59,13 @@ toEthernetTest C.SNat macSrc =
     model :: MacAddress -> [PacketStreamM2S dataWidth IPv4Address] -> [PacketStreamM2S dataWidth EthernetHeader]
     model src = map $ fmap (toEthernet src)
 
+    toEthernet :: MacAddress -> IPv4Address -> EthernetHeader
+    toEthernet src _ = EthernetHeader {
+      _macDst = MacAddress (C.repeat 0x37),
+      _macSrc = src,
+      _etherType = 0x0800 -- IPv4 EtherType
+    }
+
     -- This generates the packets
     genPackets :: Gen IPv4Address -> Gen (PacketStreamM2S dataWidth IPv4Address)
     genPackets genMeta =
