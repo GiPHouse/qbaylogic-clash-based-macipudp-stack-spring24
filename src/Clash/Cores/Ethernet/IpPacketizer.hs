@@ -18,7 +18,7 @@ import Data.Functor
 import Data.Maybe
 
 -- | Packetize a packet stream with the IPv4HeaderLite meta data
--- giving default values for header data that is not in IPv4HeaderLite.
+-- giving default values for header data that are not in IPv4HeaderLite.
 ipLitePacketizerC
   :: forall (dom :: Domain)
             (dataWidth :: Nat) .
