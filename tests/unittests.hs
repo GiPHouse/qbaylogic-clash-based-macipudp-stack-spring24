@@ -20,10 +20,12 @@ import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
 import Test.Lattice.ECP5.UART qualified
 import Test.TinyTapeout.Credits qualified
+import Test.TinyTapeout.IcmpEcho qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
   [ Test.TinyTapeout.Credits.tests
+  , Test.TinyTapeout.IcmpEcho.tests
   , Test.Cores.Ethernet.AsyncFIFO.tests
   , Test.Cores.Ethernet.PacketArbiter.tests
   , Test.Cores.Ethernet.PacketStream.tests

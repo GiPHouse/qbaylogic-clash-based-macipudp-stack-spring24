@@ -29,6 +29,7 @@ import Clash.Cores.Ethernet.DownConverter
 import Clash.Cores.Ethernet.UpConverter
 
 import Clash.TinyTapeout.EthernetMac.Credits
+import Clash.TinyTapeout.EthernetMac.IcmpEcho
 
 import Data.Maybe (isNothing, isJust)
 import Clash.Cores.Ethernet.Util (toMaybe)
@@ -67,11 +68,15 @@ ethernetEndpoints
 ethernetEndpoints = circuit $ \eth -> do
   let withEthType typ hdr = typ == _etherType hdr
 
-  [echoEth, creditsEth] <- packetDispatcherC (withEthType 0x2001 :> withEthType 0x2002 :> Nil) -< eth
+  [echoEth, creditsEth, icmpEchoEth] <-
+    packetDispatcherC (withEthType 0x2001 :> withEthType 0x2002 :>
+                       withEthType 0x0800 :> Nil) -< eth
 
   credits <- creditsC -< creditsEth
 
-  packetArbiterC RoundRobin -< [echoEth, credits]
+  icmpEcho <- icmpEchoC -< icmpEchoEth
+
+  packetArbiterC RoundRobin -< [echoEth, credits, icmpEcho]
 
 stack
   :: HiddenClockResetEnable domTx
