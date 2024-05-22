@@ -118,6 +118,8 @@ library
     Clash.Cores.Ethernet.InternetChecksum
     Clash.Cores.Ethernet.FrameCheckSequence
     Clash.Cores.IP.IPv4Types
+    Clash.Cores.IP.IcmpTypes
+    Clash.Cores.IP.Icmp
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   other-modules:

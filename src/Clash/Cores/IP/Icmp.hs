@@ -1,4 +1,4 @@
-module Clash.Cores.Ethernet.Icmp
+module Clash.Cores.IP.Icmp
   (
     icmpTransmitterC
   )
