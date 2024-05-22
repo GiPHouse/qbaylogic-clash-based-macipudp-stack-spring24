@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# language RecordWildCards #-}
 module Clash.Cores.IP.Icmp
   ( icmpTransmitterC
   , icmpReceiverC
@@ -7,8 +7,8 @@ module Clash.Cores.IP.Icmp
 
 import Clash.Prelude
 
-import Clash.Cores.Ethernet.Packetizer ( packetizerC )
 import Clash.Cores.Ethernet.Depacketizer ( depacketizerC )
+import Clash.Cores.Ethernet.Packetizer ( packetizerC )
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.IcmpTypes
 import Clash.Cores.IP.IPv4Types ( IPv4HeaderLite )

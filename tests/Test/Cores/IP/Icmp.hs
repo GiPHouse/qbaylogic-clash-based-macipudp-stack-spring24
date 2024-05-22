@@ -27,9 +27,9 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.IPv4Types
 import Clash.Cores.IP.Icmp
 import Clash.Cores.IP.IcmpTypes
+import Clash.Cores.IP.IPv4Types
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
