@@ -6,6 +6,7 @@ import Test.Cores.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
+import Test.Cores.Ethernet.EthernetTypes qualified
 import Test.Cores.Ethernet.FrameCheckSequence qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
@@ -19,7 +20,6 @@ import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
-import Test.Lattice.ECP5.UART qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -41,4 +41,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.InternetChecksum.tests
     , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
     , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
+    , Test.Cores.Ethernet.EthernetTypes.tests
   ]
