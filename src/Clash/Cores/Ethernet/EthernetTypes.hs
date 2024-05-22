@@ -9,61 +9,14 @@ module Clash.Cores.Ethernet.EthernetTypes
   , broadcastMac
   , preamble
   , startFrameDelimiter
-  , IPv4Header(..)
-  , IPv4HeaderLite(..)
-  , IPv4Address
-  , IcmpHeader(..)
-  , IcmpHeaderLite(..)
   ) where
 
 import Clash.Prelude
 import Control.DeepSeq ( NFData )
 
--- | Full ICMP header
-data IcmpHeader = IcmpHeader {
-  _type :: BitVector 8,
-  _code :: BitVector 8,
-  _checksum :: BitVector 16,
-  _restofheader :: BitVector 32
-} deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-
--- | Small ICMP header with only the type
-newtype IcmpHeaderLite = IcmpHeaderLite {_typeL :: BitVector 8}
-  deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))
   deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
-type IPv4Address = Vec 4 (BitVector 8)
-
--- | (Almost) full IPv4 header. Does not contain options field.
-data IPv4Header = IPv4Header
-  { _ipv4Version :: BitVector 4
-  , _ipv4Ihl :: Unsigned 4
-  , _ipv4Dscp :: BitVector 6
-  , _ipv4Ecn :: BitVector 2
-  , _ipv4Length :: Unsigned 16
-  , _ipv4Id :: BitVector 16
-  , _ipv4FlagReserved :: Bool
-  , _ipv4FlagDF :: Bool
-  , _ipv4FlagMF :: Bool
-  , _ipv4FragmentOffset :: BitVector 13
-  , _ipv4Ttl :: Unsigned 8
-  , _ipv4Protocol :: Unsigned 8
-  , _ipv4Checksum :: BitVector 16
-  , _ipv4Source :: IPv4Address
-  , _ipv4Destination :: IPv4Address
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
--- | Partial IPv4 header.
-data IPv4HeaderLite = IPv4HeaderLite
-  { _ipv4lSource :: IPv4Address
-  , _ipv4lDestination :: IPv4Address
-  , _ipv4lPayloadLength :: Unsigned 16
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
 -- | Stores a link-layer Ethernet header, that is, a destination MAC address,
 --   a source MAC address, and an EtherType.

@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.ICMP where
+module Test.Cores.IP.Icmp where
 
 -- base
 import Prelude
@@ -26,9 +26,10 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.ICMP
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.IP.IPv4Types
+import Clash.Cores.IP.Icmp
+import Clash.Cores.IP.IcmpTypes
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
@@ -38,12 +39,10 @@ genVec gen = sequence (C.repeat gen)
 
 icmpReceiverPropertyGenerator
   :: forall (dataWidth :: Nat).
-  ( KnownNat dataWidth
-  , 1 <= dataWidth
-  )
+  1 <= dataWidth
   => SNat dataWidth
   -> Property
-icmpReceiverPropertyGenerator _ =
+icmpReceiverPropertyGenerator C.SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
@@ -53,7 +52,7 @@ icmpReceiverPropertyGenerator _ =
     (===)
     where
       f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
-      f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type})
+      f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})
 
       model :: [PacketStreamM2S dataWidth IPv4HeaderLite] -> [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
       model = depacketizerModel f
@@ -66,14 +65,29 @@ icmpReceiverPropertyGenerator _ =
         genMeta <*>
         Gen.enumBounded
 
-      genIpAddr = C.sequence (C.repeat @4 Gen.enumBounded)
+      genIpAddr :: Gen IPv4Address
+      genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
+
+      genIPv4HeaderLite :: Gen IPv4HeaderLite
       genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> Gen.enumBounded
 
-
-
--- | n mod dataWidth ~ 1
 prop_icmp_receiver_d1 :: Property
 prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
+
+prop_icmp_receiver_d4 :: Property
+prop_icmp_receiver_d4 = icmpReceiverPropertyGenerator d4
+
+prop_icmp_receiver_d16 :: Property
+prop_icmp_receiver_d16 = icmpReceiverPropertyGenerator d16
+
+prop_icmp_receiver_d23 :: Property
+prop_icmp_receiver_d23 = icmpReceiverPropertyGenerator d23
+
+prop_icmp_receiver_d24 :: Property
+prop_icmp_receiver_d24 = icmpReceiverPropertyGenerator d24
+
+prop_icmp_receiver_d25 :: Property
+prop_icmp_receiver_d25 = icmpReceiverPropertyGenerator d25
 
 
 tests :: TestTree

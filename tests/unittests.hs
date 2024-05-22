@@ -19,6 +19,7 @@ import Test.Cores.Ethernet.PaddingInserter qualified
 import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
+import Test.Cores.IP.Icmp qualified
 
 
 main :: IO ()
@@ -41,4 +42,5 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.InternetChecksum.tests
     , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
     , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
+    , Test.Cores.IP.Icmp.tests
   ]
