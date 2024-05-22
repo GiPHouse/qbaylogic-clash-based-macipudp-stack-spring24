@@ -19,6 +19,7 @@ import Clash.Prelude
 import Protocols
 
 import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.IP.IPv4Types
 import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
 import Data.Tuple ( swap )
@@ -51,7 +52,6 @@ startFrameDelimiter = 0xD5
 broadcastMac :: MacAddress
 broadcastMac = MacAddress (repeat 0xFF)
 
-type IPv4Address = Vec 4 (BitVector 8)
 
 -- | Convert an IPv4Address to the corresponding EthernetHeader.
 toEthernetC :: HiddenClockResetEnable dom
