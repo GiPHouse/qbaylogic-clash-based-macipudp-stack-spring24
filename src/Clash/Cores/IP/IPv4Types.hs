@@ -6,6 +6,7 @@ Description : Provides various data types, aliases and constants for IPv4.
 -}
 module Clash.Cores.IP.IPv4Types
   ( IPv4Address(..)
+  , IPv4Header(..)
   , IPv4HeaderLite(..)
   , toLite
   , toLiteC
@@ -52,7 +53,7 @@ toLite :: IPv4Header -> IPv4HeaderLite
 toLite IPv4Header {..} = IPv4HeaderLite
   { _ipv4lSource = _ipv4Source
   , _ipv4lDestination = _ipv4Destination
-  , _ipv4lPayloadLength = _ipv4Length - zeroExtend (4 * _ipv4Ihl)
+  , _ipv4lPayloadLength = _ipv4Length - 20 -- We do not support IHLs other than 5
   }
 
 -- | Shrinks IPv4 headers
