@@ -26,11 +26,13 @@ import Test.Cores.Ethernet.UpConverter qualified
 import Test.Cores.IP.Icmp qualified
 import Test.Cores.IP.IPDepacketizer qualified
 import Test.TinyTapeout.Credits qualified
+import Test.TinyTapeout.IcmpEcho qualified
 
 
 main :: IO ()
 main = defaultMain $ testGroup "."
   [ Test.TinyTapeout.Credits.tests
+    , Test.TinyTapeout.IcmpEcho.tests
     , Test.Cores.Arp.ArpManager.tests
     , Test.Cores.Arp.ArpTable.tests
     , Test.Cores.Arp.ArpTransmitter.tests

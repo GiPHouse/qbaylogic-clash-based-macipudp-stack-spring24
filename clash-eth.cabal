@@ -134,6 +134,7 @@ library
     Clash.TinyTapeout.EthernetMac.TopEntity
     Clash.TinyTapeout.EthernetMac.EthStack
     Clash.TinyTapeout.EthernetMac.Credits
+    Clash.TinyTapeout.EthernetMac.IcmpEcho
   other-modules:
     Clash.Sized.Vector.Extra
     Clash.Signal.Extra
@@ -194,10 +195,12 @@ test-suite test-library
     Test.Cores.IP.Icmp
     Test.Cores.IP.IPDepacketizer
     Test.TinyTapeout.Credits
+    Test.TinyTapeout.IcmpEcho
   build-depends:
     clash-eth,
     QuickCheck,
     hedgehog,
+    clash-prelude-hedgehog,
     clash-cores,
     clash-cores-crc,
     hashable,
