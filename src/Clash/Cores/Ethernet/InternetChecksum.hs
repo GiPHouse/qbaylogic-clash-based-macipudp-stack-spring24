@@ -6,7 +6,8 @@ module Clash.Cores.Ethernet.InternetChecksum
   ( internetChecksum,
     reduceToInternetChecksum,
     pipelinedInternetChecksum,
-    InternetChecksumLatency
+    InternetChecksumLatency,
+    onesComplementAdd
   ) where
 
 import Clash.Prelude
