@@ -12,6 +12,9 @@ module Clash.Cores.Ethernet.PacketStream
   , unsafeToPacketStream
   , fromPacketStream
   , forceResetSanity
+  , filterMetaS
+  , filterMeta
+  , mapMetaS
   , mapMeta
   ) where
 
@@ -191,9 +194,42 @@ forceResetSanity
   f (False, fwd, bwd) = (bwd, fwd)
   rstLow = unsafeToHighPolarity hasReset
 
+-- | Filter a packet stream based on its metadata,
+--   with the predicate wrapped in a @Signal@.
+filterMetaS
+  :: Signal dom (meta -> Bool)
+  -- ^ Predicate which specifies whether to keep a fragment based on its metadata,
+  --   wrapped in a @Signal@
+  -> Circuit (PacketStream dom dataWidth meta) (PacketStream dom dataWidth meta)
+filterMetaS pS = Circuit $ \(fwdIn, bwdIn) -> unbundle (go <$> bundle (fwdIn, bwdIn, pS))
+  where
+    go (Nothing, bwdIn, _) = (bwdIn, Nothing)
+    go (Just inPkt, bwdIn, predicate)
+      | predicate (_meta inPkt) = (bwdIn, Just inPkt)
+      -- It's illegal to look at bwdIn when sending out a Nothing.
+      -- So if we drive a Nothing, force an acknowledgement.
+      | otherwise = (PacketStreamS2M True, Nothing)
+
+-- | Filter a packet stream based on its metadata.
+filterMeta
+  :: (meta -> Bool)
+  -- ^ Predicate which specifies whether to keep a fragment based on its metadata
+  -> Circuit (PacketStream dom dataWidth meta) (PacketStream dom dataWidth meta)
+filterMeta p = filterMetaS (pure p)
+
+-- | Map a function on the metadata of a packet stream,
+--   with the function wrapped in a @Signal@.
+mapMetaS
+  :: Signal dom (a -> b)
+  -- ^ Function to apply on the metadata, wrapped in a @Signal@
+  -> Circuit (PacketStream dom dataWidth a) (PacketStream dom dataWidth b)
+mapMetaS fS = Circuit $ \(fwdIn, bwdIn) -> (bwdIn, go <$> bundle (fwdIn, fS))
+  where
+    go (inp, f) = (\inPkt -> inPkt {_meta = f (_meta inPkt)}) <$> inp
+
+-- | Map a function on the metadata of a packet stream.
 mapMeta
   :: (a -> b)
+  -- ^ Function to apply on the metadata
   -> Circuit (PacketStream dom dataWidth a) (PacketStream dom dataWidth b)
-mapMeta f = fromSignals go
-  where
-    go (fwdIn, bwdIn) = (bwdIn, fmap (fmap f) <$> fwdIn)
+mapMeta f = mapMetaS (pure f)
