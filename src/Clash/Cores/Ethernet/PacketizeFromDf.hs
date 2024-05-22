@@ -16,9 +16,10 @@ import Protocols.Df
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.Ethernet.Util
+import Data.Constraint.Deferrable ( (:~:)(Refl) )
 
 
-type HeaderBufSize headerBytes dataWidth = headerBytes + dataWidth
+type HeaderBufSize headerBytes dataWidth = dataWidth `Max` headerBytes - dataWidth
 
 data DfPacketizerState (metaOut :: Type) (headerBytes :: Nat) (dataWidth :: Nat)
   = Idle
@@ -37,6 +38,7 @@ packetizeFromDfT
             (metaOut :: Type)
             (header :: Type)
             (headerBytes :: Nat)
+            (z :: Nat)
    . NFDataX metaOut
   => BitPack header
   => BitSize header ~ headerBytes * 8
@@ -44,6 +46,9 @@ packetizeFromDfT
   => 1 <= headerBytes `DivRU` dataWidth
   => 1 <= dataWidth
   => KnownNat dataWidth
+  => KnownNat z
+  => z <= dataWidth
+  => Min dataWidth headerBytes + z ~ dataWidth
   => (a -> metaOut)
   -- ^ function that transforms the Df input to the output metadata.
   -> (a -> header)
@@ -54,8 +59,14 @@ packetizeFromDfT
      , (Ack, Maybe (PacketStreamM2S dataWidth metaOut)))
 packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStOut, (bwdOut, Just outPkt))
   where
-    hdrBuf = bitCoerce (toHeader dataIn) ++ repeat @dataWidth defaultByte
-    (newHdrBuf, dataOut) = shiftOutFrom0 (SNat @dataWidth) hdrBuf
+    hdrBuf :: Vec (HeaderBufSize headerBytes dataWidth) (BitVector 8)
+    (hdrBuf, dataOut) = case sameNat (SNat @headerBytes) (SNat @(dataWidth `Max` headerBytes - dataWidth + dataWidth `Min` headerBytes)) of
+      Nothing -> errorX "packetizeFromDfT: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
+      Just Refl -> (v1, v2 ++ repeat defaultByte)
+        where
+          (v1, v2) = splitAt (SNat @(Max dataWidth headerBytes - dataWidth)) rotatedHdr
+          rotatedHdr = rotateRightS (bitCoerce (toHeader dataIn)) (SNat @(Max dataWidth headerBytes - dataWidth))
+
     outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
     (nextSt, bwdOut, newLast) = case compareSNat (SNat @headerBytes) (SNat @dataWidth) of
@@ -64,14 +75,14 @@ packetizeFromDfT toMetaOut toHeader Idle (Data dataIn, bwdIn) = (nextStOut, (bwd
           l = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
             SNatLE -> natToNum @(dataWidth - 1)
             SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
-      SNatGT -> (Insert 0 newHdrBuf, Ack False, Nothing)
+      SNatGT -> (Insert 0 hdrBuf, Ack False, Nothing)
     nextStOut = if _ready bwdIn then nextSt else Idle
 
 -- fwdIn is always Data in this state, because we assert backpressure in Idle before we go here
 -- Thus, we don't need to store the metadata in the state.
 packetizeFromDfT toMetaOut _ st@Insert{..} (Data dataIn, bwdIn) = (nextStOut, (bwdOut, Just outPkt))
   where
-    (newHdrBuf, dataOut) = shiftOutFrom0 (SNat @dataWidth) _hdrBuf
+    (dataOut, newHdrBuf) = splitAt (SNat @dataWidth) (_hdrBuf ++ repeat @dataWidth defaultByte)
     outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
     newLast = toMaybe (_counter == maxBound) $ case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
@@ -94,6 +105,7 @@ packetizeFromDfC
             (metaOut :: Type)
             (header :: Type)
             (headerBytes :: Nat)
+            (z :: Nat)
    . HiddenClockResetEnable dom
   => NFDataX metaOut
   => BitPack header
@@ -101,6 +113,9 @@ packetizeFromDfC
   => KnownNat headerBytes
   => 1 <= dataWidth
   => KnownNat dataWidth
+  => KnownNat z
+  => z <= dataWidth
+  => Min dataWidth headerBytes + z ~ dataWidth
   => (a -> metaOut)
   -- ^ function that transforms the Df input to the output metadata.
   -> (a -> header)

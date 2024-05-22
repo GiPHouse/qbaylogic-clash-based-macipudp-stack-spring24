@@ -38,8 +38,11 @@ genArpLite = ArpLite <$>
           Gen.enumBounded
 
 arpTransmitterPropertyGenerator
-  :: forall (dataWidth :: Nat)
+  :: forall (dataWidth :: Nat) (z :: Nat)
    . 1 <= dataWidth
+  => KnownNat z
+  => z <= dataWidth
+  => Min dataWidth 28 + z ~ dataWidth
   => SNat dataWidth
   -> Property
 arpTransmitterPropertyGenerator SNat =
@@ -70,8 +73,8 @@ prop_arp_transmitter_d1 :: Property
 prop_arp_transmitter_d1 = arpTransmitterPropertyGenerator d1
 
 -- | dataWidth < headerBytes
-prop_arp_transmitter_d11 :: Property
-prop_arp_transmitter_d11 = arpTransmitterPropertyGenerator d11
+prop_arp_transmitter_d15 :: Property
+prop_arp_transmitter_d15 = arpTransmitterPropertyGenerator d11
 
 -- | dataWidth ~ headerBytes
 prop_arp_transmitter_d28 :: Property

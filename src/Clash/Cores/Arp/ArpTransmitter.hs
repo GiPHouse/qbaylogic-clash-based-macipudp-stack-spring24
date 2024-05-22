@@ -22,9 +22,13 @@ import Clash.Cores.IP.IPv4Types
 arpTransmitter
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
+            (z :: Nat)
    . HiddenClockResetEnable dom
   => 1 <= dataWidth
   => KnownNat dataWidth
+  => KnownNat z
+  => z <= dataWidth
+  => Min dataWidth 28 + z ~ dataWidth
   => Signal dom MacAddress
   -- ^ Our MAC address
   -> Signal dom IPv4Address
