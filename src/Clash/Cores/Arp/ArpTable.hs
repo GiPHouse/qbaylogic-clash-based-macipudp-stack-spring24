@@ -7,7 +7,6 @@ Description : Provides an ARP table which is able to hold one ARP entry.
 
 module Clash.Cores.Arp.ArpTable
   ( arpTable
-  , secondTimer
   ) where
 
 import Clash.Prelude
@@ -18,24 +17,10 @@ import Protocols.Df qualified as Df
 import Clash.Cores.Arp.ArpTypes
 
 
--- | This register is @True@ exactly every second.
-secondTimer
-  :: forall (dom :: Domain)
-   . HiddenClockResetEnable dom
-  => KnownNat (DomainPeriod dom)
-  => 1 <= DomainPeriod dom
-  => Signal dom Bool
-secondTimer = case compareSNat d1 (SNat @(10^12 `Div` DomainPeriod dom)) of
-  SNatLE -> isRising 0 $ msb <$> counter
-    where
-      counter :: Signal dom (Index (10^12 `Div` DomainPeriod dom))
-      counter = register maxBound (satPred SatWrap <$> counter)
-  SNatGT -> errorX "secondTimer: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
-
 -- | ARP table that stores one ARP entry in a register. `maxAgeSeconds` is the number of seconds before the
 --   entry will be removed from the table (lazily). The timeout is inaccurate for up to one second less, because
---   the circuit uses a constant counter for efficiency. For example, when `maxAgeSeconds` is set to 30,
---   an entry will expire in 29-30 seconds.
+--   the circuit uses a constant counter for efficiency reasons. For example, when `maxAgeSeconds` is set to 30,
+--   an entry will expire in 29-30 seconds. The clock frequency must be at least 1 Hz for timeouts to work correctly.
 arpTable
   :: forall
     (dom :: Domain)
@@ -43,6 +28,7 @@ arpTable
    . HiddenClockResetEnable dom
   => KnownNat (DomainPeriod dom)
   => 1 <= DomainPeriod dom
+  => DomainPeriod dom <= 10^12
   => 1 <= maxAgeSeconds
   => SNat maxAgeSeconds
   -- ^ The ARP entry will expire after this many seconds
@@ -55,6 +41,7 @@ arpTable SNat = fromSignals ckt
         arpEntry :: Signal dom (ArpEntry, Index (maxAgeSeconds + 1))
         arpEntry = register (errorX "empty initial content", 0) writeCommand
 
+        secondTimer = riseEvery (SNat @(10^12 `Div` DomainPeriod dom))
         writeCommand = fmap go (bundle (insertReq, arpEntry, secondTimer))
           where
             go (req, (entry, secondsLeft), secondPassed) = case req of
