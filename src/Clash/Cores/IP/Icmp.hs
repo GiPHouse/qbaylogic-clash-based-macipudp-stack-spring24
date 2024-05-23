@@ -23,9 +23,9 @@ icmpEchoResponderC ::
   => 1 <= dataWidth
   => Signal dom IPv4Address
   -> Circuit (PacketStream dom dataWidth IPv4HeaderLite) (PacketStream dom dataWidth IPv4HeaderLite)
-icmpEchoResponderC ourIP = icmpReceiverC |> fromSignals (echoReplier ourIP) |> icmpTransmitterC
+icmpEchoResponderC ourIP = icmpReceiverC |> fromSignals (echoResponder ourIP) |> icmpTransmitterC
 
-echoReplier ::
+echoResponder ::
   Signal dom IPv4Address
   -- ^ Our IP address
   -> ( Signal dom (Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)))
@@ -36,7 +36,7 @@ echoReplier ::
       , Signal dom (Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)))
       )
   -- ^ Output packetStream
-echoReplier ourIp (fwdIn, bwdIn) = (bwdIn, fwdOut)
+echoResponder ourIp (fwdIn, bwdIn) = (bwdIn, fwdOut)
   where
     fwdOut = updateMeta <$> ourIp <*> fwdIn
 
