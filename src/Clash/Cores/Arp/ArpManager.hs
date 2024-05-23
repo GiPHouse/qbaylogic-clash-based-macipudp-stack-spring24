@@ -18,18 +18,23 @@ import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.IP.IPv4Types
 
 
--- | This register is @True@ exactly every second.
+-- | This register is @True@ exactly every second if @DomainPeriod dom@ divides @10^12@.
+--   If not, the accuracy depends on the clock frequency, because we round this division
+--   down. In that case, the higher the clock frequency, the more accurate it is.
+--   Does not support clock frequencies lower than 2 Hz.
 secondTimer
   :: forall (dom :: Domain)
    . HiddenClockResetEnable dom
-  => 1 <= DomainPeriod dom
-  => 1 <= 10^12 `Div` DomainPeriod dom
   => KnownNat (DomainPeriod dom)
+  => 1 <= DomainPeriod dom
+  => DomainPeriod dom <= 5 * 10^11
   => Signal dom Bool
-secondTimer = isRising 0 $ msb <$> counter
-  where
-    counter :: Signal dom (Index (10^12 `Div` DomainPeriod dom))
-    counter = register maxBound (satPred SatWrap <$> counter)
+secondTimer = case compareSNat d1 (SNat @(10^12 `Div` DomainPeriod dom)) of
+  SNatLE -> isRising 0 $ msb <$> counter
+    where
+      counter :: Signal dom (Index (10^12 `Div` DomainPeriod dom))
+      counter = register maxBound (satPred SatWrap <$> counter)
+  SNatGT -> errorX "secondTimer: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
 
 -- | State of the ARP manager.
 data ArpManagerState maxWaitSeconds
@@ -49,8 +54,8 @@ arpManagerT
      , (Maybe ArpResponse, (Maybe IPv4Address, Df.Data ArpLite)))
 -- User issues a lookup request. We don't have a timeout, because the ARP table should
 -- always respond within a reasonable time frame. If not, there is a bug in the ARP table.
-arpManagerT AwaitLookup (Just lookupIPv4, arpResponseIn, Ack readyIn, _)
-  = (nextSt, (arpResponseOut, (Just lookupIPv4, arpRequestOut)))
+arpManagerT AwaitLookup (Just lookupIPv4, arpResponseIn, Ack readyIn, _) =
+  (nextSt, (arpResponseOut, (Just lookupIPv4, arpRequestOut)))
     where
       (arpResponseOut, arpRequestOut, nextSt) = case arpResponseIn of
         Nothing
@@ -72,13 +77,13 @@ arpManagerT AwaitLookup (Just lookupIPv4, arpResponseIn, Ack readyIn, _)
 -- We don't care about incoming backpressure, because we do not send ARP requests in this state.
 -- We keep polling the ARP table until either a timeout occurs or the entry is found.
 -- This requires the ARP table to handle read and write requests in parallel.
-arpManagerT AwaitArpReply{..} (Just lookupIPv4, arpResponseIn, _, secondPassed)
-  = (nextSt, (arpResponseOut, (Just lookupIPv4, Df.NoData)))
+arpManagerT AwaitArpReply{..} (Just lookupIPv4, arpResponseIn, _, secondPassed) =
+  (nextSt, (arpResponseOut, (Just lookupIPv4, Df.NoData)))
     where
       newTimer = if secondPassed then satPred SatBound _secondsLeft else _secondsLeft
 
-      (arpResponseOut, nextSt)
-        = case (arpResponseIn, _secondsLeft == 0) of
+      (arpResponseOut, nextSt) =
+        case (arpResponseIn, _secondsLeft == 0) of
           (Just (ArpEntryFound _), _)
             -> (arpResponseIn, AwaitLookup)
           (Just ArpEntryNotFound, True)
@@ -95,14 +100,15 @@ arpManagerT st (Nothing, _,  _, _) = (st, (Nothing, (Nothing, Df.NoData)))
 --   in the ARP table, it will broadcast an ARP request to the local network and wait at most `maxWaitSeconds`
 --   for a reply. If no reply was received within time, the lookup request is ignored. `maxWaitSeconds` is inaccurate
 --   for up to one second less. For example, if `maxWaitSeconds` ~ 30, then the component will wait for 29-30 seconds.
+--   Does not support clock frequencies lower than 2 Hz.
 arpManagerC
   :: forall (dom :: Domain)
             (maxWaitSeconds :: Nat)
    . HiddenClockResetEnable dom
   => KnownDomain dom
-  => 1 <= DomainPeriod dom
-  => 1 <= 10^12 `Div` DomainPeriod dom
   => KnownNat (DomainPeriod dom)
+  => 1 <= DomainPeriod dom
+  => DomainPeriod dom <= 5 * 10^11
   => 1 <= maxWaitSeconds
   => SNat maxWaitSeconds
   -- ^ The amount of seconds we wait for an incoming ARP reply
@@ -111,5 +117,5 @@ arpManagerC SNat = fromSignals ckt
   where
     ckt (lookupIPv4S, (arpResponseInS, ackInS)) = (bwdOut, unbundle fwdOut)
       where
-        (bwdOut, fwdOut)
-          = mealyB arpManagerT (AwaitLookup @maxWaitSeconds) (lookupIPv4S, arpResponseInS, ackInS, secondTimer)
+        (bwdOut, fwdOut) =
+          mealyB arpManagerT (AwaitLookup @maxWaitSeconds) (lookupIPv4S, arpResponseInS, ackInS, secondTimer)
