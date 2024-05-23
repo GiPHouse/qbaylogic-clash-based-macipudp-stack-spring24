@@ -94,6 +94,7 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Arp.ArpManager
     Clash.Cores.Arp.ArpTable
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
@@ -163,6 +164,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Arp.ArpManager
     Test.Cores.Arp.ArpTable
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer

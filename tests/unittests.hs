@@ -2,6 +2,7 @@ import Prelude
 
 import Test.Tasty
 
+import Test.Cores.Arp.ArpManager qualified
 import Test.Cores.Arp.ArpTable qualified
 import Test.Cores.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.AsyncFIFO qualified
@@ -27,7 +28,8 @@ import Test.Cores.IP.IPDepacketizer qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-  [ Test.Cores.Arp.ArpTable.tests
+  [ Test.Cores.Arp.ArpManager.tests
+    , Test.Cores.Arp.ArpTable.tests
     , Test.Cores.Arp.ArpTransmitter.tests
     , Test.Cores.Ethernet.AsyncFIFO.tests
     , Test.Cores.Ethernet.PacketArbiter.tests
