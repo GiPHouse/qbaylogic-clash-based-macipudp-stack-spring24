@@ -50,6 +50,10 @@ common common-options
     -fplugin GHC.TypeLits.Extra.Solver
     -fplugin GHC.TypeLits.Normalise
     -fplugin GHC.TypeLits.KnownNat.Solver
+
+    -- circuit-notation plugin
+    -fplugin Protocols.Plugin
+
     -fconstraint-solver-iterations=10
 
     -- Clash needs access to the source code in compiled modules
@@ -90,6 +94,7 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Arp.ArpTable
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
@@ -98,6 +103,7 @@ library
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.MacPacketizer
+    Clash.Cores.Ethernet.IpPacketizer
     Clash.Cores.Ethernet.PacketizeFromDf
     Clash.Cores.Ethernet.Packetizer
     Clash.Cores.Ethernet.PacketArbiter
@@ -120,6 +126,7 @@ library
     Clash.Cores.IP.IPv4Types
     Clash.Cores.IP.IcmpTypes
     Clash.Cores.IP.Icmp
+    Clash.Cores.IP.IPDepacketizer
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   other-modules:
@@ -156,6 +163,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Arp.ArpTable
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.MacDepacketizer
@@ -169,13 +177,16 @@ test-suite test-library
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
     Test.Cores.Ethernet.PacketBuffer
+    Test.Cores.Ethernet.IpPacketizer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.FrameCheckSequence
     Test.Cores.Ethernet.AsyncFIFO
     Test.Cores.Ethernet.InternetChecksum
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
-    Test.Cores.Ethernet.IP.Icmp
+    Test.Cores.Ethernet.EthernetTypes
+    Test.Cores.IP.Icmp
+    Test.Cores.IP.IPDepacketizer
   build-depends:
     clash-eth,
     QuickCheck,

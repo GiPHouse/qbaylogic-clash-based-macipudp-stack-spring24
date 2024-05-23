@@ -2,8 +2,9 @@
 
 module Clash.Cores.IP.Icmp
   (
-    icmpTransmitterC,
-    icmpEchoResponderC
+    icmpReceiverC
+    , icmpTransmitterC
+    , icmpEchoResponderC
   )
   where
 
@@ -58,7 +59,7 @@ echoResponder ourIp (fwdIn, bwdIn) = (bwdIn, fwdOut)
       IcmpHeaderLite { _typeL = 0 , _checksumL = onesComplementAdd (complement 0x0800) _checksumL }
 
 icmpTransmitterC ::
-  forall (dom :: Domain) (n :: Nat).
+  forall (dom::Domain) (n::Nat).
   HiddenClockResetEnable dom
   => KnownNat n
   => 1 <= n
@@ -76,4 +77,4 @@ icmpReceiverC :: forall (dom :: Domain) (dataWidth :: Nat).
 icmpReceiverC = depacketizerC f
   where
     f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
-    f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type , _checksumL = _checksum})
+    f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})

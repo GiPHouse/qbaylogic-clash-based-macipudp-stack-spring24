@@ -2,38 +2,45 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.IP.Icmp where
+module Test.Cores.IP.Icmp where
 
 -- base
-import Data.Maybe
 import Prelude
 
 -- clash-prelude
+import Clash.Prelude hiding ( concatMap )
 import Clash.Prelude qualified as C
 
 -- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 -- tasty
-import Hedgehog.Range qualified as Range
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
--- clash-cores
-import Clash.Cores.Ethernet.InternetChecksum ( onesComplementAdd )
+-- clash-protocols
+import Protocols.Hedgehog
+
+-- Me
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.Icmp
 import Clash.Cores.IP.IcmpTypes
 import Clash.Cores.IP.IPv4Types
-import Clash.Explicit.Prelude ( complement )
-import Protocols
-import Protocols.Hedgehog
+
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
+import Test.Cores.Ethernet.Util
+
+-- clash-cores
+import Clash.Cores.Ethernet.InternetChecksum ( onesComplementAdd )
+import Protocols
 import Test.Cores.Ethernet.Packetizer ( packetizerModel )
-import Test.Cores.Ethernet.Util ( genValidPacket )
+
+genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
+genVec gen = sequence (C.repeat gen)
 
 genIpAddr :: Gen IPv4Address
 genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
@@ -43,9 +50,6 @@ intToIPv4Addr i = IPv4Address (C.repeat @4 i)
 
 ourIpAddr :: IPv4Address
 ourIpAddr = intToIPv4Addr 0x3
-
-genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
-genVec gen = sequence (C.repeat gen)
 
 genRandomWord :: Gen (PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite))
 genRandomWord = do
@@ -63,6 +67,52 @@ depacketize = depacketizerModel f
   where
     f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
     f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})
+
+icmpReceiverPropertyGenerator
+  :: forall (dataWidth :: Nat).
+  1 <= dataWidth
+  => SNat dataWidth
+  -> Property
+icmpReceiverPropertyGenerator C.SNat =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    (fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets genIPv4HeaderLite)))
+    (C.exposeClockResetEnable model)
+    (C.exposeClockResetEnable @C.System icmpReceiverC)
+    (===)
+    where
+      f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
+      f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})
+
+      model :: [PacketStreamM2S dataWidth IPv4HeaderLite] -> [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
+      model = depacketizerModel f
+
+      genPackets :: Gen IPv4HeaderLite -> Gen (PacketStreamM2S dataWidth IPv4HeaderLite)
+      genPackets genMeta =
+        PacketStreamM2S <$>
+        genVec Gen.enumBounded <*>
+        Gen.maybe Gen.enumBounded <*>
+        genMeta <*>
+        Gen.enumBounded
+
+      testAddress :: Gen IPv4Address
+      testAddress = pure $ IPv4Address (C.repeat 0x00)
+
+      genIPv4HeaderLite :: Gen IPv4HeaderLite
+      genIPv4HeaderLite = IPv4HeaderLite <$> testAddress <*> testAddress <*> pure 0
+
+prop_icmp_receiver_d1 :: Property
+prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
+
+prop_icmp_receiver_d2 :: Property
+prop_icmp_receiver_d2 = icmpReceiverPropertyGenerator d2
+
+prop_icmp_receiver_d3 :: Property
+prop_icmp_receiver_d3 = icmpReceiverPropertyGenerator d3
+
+prop_icmp_receiver_d4 :: Property
+prop_icmp_receiver_d4 = icmpReceiverPropertyGenerator d4
 
 -- | A  test for the working of the echo responder component
 -- The correct updating of the checksum should be tested in hardware
