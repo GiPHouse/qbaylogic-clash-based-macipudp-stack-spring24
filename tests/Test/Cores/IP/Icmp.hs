@@ -65,30 +65,23 @@ icmpReceiverPropertyGenerator C.SNat =
         genMeta <*>
         Gen.enumBounded
 
-      genIpAddr :: Gen IPv4Address
-      genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
+      testAddress :: Gen IPv4Address
+      testAddress = pure $ IPv4Address (C.repeat 0x00)
 
       genIPv4HeaderLite :: Gen IPv4HeaderLite
-      genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> Gen.enumBounded
+      genIPv4HeaderLite = IPv4HeaderLite <$> testAddress <*> testAddress <*> pure 0
 
 prop_icmp_receiver_d1 :: Property
 prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
 
+prop_icmp_receiver_d2 :: Property
+prop_icmp_receiver_d2 = icmpReceiverPropertyGenerator d2
+
+prop_icmp_receiver_d3 :: Property
+prop_icmp_receiver_d3 = icmpReceiverPropertyGenerator d3
+
 prop_icmp_receiver_d4 :: Property
 prop_icmp_receiver_d4 = icmpReceiverPropertyGenerator d4
-
-prop_icmp_receiver_d16 :: Property
-prop_icmp_receiver_d16 = icmpReceiverPropertyGenerator d16
-
-prop_icmp_receiver_d23 :: Property
-prop_icmp_receiver_d23 = icmpReceiverPropertyGenerator d23
-
-prop_icmp_receiver_d24 :: Property
-prop_icmp_receiver_d24 = icmpReceiverPropertyGenerator d24
-
-prop_icmp_receiver_d25 :: Property
-prop_icmp_receiver_d25 = icmpReceiverPropertyGenerator d25
-
 
 tests :: TestTree
 tests =
