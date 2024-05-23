@@ -90,6 +90,7 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Arp.ArpTable
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
@@ -120,6 +121,7 @@ library
     Clash.Cores.IP.IPv4Types
     Clash.Cores.IP.IcmpTypes
     Clash.Cores.IP.Icmp
+    Clash.Cores.IP.IPDepacketizer
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   other-modules:
@@ -156,6 +158,7 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
+    Test.Cores.Arp.ArpTable
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.MacDepacketizer
@@ -175,7 +178,9 @@ test-suite test-library
     Test.Cores.Ethernet.InternetChecksum
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
+    Test.Cores.Ethernet.EthernetTypes
     Test.Cores.IP.Icmp
+    Test.Cores.IP.IPDepacketizer
   build-depends:
     clash-eth,
     QuickCheck,

@@ -2,10 +2,12 @@ import Prelude
 
 import Test.Tasty
 
+import Test.Cores.Arp.ArpTable qualified
 import Test.Cores.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.AsyncFIFO qualified
 import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
+import Test.Cores.Ethernet.EthernetTypes qualified
 import Test.Cores.Ethernet.FrameCheckSequence qualified
 import Test.Cores.Ethernet.InternetChecksum qualified
 import Test.Cores.Ethernet.InterpacketGapInserter qualified
@@ -20,11 +22,12 @@ import Test.Cores.Ethernet.PreambleInserter qualified
 import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
 import Test.Cores.IP.Icmp qualified
-
+import Test.Cores.IP.IPDepacketizer qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-  [ Test.Cores.Arp.ArpTransmitter.tests
+  [ Test.Cores.Arp.ArpTable.tests
+    , Test.Cores.Arp.ArpTransmitter.tests
     , Test.Cores.Ethernet.AsyncFIFO.tests
     , Test.Cores.Ethernet.PacketArbiter.tests
     , Test.Cores.Ethernet.PacketStream.tests
@@ -42,5 +45,7 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.InternetChecksum.tests
     , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
     , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
+    , Test.Cores.Ethernet.EthernetTypes.tests
     , Test.Cores.IP.Icmp.tests
+    , Test.Cores.IP.IPDepacketizer.tests
   ]

@@ -32,7 +32,7 @@ packetizerModel
   -> (metaIn -> header)
   -> [PacketStreamM2S dataWidth metaIn]
   -> [PacketStreamM2S dataWidth metaOut]
-packetizerModel toMetaOut toHeader ps = L.concat (upConvert <$> L.map prependHdr bytePackets)
+packetizerModel toMetaOut toHeader ps = L.concatMap (upConvert . prependHdr) bytePackets
   where
     prependHdr :: [PacketStreamM2S 1 metaIn] -> [PacketStreamM2S 1 metaOut]
     prependHdr fragments = hdr L.++ L.map (\f -> f { _meta = metaOut}) fragments
@@ -62,8 +62,9 @@ packetizeFromDfModel
   -> (a -> header)
   -> [a]
   -> [PacketStreamM2S dataWidth metaOut]
-packetizeFromDfModel toMetaOut toHeader ps = L.concat (upConvert <$> L.map packetize ps)
+packetizeFromDfModel toMetaOut toHeader = L.concatMap (upConvert . packetize)
   where
     packetize :: a -> [PacketStreamM2S 1 metaOut]
-    packetize d = fullPackets $ L.map (\byte -> PacketStreamM2S (byte :> Nil) Nothing (toMetaOut d) False)
-                                      (toList $ bitCoerce (toHeader d))
+    packetize d = fullPackets $
+      L.map (\byte -> PacketStreamM2S (byte :> Nil) Nothing (toMetaOut d) False)
+            (toList $ bitCoerce (toHeader d))

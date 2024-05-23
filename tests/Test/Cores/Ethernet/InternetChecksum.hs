@@ -77,6 +77,24 @@ checkZeroAfterReset d (_:xs) (_:ys) = checkZeroAfterReset d xs ys
 extendInput :: Int -> [(Bool, Maybe x)] -> [(Bool, Maybe x)]
 extendInput delay input = input ++ replicate delay (False, Nothing)
 
+-- | Pure implementation of the RFC1079 internet checksum. Takes complement of
+-- final outcome, unlike some components!
+pureInternetChecksum :: Foldable t => t (C.BitVector 16) -> C.BitVector 16
+pureInternetChecksum = C.complement . fromInteger . foldr (pureOnesComplementAdd . toInteger) 0
+
+-- | Pure 16-bit one's complement sum for integers. Assumes that @a@ can store
+-- large enough integers. Use something like `Int`, not `BitVector 16`.
+pureOnesComplementAdd :: Integral a => a -> a -> a
+pureOnesComplementAdd a b = (a + b) `mod` 65_536 + (a + b) `div` 65_536
+
+-- Tests the one's complement sum
+prop_onescomplementadd :: Property
+prop_onescomplementadd = property $ do
+  a <- forAll $ Gen.int (Range.linear 0 65_536)
+  b <- forAll $ Gen.int (Range.linear 0 65_536)
+  let c = pureOnesComplementAdd a b
+  onesComplementAdd (C.fromIntegral a) (C.fromIntegral b) === C.fromIntegral c
+
 -- Checks whether the checksum succeeds
 prop_checksum_succeed :: Property
 prop_checksum_succeed =
