@@ -71,7 +71,6 @@ testSetChecksumC _ = idWithModelSingleDomain
 
     geb :: forall x . (Enum x, Bounded x) => Gen x
     geb = Gen.enumBounded
-    -- genIpAddr = C.sequence (C.repeat @4 geb)
     genIpAddr = IPv4Address <$> genVec geb
     genIPv4Header = IPv4Header
       <$> pure 4 <*> pure 5 <*> geb <*> geb   --version, ihl, dscp, ecn
