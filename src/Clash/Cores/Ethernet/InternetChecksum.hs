@@ -3,10 +3,11 @@ Module      : Clash.Cores.Ethernet.InternetChecksum
 Description : Functions for computing the RFC1071 internet checksum
 -}
 module Clash.Cores.Ethernet.InternetChecksum
-  ( internetChecksum,
-    reduceToInternetChecksum,
-    pipelinedInternetChecksum,
-    InternetChecksumLatency
+  ( internetChecksum
+  , reduceToInternetChecksum
+  , pipelinedInternetChecksum
+  , InternetChecksumLatency
+  , onesComplementAdd
   ) where
 
 import Clash.Prelude
@@ -15,8 +16,13 @@ import Data.Maybe
 import Clash.Signal.Extra ( registerN )
 import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
 
--- | computes the un-complimented internet checksum of a stream of 16-bit words
--- according to https://datatracker.ietf.org/doc/html/rfc1071
+onesComplementAdd :: BitVector 16 -> BitVector 16 -> BitVector 16
+onesComplementAdd a b = carry + truncated
+  where
+    c :: BitVector 17 = add a b
+    (zeroExtend -> carry, truncated) = split c
+
+-- | computes the un-complimented internet checksum of a stream of 16-bit words according to https://datatracker.ietf.org/doc/html/rfc1071
 -- The checksum and reset are delayed by one clock cycle.
 -- Keep in mind that if "reset" is True in the input tuple, the checksum is
 -- reset to 0 the next cycle so the value of the bitvector is disgarded
@@ -40,13 +46,6 @@ internetChecksum reset inputM = checkSumWithCarry
 
     checkSumWithCarry = carry + truncated
     nextCheckSum = add <$> inp <*> checkSumWithCarry
-
-onesComplementAdd :: BitVector 16 -> BitVector 16 -> BitVector 16
-onesComplementAdd bvA bvB = carry + truncated
-  where
-    (zeroExtend -> carry, truncated) = split checkSum
-    checkSum :: BitVector 17
-    checkSum = add bvA bvB
 
 -- | Computes the internetChecksum of a vector of 16 bit words. Compared to
 -- internetChecksum this is quicker as you can load multiple words per cycle
