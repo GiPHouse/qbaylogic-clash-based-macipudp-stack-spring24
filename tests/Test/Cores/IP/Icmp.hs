@@ -45,11 +45,8 @@ genVec gen = sequence (C.repeat gen)
 genIpAddr :: Gen IPv4Address
 genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
 
-intToIPv4Addr :: C.BitVector 8 -> IPv4Address
-intToIPv4Addr i = IPv4Address (C.repeat @4 i)
-
 ourIpAddr :: IPv4Address
-ourIpAddr = intToIPv4Addr 0x3
+ourIpAddr = IPv4Address (C.repeat @4 0x3)
 
 genRandomWord :: Gen (PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite))
 genRandomWord = do
@@ -126,7 +123,7 @@ prop_icmp_echoResponder_response_type =
     (C.exposeClockResetEnable ckt)
  where
   ckt :: C.HiddenClockResetEnable C.System => Circuit (PacketStream C.System 4 IPv4HeaderLite) (PacketStream C.System 4 IPv4HeaderLite)
-  ckt = icmpEchoResponderC $ pure (intToIPv4Addr 3)
+  ckt = icmpEchoResponderC $ pure ourIpAddr
 
   model :: [PacketStreamM2S 4 IPv4HeaderLite] -> [PacketStreamM2S 4 IPv4HeaderLite]
   model packets = packetizerModel fst snd $ swapAdresses . adjustIcmpType <$> depacketized
