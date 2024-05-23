@@ -23,8 +23,6 @@ module Clash.Cores.Ethernet.EthernetTypes
 
 import Clash.Prelude
 
-import Protocols
-
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.IPv4Types
 import Control.DeepSeq ( NFData )
@@ -84,34 +82,6 @@ hardCodedMac = MacAddress (0x8C :> 0x8C :> 0xAA :> 0xC8 :> 0x2B :> 0xEE :> Nil)
 -- | Broadcast MAC address.
 broadcastMac :: MacAddress
 broadcastMac = MacAddress (repeat 0xFF)
-
-type IPv4Address = Vec 4 (BitVector 8)
-
--- | (Almost) full IPv4 header. Does not contain options field.
-data IPv4Header = IPv4Header
-  { _ipv4Version :: BitVector 4
-  , _ipv4Ihl :: Unsigned 4
-  , _ipv4Dscp :: BitVector 6
-  , _ipv4Ecn :: BitVector 2
-  , _ipv4Length :: Unsigned 16
-  , _ipv4Id :: BitVector 16
-  , _ipv4FlagReserved :: Bool
-  , _ipv4FlagDF :: Bool
-  , _ipv4FlagMF :: Bool
-  , _ipv4FragmentOffset :: BitVector 13
-  , _ipv4Ttl :: Unsigned 8
-  , _ipv4Protocol :: Unsigned 8
-  , _ipv4Checksum :: BitVector 16
-  , _ipv4Source :: IPv4Address
-  , _ipv4Destination :: IPv4Address
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
-
--- | Partial IPv4 header.
-data IPv4HeaderLite = IPv4HeaderLite
-  { _ipv4lSource :: IPv4Address
-  , _ipv4lDestination :: IPv4Address
-  , _ipv4lPayloadLength :: Unsigned 16
-  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
 toLite :: IPv4Header -> IPv4HeaderLite
 toLite IPv4Header {..} = IPv4HeaderLite

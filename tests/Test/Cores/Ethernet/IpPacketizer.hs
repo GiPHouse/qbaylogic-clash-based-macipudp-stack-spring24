@@ -27,6 +27,7 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.IP.IPv4Types
 import Clash.Cores.Ethernet.IpPacketizer
 import Clash.Cores.Ethernet.PacketStream
 
@@ -70,7 +71,8 @@ testSetChecksumC _ = idWithModelSingleDomain
 
     geb :: forall x . (Enum x, Bounded x) => Gen x
     geb = Gen.enumBounded
-    genIpAddr = C.sequence (C.repeat @4 geb)
+    -- genIpAddr = C.sequence (C.repeat @4 geb)
+    genIpAddr = IPv4Address <$> genVec geb
     genIPv4Header = IPv4Header
       <$> pure 4 <*> pure 5 <*> geb <*> geb   --version, ihl, dscp, ecn
       <*> geb <*> geb <*> geb <*> geb <*> geb --length, identification, flags

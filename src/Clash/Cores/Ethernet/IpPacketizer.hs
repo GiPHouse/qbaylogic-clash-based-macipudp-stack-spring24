@@ -79,7 +79,7 @@ setChecksumC = Circuit $ \(fwdInS, bwdInS) ->
     counter :: Signal dom (Index 11)
     buffer = register (ensureSpine defaultBytes) (mux replaceBuffer ipHeader ((<<+ defaultBytes) <$> buffer))
     counter = register 0 $ mux replaceBuffer 10 (satPred SatBound <$> counter)
-    checksum = complement <$> internetChecksum (liftA2 (\x b -> Just (head x, b)) buffer replaceBuffer)
+    checksum = complement <$> internetChecksum replaceBuffer (Just . head <$> buffer)
 
     defaultBytes = errorX "ipPacketizerC: undefined value in header register"
    in (bwdOutS, fwdOutS)
