@@ -179,6 +179,7 @@ test-suite test-library
     Test.Cores.Ethernet.Packetizer
     Test.Cores.Ethernet.MacPacketizer
     Test.Cores.Ethernet.EthernetTypes
+    Test.Cores.IP.Icmp
     Test.Cores.IP.IPDepacketizer
   build-depends:
     clash-eth,
