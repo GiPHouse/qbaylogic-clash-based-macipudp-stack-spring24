@@ -7,8 +7,6 @@ Description : Provides various data types, aliases and constants for the Etherne
 module Clash.Cores.Ethernet.EthernetTypes
   ( MacAddress(..)
   , EthernetHeader(..)
-  , fromLite
-  , fromLiteC
   , Preamble
   , broadcastMac
   , preamble
@@ -17,8 +15,6 @@ module Clash.Cores.Ethernet.EthernetTypes
   , IPv4Address
   , IPv4Header(..)
   , IPv4HeaderLite(..)
-  , toLite
-  , toLiteC
   ) where
 
 import Clash.Prelude
@@ -82,43 +78,3 @@ hardCodedMac = MacAddress (0x8C :> 0x8C :> 0xAA :> 0xC8 :> 0x2B :> 0xEE :> Nil)
 -- | Broadcast MAC address.
 broadcastMac :: MacAddress
 broadcastMac = MacAddress (repeat 0xFF)
-
-toLite :: IPv4Header -> IPv4HeaderLite
-toLite IPv4Header {..} = IPv4HeaderLite
-  { _ipv4lSource = _ipv4Source
-  , _ipv4lDestination = _ipv4Destination
-  , _ipv4lPayloadLength = _ipv4Length - zeroExtend (4 * _ipv4Ihl)
-  }
-
--- | Shrinks IPv4 headers
-toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4HeaderLite)
-toLiteC = Circuit (swap . unbundle . go . bundle)
-  where
-    go = fmap $ B.first $ fmap $ fmap toLite
-
-fromLite :: IPv4HeaderLite -> IPv4Header
-fromLite header = IPv4Header { _ipv4Version = 4
-                             , _ipv4Ihl = ipv4Ihl
-                             , _ipv4Dscp = 0
-                             , _ipv4Ecn = 0
-                             , _ipv4Length = _ipv4lPayloadLength header + zeroExtend (4 * ipv4Ihl)
-                             , _ipv4Id = 0
-                             , _ipv4FlagReserved = False
-                             , _ipv4FlagDF = False
-                             , _ipv4FlagMF = False
-                             , _ipv4FragmentOffset = 0
-                             , _ipv4Ttl = 64
-                             , _ipv4Protocol = 0
-                             , _ipv4Checksum = 0
-                             , _ipv4Source = _ipv4lSource header
-                             , _ipv4Destination = _ipv4lDestination header
-                             }
-  where
-    ipv4Ihl = 5
-
--- | Produce a full IPv4 header from a lite one.
---   Note that this does *not* compute the checksum.
-fromLiteC :: Circuit (PacketStream dom n IPv4HeaderLite) (PacketStream dom n IPv4Header)
-fromLiteC = Circuit (swap . unbundle . go . bundle)
-  where
-    go = fmap $ B.first $ fmap $ fmap fromLite

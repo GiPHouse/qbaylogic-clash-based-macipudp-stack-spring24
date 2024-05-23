@@ -11,6 +11,7 @@ import Clash.Prelude
 import Protocols
 
 import Clash.Cores.Ethernet.EthernetTypes
+import Clash.Cores.IP.IPv4Types
 import Clash.Cores.Ethernet.InternetChecksum
 import Clash.Cores.Ethernet.Packetizer
 import Clash.Cores.Ethernet.PacketStream
