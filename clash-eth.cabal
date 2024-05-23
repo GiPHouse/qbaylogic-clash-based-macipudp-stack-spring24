@@ -50,6 +50,10 @@ common common-options
     -fplugin GHC.TypeLits.Extra.Solver
     -fplugin GHC.TypeLits.Normalise
     -fplugin GHC.TypeLits.KnownNat.Solver
+
+    -- circuit-notation plugin
+    -fplugin Protocols.Plugin
+
     -fconstraint-solver-iterations=10
 
     -- Clash needs access to the source code in compiled modules
@@ -99,6 +103,7 @@ library
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
     Clash.Cores.Ethernet.MacPacketizer
+    Clash.Cores.Ethernet.IpPacketizer
     Clash.Cores.Ethernet.PacketizeFromDf
     Clash.Cores.Ethernet.Packetizer
     Clash.Cores.Ethernet.PacketArbiter
@@ -172,6 +177,7 @@ test-suite test-library
     Test.Cores.Ethernet.DownConverter
     Test.Cores.Ethernet.UpConverter
     Test.Cores.Ethernet.PacketBuffer
+    Test.Cores.Ethernet.IpPacketizer
     Test.Cores.Ethernet.InterpacketGapInserter
     Test.Cores.Ethernet.FrameCheckSequence
     Test.Cores.Ethernet.AsyncFIFO

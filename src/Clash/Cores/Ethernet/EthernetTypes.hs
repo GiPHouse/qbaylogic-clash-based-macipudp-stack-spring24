@@ -1,3 +1,5 @@
+{-# language RecordWildCards #-}
+
 {-|
 Module      : Clash.Cores.Ethernet.EthernetTypes
 Description : Provides various data types, aliases and constants for the Ethernet protocol.
@@ -10,17 +12,19 @@ module Clash.Cores.Ethernet.EthernetTypes
   , preamble
   , startFrameDelimiter
   , toEthernetC
+  , IPv4Address
+  , IPv4Header(..)
+  , IPv4HeaderLite(..)
   ) where
 
 import Clash.Prelude
-
-import Protocols
 
 import Clash.Cores.Ethernet.PacketStream
 import Clash.Cores.IP.IPv4Types
 import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
-import Data.Tuple ( swap )
+import Data.Tuple
+import Protocols
 
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))

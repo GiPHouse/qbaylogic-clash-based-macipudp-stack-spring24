@@ -10,6 +10,8 @@ module Clash.Cores.IP.IPv4Types
   , IPv4HeaderLite(..)
   , toLite
   , toLiteC
+  , fromLite
+  , fromLiteC
   ) where
 
 import Clash.Cores.Ethernet.PacketStream
@@ -61,3 +63,30 @@ toLiteC :: Circuit (PacketStream dom n IPv4Header) (PacketStream dom n IPv4Heade
 toLiteC = Circuit (swap . unbundle . go . bundle)
   where
     go = fmap $ B.first $ fmap $ fmap toLite
+
+fromLite :: IPv4HeaderLite -> IPv4Header
+fromLite header = IPv4Header { _ipv4Version = 4
+                             , _ipv4Ihl = ipv4Ihl
+                             , _ipv4Dscp = 0
+                             , _ipv4Ecn = 0
+                             , _ipv4Length = _ipv4lPayloadLength header + zeroExtend (4 * ipv4Ihl)
+                             , _ipv4Id = 0
+                             , _ipv4FlagReserved = False
+                             , _ipv4FlagDF = False
+                             , _ipv4FlagMF = False
+                             , _ipv4FragmentOffset = 0
+                             , _ipv4Ttl = 64
+                             , _ipv4Protocol = 0
+                             , _ipv4Checksum = 0
+                             , _ipv4Source = _ipv4lSource header
+                             , _ipv4Destination = _ipv4lDestination header
+                             }
+  where
+    ipv4Ihl = 5
+
+-- | Produce a full IPv4 header from a lite one.
+--   Note that this does *not* compute the checksum.
+fromLiteC :: Circuit (PacketStream dom n IPv4HeaderLite) (PacketStream dom n IPv4Header)
+fromLiteC = Circuit (swap . unbundle . go . bundle)
+  where
+    go = fmap $ B.first $ fmap $ fmap fromLite
