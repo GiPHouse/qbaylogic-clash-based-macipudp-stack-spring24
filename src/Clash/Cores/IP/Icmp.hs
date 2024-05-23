@@ -24,39 +24,23 @@ icmpEchoResponderC ::
   => 1 <= dataWidth
   => Signal dom IPv4Address
   -> Circuit (PacketStream dom dataWidth IPv4HeaderLite) (PacketStream dom dataWidth IPv4HeaderLite)
-icmpEchoResponderC ourIP = icmpReceiverC |> fromSignals (echoResponder ourIP) |> icmpTransmitterC
+icmpEchoResponderC ourIP = icmpReceiverC |> mapMetaS (updateMeta <$> ourIP)  |> icmpTransmitterC
 
-echoResponder ::
-  Signal dom IPv4Address
-  -- ^ Our IP address
-  -> ( Signal dom (Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)))
-      , Signal dom PacketStreamS2M
-      )
-  -- ^ Input packetStream
-  -> ( Signal dom PacketStreamS2M
-      , Signal dom (Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)))
-      )
-  -- ^ Output packetStream
-echoResponder ourIp (fwdIn, bwdIn) = (bwdIn, fwdOut)
-  where
-    fwdOut = updateMeta <$> ourIp <*> fwdIn
+updateMeta ::
+  IPv4Address
+  -> (IPv4HeaderLite, IcmpHeaderLite)
+  -> (IPv4HeaderLite, IcmpHeaderLite)
+updateMeta ip (ipv4, icmp) = (adjustIP ip ipv4, adjustIcmp icmp)
 
-    updateMeta ::
-      IPv4Address
-      -> Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite))
-      -> Maybe (PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite))
-    updateMeta ip = fmap $ \a@PacketStreamM2S { _meta = (ipv4, icmp) } ->
-      a { _meta = (adjustIP ip ipv4, adjustIcmp icmp) }
+adjustIP :: IPv4Address -> IPv4HeaderLite -> IPv4HeaderLite
+adjustIP ip hdr@IPv4HeaderLite {..} = hdr {
+  _ipv4lSource = ip
+  , _ipv4lDestination = _ipv4lSource
+}
 
-    adjustIP :: IPv4Address -> IPv4HeaderLite -> IPv4HeaderLite
-    adjustIP ip hdr@IPv4HeaderLite {..} = hdr {
-      _ipv4lSource = ip
-      , _ipv4lDestination = _ipv4lSource
-    }
-
-    adjustIcmp :: IcmpHeaderLite -> IcmpHeaderLite
-    adjustIcmp IcmpHeaderLite {..}  =
-      IcmpHeaderLite { _typeL = 0 , _checksumL = onesComplementAdd (complement 0x0800) _checksumL }
+adjustIcmp :: IcmpHeaderLite -> IcmpHeaderLite
+adjustIcmp IcmpHeaderLite {..}  =
+  IcmpHeaderLite { _typeL = 0 , _checksumL = onesComplementAdd (complement 0x0800) _checksumL }
 
 icmpTransmitterC ::
   forall (dom::Domain) (n::Nat).
