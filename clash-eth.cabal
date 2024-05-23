@@ -164,11 +164,8 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
-<<<<<<< HEAD
-    Test.Cores.Arp.ArpTable
-=======
     Test.Cores.Arp.ArpManager
->>>>>>> faf03b2 (manual test + slight style changes)
+    Test.Cores.Arp.ArpTable
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
     Test.Cores.Ethernet.MacDepacketizer

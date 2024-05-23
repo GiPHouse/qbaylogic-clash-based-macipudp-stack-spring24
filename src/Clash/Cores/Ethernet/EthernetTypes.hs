@@ -1,5 +1,3 @@
-{-# language RecordWildCards #-}
-
 {-|
 Module      : Clash.Cores.Ethernet.EthernetTypes
 Description : Provides various data types, aliases and constants for the Ethernet protocol.
@@ -12,9 +10,6 @@ module Clash.Cores.Ethernet.EthernetTypes
   , preamble
   , startFrameDelimiter
   , toEthernetC
-  , IPv4Address
-  , IPv4Header(..)
-  , IPv4HeaderLite(..)
   ) where
 
 import Clash.Prelude
