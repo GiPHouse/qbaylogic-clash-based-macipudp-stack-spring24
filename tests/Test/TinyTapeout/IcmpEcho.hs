@@ -8,7 +8,7 @@ module Test.TinyTapeout.IcmpEcho where
 import Control.Monad
 import Data.Bits (complement)
 import Data.List (foldl', intersperse)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromJust, isJust)
 import Numeric (showHex)
 import Prelude
 
@@ -40,6 +40,7 @@ import Test.Cores.Ethernet.Util
 -- ethernet modules
 import Clash.Cores.Ethernet.PacketStream
 import Clash.TinyTapeout.EthernetMac.IcmpEcho
+import Test.TinyTapeout.IcmpEcho.PacketFifo qualified as PacketFifo
 
 
 -- Functionality test: does the component generate the correct response packets?
@@ -56,6 +57,20 @@ prop_basic = H.property $ do
     inStream = concatMap (packetToStream ()) inPkts
     outStream = simulateIcmpEchoC inStream
     outPkts = map streamToPacket $ chunkByPacket outStream
+  H.footnote $ pPrintPacketsIEO (zip inPkts expectedPkts) outPkts ""
+  H.assert (outPkts == expectedPkts)
+  where
+    pPrintPair (inp, ex) = pPrintPacketIE inp ex ""
+
+prop_PacketFifo :: H.Property
+prop_PacketFifo = H.property $ do
+  alters <-
+    H.forAll $
+      Gen.list (Range.linear 0 10) (Gen.maybe $ Gen.enum AlterVerLen AlterType)
+  -- alters <- H.forAll $ Gen.list (Range.linear 0 10) (Gen.constant Nothing)
+  (inPkts, expectedPkts) <-
+    mapAndUnzipM (H.forAllWith pPrintPair . genPacket) alters
+  let outPkts = simulatePacketFifo inPkts
   H.footnote $ pPrintPacketsIEO (zip inPkts expectedPkts) outPkts ""
   H.assert (outPkts == expectedPkts)
   where
@@ -92,6 +107,41 @@ simulateIcmpEchoC = catMaybes . simulateC comp simConfig . map Just
   comp =
     C.withClockResetEnable C.systemClockGen C.resetGen C.enableGen icmpEchoC
   simConfig = def{timeoutAfter=1000, ignoreReset=True}
+
+-- Run the packet through the code that is known to work in practice, to see the
+-- tests are good. This code works on the Ethernet level, so we prepend and
+-- subsequently drop an Ethernet header.
+simulatePacketFifo ::
+  [[C.Unsigned 8]] ->
+  [[C.Unsigned 8]]
+simulatePacketFifo inPkts = outPkts
+  where
+    (outPkts, streamIn) = go inPkts streamOut
+    streamOut =
+      C.sample $ snd $
+      PacketFifo.responderStream' C.systemClockGen noReset C.enableGen
+        (C.fromList streamIn) (pure True)
+    go [] _ = ([], [])
+    go (inPkt0:inPkts0) streamOut0 = (outPkt1:outPkts0, streamIn0 ++ streamIn1)
+     where
+      (outPkts0, streamIn1) = go inPkts0 streamOut2
+      streamIn0 =
+        (map (Just . (True,)) $ init inPkt1) ++
+        [Just (False, last inPkt1)] ++ replicate 3 Nothing ++
+        map (const Nothing) outPkt0
+      (streamOut1, streamOut2) = span isJust $ drop (length inPkt1 + 3) streamOut0
+      inPkt1 = ethHeader ++ inPkt0
+      outPkt0 = map (snd . fromJust) streamOut1
+      outPkt1 = drop (length ethHeader) outPkt0
+      ethHeader =
+        [ -- Dst MAC
+          0x52, 0x54, 0x00, 0xeb, 0x9b, 0xd0,
+          -- Src Mac
+          0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          -- EtherType
+          0x08, 0x00
+        ]
+    noReset = C.unsafeFromHighPolarity $ pure False
 
 -- Returns [] when the stream was aborted
 streamToPacket
@@ -131,8 +181,12 @@ data AlterPacket
     -- ^ Alter the IPv4 version field or the Internet Header Length field
   | AlterL3Proto
     -- ^ Alter the level 3 protocol
-  | AlterIpType
-    -- ^ Alter the destination IP address or the ICMP Type/Code
+  | AlterAddress
+    -- ^ Alter the destination IP address
+  | AlterType
+    -- ^ Alter the ICMP Type
+  | AlterCode
+    -- ^ Alter the ICMP Code
   deriving (Enum, Bounded, Show)
 
 -- If the request should not be answered, the reply packet is [].
@@ -150,32 +204,42 @@ genPacket alter = do
     case alter of
       Just AlterL3Proto -> genUnsigned Range.constantBounded
       _ -> pure l3proto
-  ipType1 <-
+  dstIP1 <-
     case alter of
-      Just AlterIpType -> do
-        pos <- genIndex @_ @6 Range.constantBounded
+      Just AlterAddress -> do
+        pos <- genIndex @_ @4 Range.constantBounded
         byte <- genUnsigned Range.constantBounded
-        pure (replaceByte pos byte ipType)
-      _ -> pure ipType
+        pure (replaceByte pos byte dstIP)
+      _ -> pure dstIP
+  icmpType1 <-
+    case alter of
+      Just AlterType -> genUnsigned Range.constantBounded
+      _ -> pure icmpType
+  icmpCode1 <-
+    case alter of
+      Just AlterCode -> genUnsigned Range.constantBounded
+      _ -> pure icmpCode
   random2 <- replicateM 8 $ genUnsigned Range.constantBounded
-  srcIp <- replicateM 4 $ genUnsigned Range.constantBounded
+  srcIP <- replicateM 4 $ genUnsigned Range.constantBounded
   random3 <- replicateM 2 $ genUnsigned Range.constantBounded
   extraLen <- Gen.integral (Range.linear 0 64)
   random5 <- replicateM (extraLen + 4) $ genUnsigned Range.constantBounded
   let
     request cksum =
       verLen1 : random2 ++ [l3proto1] ++ random3 ++
-      srcIp ++ ipType1 ++ cksum ++ random5
+      srcIP ++ dstIP1 ++ [icmpType1, icmpCode1] ++ cksum ++ random5
     request1 = request $ u16toU8s $ checksumIcmp $ request [0,0]
     reply cksum =
       verLen1 : random2 ++ [l3proto] ++ random3 ++
-      take 4 ipType ++ srcIp ++ [0x00, 0x00] ++ cksum ++ random5
+      dstIP ++ srcIP ++ [0x00, 0x00] ++ cksum ++ random5
 
     reply1 = reply $ u16toU8s $ checksumIcmp $ reply [0,0]
     reply2
       | verLen1 == verLen
       , l3proto1 == l3proto
-      , ipType1 == ipType
+      , dstIP1 == dstIP
+      , icmpType1 == icmpType
+      , icmpCode1 == icmpCode
       = reply1
       | otherwise = []
 
@@ -183,7 +247,9 @@ genPacket alter = do
  where
   verLen = 0x45
   l3proto = 0x01
-  ipType = [ 0x0a, 0x00, 0x00, 0x02, 0x08, 0x00 ]
+  dstIP = [ 0x0a, 0x00, 0x00, 0x02]
+  icmpType = 0x08
+  icmpCode = 0x00
 
   replaceByte pos byte xs =
     let (xs1, xs2) = splitAt (fromIntegral pos) xs
@@ -216,8 +282,8 @@ pPrintPacket packet
   | otherwise
   = ("IP ver/len: " ++) . showHex8 verLen . ("\nL3 proto: " ++) .
     showHex8 l3Proto . ("\nSrc IP: " ++) . showHexList srcIp .
-    ("\nDst IP: " ++) . showHexList destIp . ("\nICMP Type: " ++) .
-    showHex8 icmpType . ("\nPayload length: " ++) . shows payLen .
+    ("\nDst IP: " ++) . showHexList destIp . ("\nICMP Type/Code: " ++) .
+    showHexList icmpTC . ("\nPayload length: " ++) . shows payLen .
     ("\nComputed checksum: " ++) . showHex16 checksum . ("\nHex dump:\n" ++) .
     showDump packet . ('\n':)
  where
@@ -227,7 +293,7 @@ pPrintPacket packet
   packet5 = tail packet4
   (srcIp, packet6) = splitAt 4 $ drop 2 packet5
   (destIp, packet7) = splitAt 4 packet6
-  icmpType = head packet7
+  icmpTC = take 2 packet7
   payLen = length packet7 - 8
   checksum = checksumIcmp packet
 

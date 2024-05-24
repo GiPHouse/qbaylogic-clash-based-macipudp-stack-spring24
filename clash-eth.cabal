@@ -178,6 +178,7 @@ test-suite test-library
     Test.Cores.Ethernet.MacPacketizer
     Test.TinyTapeout.Credits
     Test.TinyTapeout.IcmpEcho
+    Test.TinyTapeout.IcmpEcho.PacketFifo
   build-depends:
     clash-eth,
     QuickCheck,
