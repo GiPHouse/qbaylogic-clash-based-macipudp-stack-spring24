@@ -30,7 +30,7 @@ jobs:
           run: |
             mkdir /tmp
             cd work
-            cabal test test-library --verbose=0
+            cabal test test-library --test-show-details=streaming
       - name: Synthesize-clash
         uses: addnab/docker-run-action@v3
         with:
