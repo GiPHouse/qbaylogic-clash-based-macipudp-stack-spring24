@@ -16,8 +16,7 @@ import Control.DeepSeq ( NFData )
 data IcmpHeader = IcmpHeader {
   _type :: BitVector 8,
   _code :: BitVector 8,
-  _checksum :: BitVector 16,
-  _restofheader :: BitVector 32
+  _checksum :: BitVector 16
   } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
 -- | Small ICMP header with only the type
