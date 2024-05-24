@@ -1,5 +1,7 @@
 name: "Linters"
-on: [push, pull_request]
+on:
+  push:
+    branches: [ develop ]
 jobs:
   linters:
     runs-on: ubuntu-latest
