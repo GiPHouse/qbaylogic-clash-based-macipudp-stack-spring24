@@ -321,6 +321,6 @@ pPrintPacketsIEO inpExps outs = go (0 :: Int) inpExps (map Just outs)
 
 tests :: TestTree
 tests =
---     localOption (mkTimeout 12_000_000 {- 12 seconds -})
---   $ localOption (HedgehogTestLimit (Just 1_000))
+    localOption (mkTimeout 12_000_000 {- 12 seconds -})
+  $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)
