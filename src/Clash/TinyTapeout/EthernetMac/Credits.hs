@@ -19,7 +19,8 @@ creditsStr = L.concat
   , "\n\tBryan Rinders"
   , "\n\tMatthijs Muis"
   , "\n\tRowan Goemans"
-  , "\n\n ==> Sponsored by QbayLogic <==\n"
+  , "\n\tPeter Lebbing"
+  , "\n\n ==> Sponsored by QbayLogic <=="
   ]
 
 chunkList :: Int -> [a] -> [[a]]
