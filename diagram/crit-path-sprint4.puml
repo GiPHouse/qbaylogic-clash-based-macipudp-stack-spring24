@@ -1,0 +1,44 @@
+@startuml
+state "Implement IP packetizer" as IPPack
+state "Implement IP depacketizer" as IPDepack
+state "Implement ARP receiver" as ARPRcv
+state "IP loopback hardware test" as IPLoop
+state "Implement multi-entry ARP table" as ARPTable
+state "Implement ARP top level module" as ARPMod
+state "Implement ArpManager" as ArpMan
+state "Implement ICMP receiver" as ICMPRecv
+state "Implement ICMP transmitter" as ICMPTrans
+state "Implement ICMP top level module" as ICMPMod
+state "Implement IP to Ethernet stream\ntransformer using ARP module" as IPARP
+state "Writer proper README with\ncomparsion to other open source\nethernet stacks" as README
+state "Remake package structure" as PKG
+state "Write MAC stack TX example" as MACTX
+state "Write MAC stack RX example" as MACRX
+state "Write MAC stack TX+RX example" as MACTXRX
+state "Strip FC in FCSValidator" as FCSSTRIP
+state "Optimize resource usage of\npacketizeFromDfC" as optDepackDfC
+
+[*] -down-> IPPack
+[*] -down-> IPDepack
+[*] -down-> ARPRcv
+IPPack -down-> IPLoop
+IPDepack -down-> IPLoop
+[*] -down-> ARPTable
+[*] -down-> ARPMan
+ARPMod -up-> ARPMan
+ARPMod -up-> ARPRcv
+[*] --> ICMPRecv
+[*] --> ICMPTrans
+ICMPMod -up-> ICMPRecv
+ICMPMod -up-> ICMPTrans
+IPARP -down-> IPPack
+IPARP -> ARPMod
+[*] -up-> README
+[*] -up-> PKG
+[*] -up-> MACTX
+[*] -up-> MACRX
+[*] -up-> MACTXRX
+[*] -up-> FCSSTRIP
+[*] -up-> optDepackDfC
+[*] -up-> ArpMan
+@enduml
