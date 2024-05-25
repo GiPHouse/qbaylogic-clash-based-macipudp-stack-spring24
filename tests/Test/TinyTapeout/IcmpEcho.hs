@@ -194,17 +194,12 @@ genPacket alter = do
 checksumIcmp
   :: [C.Unsigned 8]
   -> C.Unsigned 16
-checksumIcmp xs =
-  complement $ foldl' (~+~) 0 $ map to16 $ parts $ take 8 $ drop 20 xs
- where
-  parts []  = []
-  parts xs1 = let (xs2, xs3) = splitAt 2 xs1 in xs2:parts xs3
-  to16 :: [C.Unsigned 8] -> C.Unsigned 16
-  to16 xs1 =
-    let
-      hi = C.resize $ head xs1
-      lo = C.resize $ head (tail xs1)
-    in 256 * hi + lo
+checksumIcmp xs = complement $ foldl' (~+~) 0 $ to16 $ drop 20 xs
+  where
+    to16 :: [C.Unsigned 8] -> [C.Unsigned 16]
+    to16 [] = []
+    to16 [y0] = to16 [y0,0]
+    to16 (y0:y1:ys) = C.bitCoerce (y0 C.:> y1 C.:> C.Nil) : to16 ys
 
 u16toU8s
   :: C.Unsigned 16
