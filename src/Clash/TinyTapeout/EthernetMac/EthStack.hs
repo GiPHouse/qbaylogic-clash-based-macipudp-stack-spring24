@@ -36,7 +36,7 @@ import Clash.Cores.Ethernet.Util (toMaybe)
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
 
-type CreditsBlobWords = 91
+type CreditsBlobWords = 98
 creditsBlob :: MemBlob CreditsBlobWords 16
 creditsBlob = $(memBlobTH Nothing $ creditsBV d2)
 
