@@ -1,7 +1,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Arp.ArpTransmitter where
+module Test.Cores.Ethernet.Arp.ArpTransmitter where
 
 import Prelude
 
@@ -25,7 +25,7 @@ import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Packetizer
+import Test.Protocols.Extra.PacketStream.Packetizer
 
 
 genVec :: (KnownNat n, 1 <= n) => Gen a -> Gen (Vec n a)

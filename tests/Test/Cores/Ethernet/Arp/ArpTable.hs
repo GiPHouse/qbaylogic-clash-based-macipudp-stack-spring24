@@ -3,7 +3,7 @@
 {-# language RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Test.Cores.Arp.ArpTable where
+module Test.Cores.Ethernet.Arp.ArpTable where
 
 -- base
 import Prelude

@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.MacPacketizer where
+module Test.Cores.Ethernet.Mac.MacPacketizer where
 
 -- base
 import Prelude
@@ -30,8 +30,8 @@ import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macPacketizerC )
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Packetizer ( packetizerModel )
 import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

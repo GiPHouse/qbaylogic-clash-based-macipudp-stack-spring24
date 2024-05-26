@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.InternetChecksum where
+module Test.Cores.Ethernet.IP.InternetChecksum where
 
 -- base
 import Data.Maybe

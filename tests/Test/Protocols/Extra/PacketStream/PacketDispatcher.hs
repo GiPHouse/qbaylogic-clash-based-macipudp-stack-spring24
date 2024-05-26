@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.PacketDispatcher where
+module Test.Protocols.Extra.PacketStream.PacketDispatcher where
 
 -- base
 import Prelude

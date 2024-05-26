@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.PacketStream where
+module Test.Protocols.Extra.PacketStream where
 
 -- base
 import Data.Proxy

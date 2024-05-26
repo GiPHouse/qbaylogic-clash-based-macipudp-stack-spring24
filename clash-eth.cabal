@@ -160,32 +160,32 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
-    Test.Cores.Arp.ArpManager
-    Test.Cores.Arp.ArpReceiver
-    Test.Cores.Arp.ArpTable
-    Test.Cores.Arp.ArpTransmitter
-    Test.Cores.Ethernet.Depacketizer
-    Test.Cores.Ethernet.MacDepacketizer
+    Test.Cores.Ethernet.Arp.ArpManager
+    Test.Cores.Ethernet.Arp.ArpReceiver
+    Test.Cores.Ethernet.Arp.ArpTable
+    Test.Cores.Ethernet.Arp.ArpTransmitter
+    Test.Protocols.Extra.PacketStream.Depacketizer
+    Test.Cores.Ethernet.Mac.MacDepacketizer
     Test.Cores.Ethernet.Util
-    Test.Cores.Ethernet.PacketArbiter
-    Test.Cores.Ethernet.PacketStream
-    Test.Cores.Ethernet.PaddingInserter
-    Test.Cores.Ethernet.PacketDispatcher
-    Test.Cores.Ethernet.PreambleInserter
-    Test.Cores.Ethernet.PreambleStripper
-    Test.Cores.Ethernet.DownConverter
-    Test.Cores.Ethernet.UpConverter
-    Test.Cores.Ethernet.PacketBuffer
-    Test.Cores.Ethernet.IpPacketizer
-    Test.Cores.Ethernet.InterpacketGapInserter
-    Test.Cores.Ethernet.FrameCheckSequence
-    Test.Cores.Ethernet.AsyncFIFO
-    Test.Cores.Ethernet.InternetChecksum
-    Test.Cores.Ethernet.Packetizer
-    Test.Cores.Ethernet.MacPacketizer
-    Test.Cores.Ethernet.EthernetTypes
-    Test.Cores.IP.Icmp
-    Test.Cores.IP.IPDepacketizer
+    Test.Protocols.Extra.PacketStream.PacketArbiter
+    Test.Protocols.Extra.PacketStream
+    Test.Cores.Ethernet.Mac.PaddingInserter
+    Test.Protocols.Extra.PacketStream.PacketDispatcher
+    Test.Cores.Ethernet.Mac.PreambleInserter
+    Test.Cores.Ethernet.Mac.PreambleStripper
+    Test.Protocols.Extra.PacketStream.DownConverter
+    Test.Protocols.Extra.PacketStream.UpConverter
+    Test.Protocols.Extra.PacketStream.PacketBuffer
+    Test.Cores.Ethernet.IP.IPPacketizer
+    Test.Cores.Ethernet.Mac.InterpacketGapInserter
+    Test.Cores.Ethernet.Mac.FrameCheckSequence
+    Test.Cores.Ethernet.Mac.AsyncFIFO
+    Test.Cores.Ethernet.IP.InternetChecksum
+    Test.Protocols.Extra.PacketStream.Packetizer
+    Test.Cores.Ethernet.Mac.MacPacketizer
+    Test.Cores.Ethernet.Mac.EthernetTypes
+    Test.Cores.Ethernet.Icmp
+    Test.Cores.Ethernet.IP.IPDepacketizer
   build-depends:
     clash-eth,
     QuickCheck,

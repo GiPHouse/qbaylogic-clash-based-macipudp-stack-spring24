@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.PaddingInserter where
+module Test.Cores.Ethernet.Mac.PaddingInserter where
 
 -- base
 import Prelude

@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.IpPacketizer where
+module Test.Cores.Ethernet.IP.IPPacketizer where
 
 -- base
 import Control.Monad
@@ -31,10 +31,10 @@ import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Packetizer ( packetizerModel )
 import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
 
-import Test.Cores.Ethernet.InternetChecksum ( pureInternetChecksum )
+import Test.Cores.Ethernet.IP.InternetChecksum ( pureInternetChecksum )
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

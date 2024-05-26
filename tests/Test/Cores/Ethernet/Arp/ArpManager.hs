@@ -3,7 +3,7 @@
 {-# language RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Test.Cores.Arp.ArpManager where
+module Test.Cores.Ethernet.Arp.ArpManager where
 
 import Prelude
 

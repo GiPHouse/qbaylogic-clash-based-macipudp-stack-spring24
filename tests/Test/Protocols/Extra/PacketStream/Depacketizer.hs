@@ -1,7 +1,7 @@
 {-# language FlexibleContexts #-}
 {-# language NumericUnderscores #-}
 
-module Test.Cores.Ethernet.Depacketizer
+module Test.Protocols.Extra.PacketStream.Depacketizer
   (tests, depacketizerModel, depacketizeToDfModel) where
 
 -- hedgehog

@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Arp.ArpReceiver where
+module Test.Cores.Ethernet.Arp.ArpReceiver where
 
 import Clash.Prelude
 
@@ -25,9 +25,9 @@ import Clash.Cores.Ethernet.Arp.ArpTypes
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers ( depacketizeToDfC )
-import Test.Cores.Ethernet.Depacketizer
-import Test.Cores.Ethernet.Packetizer
 import Test.Cores.Ethernet.Util ( fullPackets )
+import Test.Protocols.Extra.PacketStream.Depacketizer
+import Test.Protocols.Extra.PacketStream.Packetizer
 
 -- ip
 import Clash.Cores.Ethernet.IP.IPv4Types

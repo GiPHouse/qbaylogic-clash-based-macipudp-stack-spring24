@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.InterpacketGapInserter where
+module Test.Cores.Ethernet.Mac.InterpacketGapInserter where
 
 -- base
 import Prelude

@@ -1,6 +1,6 @@
 {-# language FlexibleContexts #-}
 
-module Test.Cores.Ethernet.Packetizer
+module Test.Protocols.Extra.PacketStream.Packetizer
   ( packetizerModel
   , packetizeFromDfModel
   ) where

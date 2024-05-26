@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.IP.Icmp where
+module Test.Cores.Ethernet.Icmp where
 
 -- base
 import Prelude
@@ -31,13 +31,13 @@ import Clash.Cores.Ethernet.Icmp.IcmpTypes
 import Clash.Cores.Ethernet.IP.IPv4Types
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Depacketizer ( depacketizerModel )
 
 -- clash-cores
 import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Protocols
-import Test.Cores.Ethernet.Packetizer ( packetizerModel )
+import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

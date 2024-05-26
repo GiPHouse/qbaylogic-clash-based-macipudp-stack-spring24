@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.UpConverter where
+module Test.Protocols.Extra.PacketStream.UpConverter where
 
 -- base
 import Prelude

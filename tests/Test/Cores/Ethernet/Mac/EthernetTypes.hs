@@ -1,7 +1,7 @@
 {-# language FlexibleContexts #-}
 {-# language NumericUnderscores #-}
 
-module Test.Cores.Ethernet.EthernetTypes where
+module Test.Cores.Ethernet.Mac.EthernetTypes where
 
 -- base
 import Prelude

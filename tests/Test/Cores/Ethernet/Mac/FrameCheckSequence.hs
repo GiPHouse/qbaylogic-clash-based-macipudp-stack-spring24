@@ -6,7 +6,7 @@
 {-# language ScopedTypeVariables #-}
 {-# language TemplateHaskell #-}
 
-module Test.Cores.Ethernet.FrameCheckSequence where
+module Test.Cores.Ethernet.Mac.FrameCheckSequence where
 
 -- base
 import Prelude

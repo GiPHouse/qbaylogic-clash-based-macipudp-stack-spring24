@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.PacketArbiter where
+module Test.Protocols.Extra.PacketStream.PacketArbiter where
 
 -- base
 import Data.List ( groupBy, sortOn )
