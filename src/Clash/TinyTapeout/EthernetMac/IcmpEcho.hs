@@ -20,8 +20,10 @@ type DataWidth = 2
 
 type IpAddress = Vec 2 (Vec DataWidth (BitVector 8))
 
+-- Manually add an ARP entry on linux
+-- arp -s 10.0.0.2 5E:A4:4E:F4:21:06
 stationAddress :: IpAddress
-stationAddress = unpack 0x0a_00_00_02
+stationAddress = bitCoerce $ (10 :: BitVector 8) :> 0 :> 0 :> 2 :> Nil
 
 data Fsm
   = IpVerLen

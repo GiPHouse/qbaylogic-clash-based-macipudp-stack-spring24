@@ -25,7 +25,6 @@ import Protocols ( toSignals, (|>) )
 import Clash.TinyTapeout.EthernetMac.EthStack (stackSeperateDoms)
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
-$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
 
 data SDRAMOut domain = SDRAMOut
   {
@@ -82,7 +81,6 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx _eth1_rx =
       = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
         |> exposeClockResetEnable (stackSeperateDoms ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
         |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
-
 
     -- phyStack
     --   = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn

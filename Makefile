@@ -44,13 +44,16 @@ python_test: /run/netns/colorlight prog
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
-verilog=verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/topEntity.v
+target=Clash.Lattice.ECP5.Colorlight.TopEntity
+# target=Clash.TinyTapeout.EthernetMac.TopEntity
+
+verilog=verilog/${target}.topEntity/topEntity.v
 netlist=netlist/synth.json
 pnr=netlist/pnr.cfg
 bitstream=netlist/clash-eth.bit
 
 ${verilog}: ${HASKELL_SOURCES}
-	cabal run clash -- Clash.Lattice.ECP5.Colorlight.TopEntity --verilog -g -fclash-clear
+	cabal run clash -- ${target} --verilog -g -fclash-clear
 
 .PHONY: verilog
 verilog: $(verilog)
@@ -62,7 +65,7 @@ ${netlist}: ${verilog}
 		-p "synth_ecp5 -no-rw-check -abc2 -top topEntity" \
 		-p "ecp5_infer_bram_outreg" \
 		-p "write_json ${netlist}" \
-		verilog/Clash.Lattice.ECP5.Colorlight.TopEntity.topEntity/*.v
+		verilog/${target}.topEntity/*.v
 
 .PHONY: netlist
 netlist: $(netlist)

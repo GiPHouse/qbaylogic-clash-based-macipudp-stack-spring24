@@ -36,10 +36,10 @@ topEntity
   -> "rstN" ::: Reset DomEthRx
   -> "" ::: MIIRXChannel DomEthRx
   -> "" ::: MIITXChannel DomEthTx
-topEntity rxClk txClk rawRst rxChannel = undefined -- snd $ ckt (rxChannel, pure ())
+topEntity rxClk txClk rawRst rxChannel = snd $ ckt (rxChannel, pure ())
   where
     rxRst = resetSynchronizer rxClk rawRst
     txRst = convertReset rxClk txClk rawRst
-    -- ckt = toSignals $ exposeClockResetEnable (miiStack rxClk rxRst) txClk txRst enableGen
+    ckt = toSignals $ exposeClockResetEnable (miiStack rxClk rxRst) txClk txRst enableGen
 
 makeTopEntity 'topEntity

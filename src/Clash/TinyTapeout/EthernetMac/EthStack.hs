@@ -9,8 +9,9 @@ import qualified Clash.Explicit.Prelude as E
 import Data.Proxy
 
 import Protocols
+import qualified Protocols.DfConv as DfConv
 
-import Clash.Cores.Crc (HardwareCrc)
+import Clash.Cores.Crc (deriveHardwareCrc)
 import Clash.Cores.Crc.Catalog (Crc32_ethernet)
 
 import Clash.Cores.Ethernet.MII
@@ -37,12 +38,9 @@ import Clash.TinyTapeout.EthernetMac.IcmpEcho
 import Data.Maybe (isNothing, isJust)
 import Clash.Cores.Ethernet.Util (toMaybe)
 
--- $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d2)
 
-type CreditsBlobWords = 114
-
-creditsBlob :: MemBlob CreditsBlobWords 16
-creditsBlob = $(memBlobTH Nothing $ creditsBV d2)
+createMemBlob @(BitVector 16) "creditsBlob" Nothing (creditsBV d2)
 
 creditsC
   :: HiddenClockResetEnable dom
@@ -64,7 +62,9 @@ creditsC = fromSignals go
     go (fwdIn, bwdIn) = (bwdOut, fwdOut)
       where
         romOut = romBlob creditsBlob addr
-        (addr, bwdOut, fwdOut) = mealyB goT (0 :: Index CreditsBlobWords) (romOut, fwdIn, bwdIn)
+        cntInit :: KnownNat n => MemBlob n 16 -> Index n
+        cntInit _ = 0
+        (addr, bwdOut, fwdOut) = mealyB goT (cntInit creditsBlob) (romOut, fwdIn, bwdIn)
 
 ethernetEndpoints
   :: HiddenClockResetEnable dom
@@ -72,15 +72,13 @@ ethernetEndpoints
 ethernetEndpoints = circuit $ \eth -> do
   let withEthType typ hdr = typ == _etherType hdr
 
-  [echoEth, creditsEth, icmpEchoEth] <-
-    packetDispatcherC (withEthType 0x2001 :> withEthType 0x2002 :>
-                       withEthType 0x0800 :> Nil) -< eth
+  [creditsEth, icmpEchoEth] <-
+    packetDispatcherC (withEthType 0x2002 :> withEthType 0x0800 :> Nil) -< eth
 
   credits <- creditsC -< creditsEth
-
   icmpEcho <- icmpEchoC -< icmpEchoEth
 
-  packetArbiterC RoundRobin -< [echoEth, credits, icmpEcho]
+  packetArbiterC RoundRobin -< [credits, icmpEcho]
 
 broadcastMacAddress :: MacAddress
 broadcastMacAddress = MacAddress $ repeat 0xFF
@@ -91,15 +89,14 @@ myMacAddress = MacAddress $ 0x5E :> 0xA4 :> 0x4E :> 0xF4 :> 0x21 :> 0x06 :> Nil
 stack
   :: HiddenClockResetEnable domTx
   => KnownDomain domRx
-  => HardwareCrc Crc32_ethernet 8 2
   => Clock domRx
   -> Reset domRx
   -> Enable domRx
   -> Circuit (PacketStream domRx 1 ()) (PacketStream domTx 1 ())
 stack clkRx rstRx enRx = ckt
   where
-    meOrBroadcast m = m == myMacAddress || m == broadcastMacAddress
     swapMac hdr@EthernetHeader {..} = hdr { _macSrc = myMacAddress, _macDst = _macSrc}
+    meOrBroadcast m = m == myMacAddress || m == broadcastMacAddress
     ckt = (exposeClockResetEnable preambleStripperC clkRx rstRx enRx)
             |> (exposeClockResetEnable (upConverterC @2) clkRx rstRx enRx)
             |> asyncFifoC d4 clkRx rstRx enRx hasClock hasReset hasEnable
@@ -118,7 +115,6 @@ stack clkRx rstRx enRx = ckt
 miiStack
   :: HiddenClockResetEnable domTx
   => KnownDomain domRx
-  => HardwareCrc Crc32_ethernet 8 2
   => Clock domRx
   -> Reset domRx
   -> Circuit (MIIRXChannel domRx) (MIITXChannel domTx)
@@ -139,7 +135,6 @@ stackSeperateDoms
   => KnownDomain domEthRx
   => KnownDomain domEthTx
   => HiddenClockResetEnable dom
-  => HardwareCrc Crc32_ethernet 8 2
   => Clock domEthRx
   -> Reset domEthRx
   -> Enable domEthRx
@@ -153,6 +148,8 @@ stackSeperateDoms rxClk rxRst rxEn txClk txRst txEn = ckt
     swapMac hdr@EthernetHeader {..} = hdr { _macSrc = myMacAddress, _macDst = _macSrc}
     ckt = rxStack @2 rxClk rxRst rxEn (pure myMacAddress)
             |> filterMeta (meOrBroadcast . _macDst)
+            |> DfConv.registerFwd Proxy Proxy
             |> ethernetEndpoints
+            |> DfConv.registerFwd Proxy Proxy
             |> mapMeta swapMac
             |> txStack txClk txRst txEn
