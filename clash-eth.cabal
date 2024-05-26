@@ -98,8 +98,6 @@ library
   exposed-modules:
     Clash.Cores.Ethernet.Arp.ArpManager
     Clash.Cores.Ethernet.Arp.ArpTable
-    Clash.Cores.Ethernet.Arp.ArpReceiver
-    Clash.Cores.Ethernet.Arp.ArpTransmitter
     Clash.Cores.Ethernet.Arp.ArpTypes
     Clash.Cores.Ethernet.Examples.EchoStack
     Clash.Cores.Ethernet.Examples.RxStack
@@ -114,6 +112,7 @@ library
     Clash.Cores.Ethernet.Mac.MacPacketizers
     Clash.Cores.Ethernet.Mac.PaddingInserter
     Clash.Cores.Ethernet.Mac.Preamble
+    Clash.Cores.Ethernet.Arp
     Clash.Cores.Ethernet.Icmp
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.TopEntity

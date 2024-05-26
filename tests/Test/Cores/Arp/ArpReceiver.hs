@@ -18,19 +18,19 @@ import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
 -- arp
-import Clash.Cores.Arp.ArpReceiver
-import Clash.Cores.Arp.ArpTypes
+import Clash.Cores.Ethernet.Arp ( arpReceiverC )
+import Clash.Cores.Ethernet.Arp.ArpTypes
 
 -- ethernet
-import Clash.Cores.Ethernet.DepacketizeToDf ( depacketizeToDfC )
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.Packetizers ( depacketizeToDfC )
 import Test.Cores.Ethernet.Depacketizer
 import Test.Cores.Ethernet.Packetizer
 import Test.Cores.Ethernet.Util ( fullPackets )
 
 -- ip
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.IP.IPv4Types
 
 -- protocols hedgehog
 import Protocols.Hedgehog
