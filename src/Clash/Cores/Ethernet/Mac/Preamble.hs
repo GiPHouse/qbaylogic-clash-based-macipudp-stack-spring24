@@ -11,8 +11,7 @@ import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
 import Protocols
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.Depacketizer
-import Protocols.Extra.PacketStream.Packetizer
+import Protocols.Extra.PacketStream.Packetizers
 
 
 -- | Prepends the ethernet preamble to the packet stream, for each individual packet.

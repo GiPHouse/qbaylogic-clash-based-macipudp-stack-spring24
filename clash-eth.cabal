@@ -121,10 +121,8 @@ library
     Clash.Lattice.ECP5.RGMII
     Protocols.Extra.PacketStream.AsyncFIFO
     Protocols.Extra.PacketStream.Converters
-    Protocols.Extra.PacketStream.Depacketizer
     Protocols.Extra.PacketStream.PacketBuffer
-    Protocols.Extra.PacketStream.PacketizeFromDf
-    Protocols.Extra.PacketStream.Packetizer
+    Protocols.Extra.PacketStream.Packetizers
     Protocols.Extra.PacketStream.PacketRouting
     Protocols.Extra.PacketStream
   other-modules:

@@ -18,8 +18,7 @@ import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address, IPv4HeaderLite(..) )
 import Clash.Prelude
 import Protocols ( Circuit, fromSignals, (|>) )
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.Depacketizer ( depacketizerC )
-import Protocols.Extra.PacketStream.Packetizer ( packetizerC )
+import Protocols.Extra.PacketStream.Packetizers ( depacketizerC, packetizerC )
 
 icmpEchoResponderC ::
   forall (dom :: Domain) (dataWidth :: Nat).

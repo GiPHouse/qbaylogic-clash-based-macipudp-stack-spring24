@@ -15,7 +15,7 @@ import Protocols.Df qualified as Df
 
 import Clash.Cores.Ethernet.Arp.ArpTypes
 import Clash.Cores.Ethernet.IP.IPv4Types
-import Protocols.Extra.PacketStream.PacketizeFromDf
+import Protocols.Extra.PacketStream.Packetizers ( packetizeFromDfC )
 
 
 -- | Transmits ARP packets upon request.

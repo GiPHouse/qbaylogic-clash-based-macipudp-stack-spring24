@@ -18,8 +18,7 @@ import Data.Maybe
 import Data.Type.Equality
 import Protocols
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.Depacketizer ( depacketizerC )
-import Protocols.Extra.PacketStream.Packetizer
+import Protocols.Extra.PacketStream.Packetizers
 
 
 -- | Packetize a packet stream with the IPv4HeaderLite meta data
