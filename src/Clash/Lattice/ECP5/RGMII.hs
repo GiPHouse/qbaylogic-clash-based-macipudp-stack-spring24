@@ -13,7 +13,6 @@ To keep this module generic users will have to provide their own "primitive" fun
 Note that Clash models a DDR signal as being twice as fast, thus both facilitating
 and requiring type-level separation between the two "clock domains".
 -}
-
 module Clash.Lattice.ECP5.RGMII
   ( rgmiiSender
   , rgmiiReceiver

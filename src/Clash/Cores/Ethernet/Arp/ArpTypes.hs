@@ -2,7 +2,6 @@
 Module      : Clash.Cores.Ethernet.Arp.ArpTypes
 Description : Provides various data types, aliases, constructors and constants for the Address Resolution Protocol. This module only provides the most common use case of ARP, which is mapping IPv4 addresses to MAC addresses.
 -}
-
 module Clash.Cores.Ethernet.Arp.ArpTypes where
 
 import Clash.Prelude

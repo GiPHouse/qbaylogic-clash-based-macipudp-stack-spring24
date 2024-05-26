@@ -1,11 +1,10 @@
+{-# language FlexibleContexts #-}
+{-# language RecordWildCards #-}
+
 {-|
 Module      : Clash.Cores.Ethernet.Arp.ArpManager
 Description : Provides an ARP manager which handles ARP lookups from client circuits.
 -}
-
-{-# language FlexibleContexts #-}
-{-# language RecordWildCards #-}
-
 module Clash.Cores.Ethernet.Arp.ArpManager where
 
 import Clash.Prelude

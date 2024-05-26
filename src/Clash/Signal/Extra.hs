@@ -1,10 +1,9 @@
+{-# language FlexibleContexts #-}
+
 {-|
 Module      : Clash.Signal.Extra
 Description : Extra utility functions for working with signals.
 -}
-
-{-# language FlexibleContexts #-}
-
 module Clash.Signal.Extra
     ( registerN
     , secondTimer

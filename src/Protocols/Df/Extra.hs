@@ -1,5 +1,9 @@
 {-# language PartialTypeSignatures #-}
 
+{-|
+Module      : Protocols.Df.Extra
+Description : ...
+-}
 module Protocols.Df.Extra
   (filterS, mapS, partitionS) where
 

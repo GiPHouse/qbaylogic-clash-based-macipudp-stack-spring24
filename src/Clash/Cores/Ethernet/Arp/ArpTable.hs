@@ -1,10 +1,9 @@
+{-# language FlexibleContexts #-}
+
 {-|
 Module      : Clash.Cores.Ethernet.Arp.ArpTable
 Description : Provides an ARP table which is able to hold one ARP entry.
 -}
-
-{-# language FlexibleContexts #-}
-
 module Clash.Cores.Ethernet.Arp.ArpTable
   ( arpTable
   ) where

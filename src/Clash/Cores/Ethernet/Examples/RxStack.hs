@@ -1,8 +1,9 @@
+{-# language FlexibleContexts #-}
+
 {-|
 Module      : Clash.Cores.Ethernet.Examples.RxStack
 Description : Provides the entire receive stack as a circuit.
 -}
-{-# language FlexibleContexts #-}
 module Clash.Cores.Ethernet.Examples.RxStack
 ( rxStack
 ) where
