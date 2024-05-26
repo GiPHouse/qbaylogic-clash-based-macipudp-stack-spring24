@@ -11,7 +11,7 @@ import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader, MacAddress )
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsValidatorC )
-import Clash.Cores.Ethernet.Mac.MacDepacketizer ( macDepacketizerC )
+import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC )
 import Clash.Cores.Ethernet.Mac.PreambleStripper ( preambleStripperC )
 import Clash.Prelude
 import Protocols

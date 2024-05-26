@@ -112,8 +112,7 @@ library
     Clash.Cores.Ethernet.Mac.EthernetTypes
     Clash.Cores.Ethernet.Mac.FrameCheckSequence
     Clash.Cores.Ethernet.Mac.InterpacketGapInserter
-    Clash.Cores.Ethernet.Mac.MacDepacketizer
-    Clash.Cores.Ethernet.Mac.MacPacketizer
+    Clash.Cores.Ethernet.Mac.MacPacketizers
     Clash.Cores.Ethernet.Mac.PaddingInserter
     Clash.Cores.Ethernet.Mac.PreambleInserter
     Clash.Cores.Ethernet.Mac.PreambleStripper

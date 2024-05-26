@@ -14,7 +14,7 @@ import Clash.Cores.Crc.Catalog
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsInserterC )
 import Clash.Cores.Ethernet.Mac.InterpacketGapInserter ( interpacketGapInserterC )
-import Clash.Cores.Ethernet.Mac.MacPacketizer
+import Clash.Cores.Ethernet.Mac.MacPacketizers ( macPacketizerC )
 import Clash.Cores.Ethernet.Mac.PaddingInserter ( paddingInserterC )
 import Clash.Cores.Ethernet.Mac.PreambleInserter ( preambleInserterC )
 import Clash.Prelude

@@ -27,7 +27,7 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.Mac.EthernetTypes
-import Clash.Cores.Ethernet.Mac.MacPacketizer
+import Clash.Cores.Ethernet.Mac.MacPacketizers ( macPacketizerC )
 import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Packetizer ( packetizerModel )
