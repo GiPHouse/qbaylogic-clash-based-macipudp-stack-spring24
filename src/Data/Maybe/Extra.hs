@@ -8,6 +8,7 @@ module Data.Maybe.Extra
 
 import Clash.Prelude
 
+
 -- | Wrap a value in a Just if True
 toMaybe :: Bool -> a -> Maybe a
 toMaybe True x = Just x

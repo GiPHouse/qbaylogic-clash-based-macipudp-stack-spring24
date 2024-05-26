@@ -8,9 +8,8 @@ module Protocols.Extra.PacketStream.AsyncFIFO
 import Clash.Explicit.Prelude ( asyncFIFOSynchronizer )
 import Clash.Prelude hiding ( empty )
 
-import Protocols.Internal ( Circuit, fromSignals )
-
 import Protocols.Extra.PacketStream
+import Protocols.Internal ( Circuit, fromSignals )
 
 
 -- | Asynchronous FIFO circuit that can be used to safely cross clock domains.

@@ -16,13 +16,15 @@ import Clash.Prelude
 import Clash.Cores.Ethernet.Examples.RxStack ( rxStack )
 import Clash.Cores.Ethernet.Examples.TxStack ( txStack )
 import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader(..), MacAddress(..) )
-import Protocols.Extra.PacketStream.PacketBuffer ( packetBufferC )
 
 -- import protocols
-import Clash.Cores.Crc ( HardwareCrc )
-import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
 import Protocols ( Circuit, (|>) )
 import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.PacketBuffer ( packetBufferC )
+
+import Clash.Cores.Crc ( HardwareCrc )
+import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
+
 
 myMac :: MacAddress
 myMac = MacAddress $ 0x00 :> 0x00 :> 0x00 :> 0xff :> 0xff :> 0xff :> Nil

@@ -10,12 +10,14 @@ module Protocols.Extra.PacketStream.PacketBuffer
     ) where
 
 import Clash.Prelude
-import Data.Maybe
-import Data.Maybe.Extra
-import Protocols.Extra.PacketStream
 
 import Protocols ( Circuit(..), fromSignals, (|>) )
+import Protocols.Extra.PacketStream
 import Protocols.Internal ( CSignal(..) )
+
+import Data.Maybe
+import Data.Maybe.Extra
+
 
 type PacketStreamContent(dataWidth :: Nat) (metaType :: Type) = (Vec dataWidth (BitVector 8), Maybe (Index dataWidth))
 

@@ -12,13 +12,15 @@ module Clash.Cores.Ethernet.Icmp
   )
   where
 
-import Clash.Cores.Ethernet.Icmp.IcmpTypes ( IcmpHeader(..), IcmpHeaderLite(..) )
-import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
-import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address, IPv4HeaderLite(..) )
 import Clash.Prelude
+
 import Protocols ( Circuit, (|>) )
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers ( depacketizerC, packetizerC )
+
+import Clash.Cores.Ethernet.Icmp.IcmpTypes ( IcmpHeader(..), IcmpHeaderLite(..) )
+import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
+import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address, IPv4HeaderLite(..) )
 
 icmpEchoResponderC ::
   forall (dom :: Domain) (dataWidth :: Nat).

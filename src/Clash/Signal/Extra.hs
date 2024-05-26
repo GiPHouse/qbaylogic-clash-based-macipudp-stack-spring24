@@ -12,6 +12,7 @@ module Clash.Signal.Extra
 
 import Clash.Prelude
 
+
 -- | a chain of registers of length n. So the delay from input -> output is n cycles.
 registerN
   :: forall (dom :: Domain) (n :: Nat) (a :: Type)

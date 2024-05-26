@@ -9,16 +9,19 @@ module Clash.Cores.Ethernet.IP.IPPacketizers
   , ipDepacketizerLiteC
   ) where
 
-import Clash.Cores.Ethernet.IP.InternetChecksum
-import Clash.Cores.Ethernet.IP.IPv4Types
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
-import Data.Functor
-import Data.Maybe
-import Data.Type.Equality
+
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers
+
+import Clash.Cores.Ethernet.IP.InternetChecksum
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+
+import Data.Functor
+import Data.Maybe
+import Data.Type.Equality
 
 
 -- | Packetize a packet stream with the IPv4HeaderLite meta data

@@ -10,6 +10,12 @@ module Clash.Cores.Ethernet.Examples.TxStack
 
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
+import Clash.Prelude
+
+import Protocols ( Circuit, (|>) )
+import Protocols.Extra.PacketStream ( PacketStream )
+import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
+import Protocols.Extra.PacketStream.Converters ( downConverterC )
 
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsInserterC )
@@ -17,11 +23,7 @@ import Clash.Cores.Ethernet.Mac.InterpacketGapInserter ( interpacketGapInserterC
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macPacketizerC )
 import Clash.Cores.Ethernet.Mac.PaddingInserter ( paddingInserterC )
 import Clash.Cores.Ethernet.Mac.Preamble ( preambleInserterC )
-import Clash.Prelude
-import Protocols ( Circuit, (|>) )
-import Protocols.Extra.PacketStream ( PacketStream )
-import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
-import Protocols.Extra.PacketStream.Converters ( downConverterC )
+
 
 -- | Processes bytes to send over ethernet
 txStack

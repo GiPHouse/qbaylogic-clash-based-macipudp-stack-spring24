@@ -11,15 +11,17 @@ module Clash.Cores.Ethernet.Arp
   , arpReceiverC
   ) where
 
-import Clash.Cores.Ethernet.Arp.ArpTypes
-import Clash.Cores.Ethernet.IP.IPv4Types
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
+
 import Protocols
 import Protocols.Df qualified as Df
 import Protocols.Df.Extra ( filterS, partitionS )
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers ( depacketizeToDfC, packetizeFromDfC )
+
+import Clash.Cores.Ethernet.Arp.ArpTypes
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 
 -- | Transmits ARP packets upon request.

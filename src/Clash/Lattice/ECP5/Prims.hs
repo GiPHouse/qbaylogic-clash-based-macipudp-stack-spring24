@@ -25,11 +25,11 @@ import Clash.Annotations.Primitive
 import Clash.Explicit.DDR ( ddrIn, ddrOut )
 import Clash.Explicit.Prelude
 import Clash.Signal.BiSignal
+
+import Data.Kind ( Type )
 import Data.String.Interpolate ( i )
 import Data.String.Interpolate.Util ( unindent )
 import GHC.Stack ( HasCallStack )
-
-import Data.Kind ( Type )
 
 -- | Bidirectional buffer primitive
 bb

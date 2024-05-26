@@ -7,11 +7,13 @@ module Clash.Cores.Ethernet.Mac.Preamble
   , preambleStripperC
   ) where
 
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
+
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers
+
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 
 -- | Prepends the ethernet preamble to the packet stream, for each individual packet.

@@ -24,11 +24,13 @@ module Clash.Lattice.ECP5.RGMII
   ) where
 
 import Clash.Prelude
+
+import Protocols
 import Protocols.Extra.PacketStream
 
 import Data.Maybe ( isJust, isNothing )
 import Data.Maybe.Extra ( toMaybe )
-import Protocols
+
 
 -- | RX channel from the RGMII PHY
 data RGMIIRXChannel domain ddrDomain = RGMIIRXChannel

@@ -10,10 +10,12 @@ module Protocols.Extra.PacketStream.Converters
   ) where
 
 import Clash.Prelude
-import Data.Maybe ( isJust, isNothing )
-import Data.Maybe.Extra
+
 import Protocols ( Circuit(..), fromSignals, (|>) )
 import Protocols.Extra.PacketStream
+
+import Data.Maybe ( isJust, isNothing )
+import Data.Maybe.Extra
 
 
 -- | Upconverter state, consisting of at most p `BitVector 8`s and a vector indicating which bytes are valid

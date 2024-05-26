@@ -10,6 +10,7 @@ module Clash.Lattice.ECP5.Colorlight.CRG where
 
 import Clash.Annotations.Primitive
 import Clash.Explicit.Prelude
+
 import Data.String.Interpolate ( i )
 import Data.String.Interpolate.Util ( unindent )
 

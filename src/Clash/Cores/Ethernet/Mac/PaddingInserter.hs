@@ -7,11 +7,13 @@ module Clash.Cores.Ethernet.Mac.PaddingInserter
   ) where
 
 import Clash.Prelude
+
+import Protocols ( Circuit, fromSignals )
+import Protocols.Extra.PacketStream
+
 import Control.Monad ( guard )
 import Data.Maybe ( isJust )
 import Data.Maybe.Extra ( toMaybe )
-import Protocols ( Circuit, fromSignals )
-import Protocols.Extra.PacketStream
 
 
 -- | State of the paddingInserter circuit.

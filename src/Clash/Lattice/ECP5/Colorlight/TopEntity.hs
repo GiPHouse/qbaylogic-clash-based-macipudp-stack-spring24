@@ -12,14 +12,18 @@ module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
 import Clash.Annotations.TH
 import Clash.Cores.Crc ( deriveHardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
-import Clash.Cores.Ethernet.Examples.EchoStack ( echoStackC )
 import Clash.Explicit.Prelude
+import Clash.Prelude ( exposeClockResetEnable )
+
+import Protocols ( toSignals, (|>) )
+
+import Clash.Cores.Ethernet.Examples.EchoStack ( echoStackC )
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )
-import Clash.Prelude ( exposeClockResetEnable )
+
 import Data.Proxy ( Proxy(Proxy) )
-import Protocols ( toSignals, (|>) )
+
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 

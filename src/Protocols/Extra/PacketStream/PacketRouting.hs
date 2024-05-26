@@ -9,11 +9,13 @@ module Protocols.Extra.PacketStream.PacketRouting
   ) where
 
 import Clash.Prelude
+
+import Protocols
+import Protocols.Extra.PacketStream
+
 import Data.Bifunctor ( Bifunctor(second) )
 import Data.Bifunctor qualified as B
 import Data.Maybe
-import Protocols
-import Protocols.Extra.PacketStream
 
 
 -- | Collect mode for `packetArbiterC`

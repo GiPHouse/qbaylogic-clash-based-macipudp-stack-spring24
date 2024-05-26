@@ -21,18 +21,17 @@ module Protocols.Extra.PacketStream
 import Clash.Prelude hiding ( sample )
 import Prelude qualified as P
 
-import Data.Hashable ( Hashable, hashWithSalt )
-import Data.Maybe qualified as Maybe
-import Data.Proxy
-
-import Control.DeepSeq ( NFData )
-
 import Protocols.Df qualified as Df
 import Protocols.DfConv qualified as DfConv
 import Protocols.Hedgehog.Internal
 import Protocols.Internal
 
+import Control.DeepSeq ( NFData )
 import Data.Coerce ( coerce )
+import Data.Hashable ( Hashable, hashWithSalt )
+import Data.Maybe qualified as Maybe
+import Data.Proxy
+
 
 -- | Data sent from manager to subordinate, a simplified AXI4-Stream like interface
 -- with metadata that can only change on packet delineation.

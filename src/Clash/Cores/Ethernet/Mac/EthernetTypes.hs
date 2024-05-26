@@ -14,12 +14,15 @@ module Clash.Cores.Ethernet.Mac.EthernetTypes
 
 import Clash.Prelude
 
+import Protocols
+import Protocols.Extra.PacketStream
+
 import Clash.Cores.Ethernet.IP.IPv4Types
+
 import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
 import Data.Tuple
-import Protocols
-import Protocols.Extra.PacketStream
+
 
 -- | Stores a MAC address, which is always 6 bytes long.
 newtype MacAddress = MacAddress (Vec 6 (BitVector 8))

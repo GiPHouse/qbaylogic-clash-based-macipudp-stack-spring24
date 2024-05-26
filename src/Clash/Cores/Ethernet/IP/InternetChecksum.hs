@@ -11,10 +11,11 @@ module Clash.Cores.Ethernet.IP.InternetChecksum
   ) where
 
 import Clash.Prelude
-import Data.Maybe
-
 import Clash.Signal.Extra ( registerN )
 import Clash.Sized.Vector.Extra ( PipelineLatency, foldPipeline )
+
+import Data.Maybe
+
 
 onesComplementAdd :: BitVector 16 -> BitVector 16 -> BitVector 16
 onesComplementAdd a b = carry + truncated

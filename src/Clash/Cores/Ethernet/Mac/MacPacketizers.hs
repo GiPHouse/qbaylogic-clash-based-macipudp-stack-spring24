@@ -7,11 +7,14 @@ module Clash.Cores.Ethernet.Mac.MacPacketizers
   , macDepacketizerC
   ) where
 
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
+
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers
+
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+
 
 -- | Prepends an `EthernetHeader` in the metadata to the packet stream, for each packet.
 macPacketizerC

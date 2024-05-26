@@ -9,15 +9,18 @@ module Clash.Cores.Ethernet.Examples.RxStack
 
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
-import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader, MacAddress )
-import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsValidatorC )
-import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC )
-import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 import Clash.Prelude
+
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
 import Protocols.Extra.PacketStream.Converters ( upConverterC )
+
+import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader, MacAddress )
+import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsValidatorC )
+import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC )
+import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
+
 
 -- | Processes received ethernet frames
 rxStack

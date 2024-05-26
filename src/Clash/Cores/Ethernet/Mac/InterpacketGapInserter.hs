@@ -7,12 +7,12 @@ Description : Circuit for inserting the interpacket gap between ethernet frames.
 module Clash.Cores.Ethernet.Mac.InterpacketGapInserter
   (interpacketGapInserterC) where
 
-import Data.Maybe
-
 import Clash.Prelude
-import Protocols.Internal ( Circuit, fromSignals )
 
 import Protocols.Extra.PacketStream
+import Protocols.Internal ( Circuit, fromSignals )
+
+import Data.Maybe
 
 
 data InterpacketGapInserterState gapSize

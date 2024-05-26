@@ -15,13 +15,15 @@ module Protocols.Extra.PacketStream.Packetizers
 
 import Clash.Prelude
 import Clash.Sized.Vector.Extra
-import Data.Constraint.Deferrable ( (:~:)(Refl) )
-import Data.Maybe
-import Data.Maybe.Extra
+
 import Protocols
 import Protocols.Df ( Data(..) )
 import Protocols.Df qualified as Df
 import Protocols.Extra.PacketStream
+
+import Data.Constraint.Deferrable ( (:~:)(Refl) )
+import Data.Maybe
+import Data.Maybe.Extra
 
 
 type HeaderBufSize (headerBytes :: Nat) (dataWidth :: Nat)

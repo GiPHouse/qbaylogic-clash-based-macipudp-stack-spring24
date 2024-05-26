@@ -10,7 +10,9 @@ module Clash.Cores.Ethernet.Icmp.IcmpTypes
 where
 
 import Clash.Prelude
+
 import Control.DeepSeq ( NFData )
+
 
 -- | Full ICMP header
 data IcmpHeader = IcmpHeader {

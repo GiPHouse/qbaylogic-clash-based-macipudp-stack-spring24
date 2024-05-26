@@ -5,11 +5,12 @@ Description : Provides various data types, aliases, constructors and constants f
 
 module Clash.Cores.Ethernet.Arp.ArpTypes where
 
-import Clash.Cores.Ethernet.IP.IPv4Types
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
 
 import Protocols
+
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 import Control.DeepSeq ( NFData )
 

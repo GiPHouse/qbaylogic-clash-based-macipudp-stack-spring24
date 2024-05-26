@@ -19,10 +19,6 @@ module Clash.Cores.Ethernet.Mac.FrameCheckSequence
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 
--- ethernet
-import Data.Maybe.Extra
-import Protocols.Extra.PacketStream
-
 -- prelude
 import Clash.Prelude
 
@@ -37,6 +33,10 @@ import Clash.Sized.Vector.Extra
 
 -- protocols
 import Protocols
+import Protocols.Extra.PacketStream
+
+import Data.Maybe.Extra
+
 
 toCRCInput
   :: KnownNat dataWidth

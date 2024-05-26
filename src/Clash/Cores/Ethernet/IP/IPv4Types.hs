@@ -15,11 +15,13 @@ module Clash.Cores.Ethernet.IP.IPv4Types
   ) where
 
 import Clash.Prelude
+
+import Protocols
+import Protocols.Extra.PacketStream
+
 import Control.DeepSeq ( NFData )
 import Data.Bifunctor qualified as B
 import Data.Tuple
-import Protocols
-import Protocols.Extra.PacketStream
 
 -- | IPv4 address.
 newtype IPv4Address = IPv4Address (Vec 4 (BitVector 8))
