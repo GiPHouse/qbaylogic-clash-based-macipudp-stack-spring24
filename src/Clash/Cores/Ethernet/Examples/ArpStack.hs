@@ -15,8 +15,8 @@ import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 import Clash.Cores.Ethernet.Arp
 import Clash.Cores.Ethernet.Arp.ArpTypes
-import Clash.Cores.Ethernet.Examples.RxStack
-import Clash.Cores.Ethernet.Examples.TxStack
+import Clash.Cores.Ethernet.Examples.RxStacks
+import Clash.Cores.Ethernet.Examples.TxStacks
 import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 
@@ -56,9 +56,9 @@ arpStackC
   -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthTx 1 ())
 arpStackC rxClk rxRst rxEn txClk txRst txEn ourMacS ourIPv4S =
   circuit $ \stream -> do
-    ethStream <- rxStack @4 rxClk rxRst rxEn ourMacS -< stream
+    ethStream <- macRxStack @4 rxClk rxRst rxEn ourMacS -< stream
     [arpStream] <- packetDispatcherC (singleton $ \hdr -> _etherType hdr == arpEtherType) -< ethStream
     lookupIn <- constArpLookup -< ()
     arpOtp <- arpC d10 d5 ourMacS ourIPv4S -< (arpStream, lookupIn)
     ethOtp <- packetArbiterC RoundRobin -< [arpOtp]
-    txStack txClk txRst txEn -< ethOtp
+    macTxStack txClk txRst txEn -< ethOtp

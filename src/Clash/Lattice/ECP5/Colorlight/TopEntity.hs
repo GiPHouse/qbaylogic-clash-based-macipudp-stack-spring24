@@ -27,6 +27,7 @@ import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiT
 
 import Protocols ( toSignals, (|>) )
 
+import Clash.Cores.Ethernet.Examples.EchoStack ( ipEchoStackC )
 import Data.Proxy ( Proxy(Proxy) )
 
 
@@ -84,13 +85,15 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx _eth1_rx =
     ethTxEn = enableGen @DomEthTx
 
     -- Replace this with your FPGA's MAC address
-    ourMac = MacAddress (0x00 :> 0xE0 :> 0x6C :> 0x38 :> 0xCF :> 0xF0 :> Nil)
-    -- Hardcoded IPv4
-    ourIPv4 = IPv4Address (192 :> 168 :> 1 :> 123 :> Nil)
+    ourMac = MacAddress (0x00 :> 0x00 :> 0x00 :> 0xff :> 0xff :> 0xff :> Nil)
+    -- Hardcoded IPv4 and subnet mash
+    ourIPv4 = ( IPv4Address (192 :> 168 :> 1 :> 123 :> Nil)
+              , IPv4Address (255 :> 255 :> 255 :> 0 :> Nil)
+              )
 
     phyStack
       = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
-        |> exposeClockResetEnable (arpStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn (pure ourMac) (pure ourIPv4)) clk50 rst50 en50
+        |> exposeClockResetEnable (ipEchoStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn (pure ourMac) (pure ourIPv4)) clk50 rst50 en50
         |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
 
     uartTxBit = uartRxBit
