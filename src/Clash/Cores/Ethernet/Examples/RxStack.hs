@@ -12,7 +12,7 @@ import Clash.Cores.Crc.Catalog
 import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader, MacAddress )
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsValidatorC )
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC )
-import Clash.Cores.Ethernet.Mac.PreambleStripper ( preambleStripperC )
+import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 import Clash.Prelude
 import Protocols
 import Protocols.Extra.PacketStream

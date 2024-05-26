@@ -27,7 +27,7 @@ import Protocols.Hedgehog
 
 -- Me
 import Clash.Cores.Ethernet.Mac.EthernetTypes
-import Clash.Cores.Ethernet.Mac.PreambleStripper
+import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )

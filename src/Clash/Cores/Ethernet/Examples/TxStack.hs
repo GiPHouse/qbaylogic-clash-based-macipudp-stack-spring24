@@ -16,7 +16,7 @@ import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsInserterC )
 import Clash.Cores.Ethernet.Mac.InterpacketGapInserter ( interpacketGapInserterC )
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macPacketizerC )
 import Clash.Cores.Ethernet.Mac.PaddingInserter ( paddingInserterC )
-import Clash.Cores.Ethernet.Mac.PreambleInserter ( preambleInserterC )
+import Clash.Cores.Ethernet.Mac.Preamble ( preambleInserterC )
 import Clash.Prelude
 import Protocols ( Circuit, (|>) )
 import Protocols.Extra.PacketStream ( PacketStream )

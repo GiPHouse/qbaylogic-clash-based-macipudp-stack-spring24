@@ -114,8 +114,7 @@ library
     Clash.Cores.Ethernet.Mac.InterpacketGapInserter
     Clash.Cores.Ethernet.Mac.MacPacketizers
     Clash.Cores.Ethernet.Mac.PaddingInserter
-    Clash.Cores.Ethernet.Mac.PreambleInserter
-    Clash.Cores.Ethernet.Mac.PreambleStripper
+    Clash.Cores.Ethernet.Mac.Preamble
     Clash.Cores.Ethernet.Icmp
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.TopEntity
