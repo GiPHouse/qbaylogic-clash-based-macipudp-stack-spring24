@@ -34,7 +34,7 @@ import Test.Cores.Ethernet.Util
 
 -- ethernet modules
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.UpConverter
+import Protocols.Extra.PacketStream.Converters
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

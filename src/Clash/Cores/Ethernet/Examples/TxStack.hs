@@ -21,7 +21,7 @@ import Clash.Prelude
 import Protocols ( Circuit, (|>) )
 import Protocols.Extra.PacketStream ( PacketStream )
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
-import Protocols.Extra.PacketStream.DownConverter ( downConverterC )
+import Protocols.Extra.PacketStream.Converters ( downConverterC )
 
 -- | Processes bytes to send over ethernet
 txStack

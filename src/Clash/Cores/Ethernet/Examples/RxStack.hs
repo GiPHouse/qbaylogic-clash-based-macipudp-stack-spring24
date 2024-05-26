@@ -17,7 +17,7 @@ import Clash.Prelude
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
-import Protocols.Extra.PacketStream.UpConverter ( upConverterC )
+import Protocols.Extra.PacketStream.Converters ( upConverterC )
 
 -- | Processes received ethernet frames
 rxStack

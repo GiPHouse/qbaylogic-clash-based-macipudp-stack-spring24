@@ -120,13 +120,12 @@ library
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.RGMII
     Protocols.Extra.PacketStream.AsyncFIFO
+    Protocols.Extra.PacketStream.Converters
     Protocols.Extra.PacketStream.Depacketizer
-    Protocols.Extra.PacketStream.DownConverter
     Protocols.Extra.PacketStream.PacketBuffer
     Protocols.Extra.PacketStream.PacketizeFromDf
     Protocols.Extra.PacketStream.Packetizer
     Protocols.Extra.PacketStream.PacketRouting
-    Protocols.Extra.PacketStream.UpConverter
     Protocols.Extra.PacketStream
   other-modules:
     Clash.Signal.Extra
