@@ -1,14 +1,29 @@
-module Clash.Sized.Vector.Extra (
-    takeLe
+module Clash.Sized.Vector.Extra
+  ( dropLe
+  , takeLe
   , appendVec
   , foldPipeline
   , PipelineLatency
-) where
+  ) where
 
 import Clash.Prelude
 
-import Data.Proxy
 import Data.Type.Equality
+
+
+-- | Like 'drop' but uses a 'Data.Type.Ord.<=' constraint
+dropLe
+  :: forall (n :: Nat)
+            (m :: Nat)
+            a
+   . n <= m
+  => SNat n
+  -- ^ How many elements to take
+  -> Vec m a
+  -- ^ input vector
+  -> Vec (m - n) a
+dropLe SNat vs = leToPlus @n @m $ dropI vs
+
 -- | Like 'take' but uses a 'Data.Type.Ord.<=' constraint
 takeLe
   :: forall (n :: Nat)

@@ -37,13 +37,11 @@ genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 macDepacketizerPropertyGenerator
-  :: forall (dataWidth :: Nat).
-  ( KnownNat dataWidth
-  , 1 <= dataWidth
-  )
+  :: forall (dataWidth :: Nat)
+   . 1 <= dataWidth
   => SNat dataWidth
   -> Property
-macDepacketizerPropertyGenerator _ =
+macDepacketizerPropertyGenerator SNat =
   propWithModelSingleDomain
     @C.System
     defExpectOptions
