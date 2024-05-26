@@ -26,10 +26,10 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.IpPacketizer
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.IP.IPPacketizer
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Packetizer ( packetizerModel )
 import Test.Cores.Ethernet.Util

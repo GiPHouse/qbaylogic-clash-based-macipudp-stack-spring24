@@ -27,8 +27,8 @@ import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketBuffer ( overflowDropPacketBufferC, packetBufferC )
-import Clash.Cores.Ethernet.PacketStream
+import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.PacketBuffer ( overflowDropPacketBufferC, packetBufferC )
 import Test.Cores.Ethernet.Util as U
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)

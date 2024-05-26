@@ -1,6 +1,6 @@
 {-|
 Module      : Clash.Signal.Extra
-Description : Extra utility functions for working with signals
+Description : Extra utility functions for working with signals.
 -}
 
 {-# language FlexibleContexts #-}

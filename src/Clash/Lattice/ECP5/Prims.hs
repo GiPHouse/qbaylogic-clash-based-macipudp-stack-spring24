@@ -6,7 +6,7 @@
 
 {-|
 Module      : Clash.Lattice.ECP5.Prims
-Description : Primitives for the Lattice ECP5
+Description : Primitives for the Lattice ECP5.
 
 All of the primitives in this module are taken from the Lattice ECP5
 Library reference: https://www.latticesemi.com/-/media/LatticeSemi/Documents/UserManuals/EI2/fpga_library_D311SP3.ashx?document_id=52656

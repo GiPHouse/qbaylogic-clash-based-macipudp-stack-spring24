@@ -26,8 +26,8 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketDispatcher
-import Clash.Cores.Ethernet.PacketStream
+import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.PacketDispatcher
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

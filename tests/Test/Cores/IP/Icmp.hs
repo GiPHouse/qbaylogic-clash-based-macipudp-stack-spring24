@@ -26,16 +26,16 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.Icmp
-import Clash.Cores.IP.IcmpTypes
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.Icmp
+import Clash.Cores.Ethernet.Icmp.IcmpTypes
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Depacketizer ( depacketizerModel )
 import Test.Cores.Ethernet.Util
 
 -- clash-cores
-import Clash.Cores.Ethernet.InternetChecksum ( onesComplementAdd )
+import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Protocols
 import Test.Cores.Ethernet.Packetizer ( packetizerModel )
 

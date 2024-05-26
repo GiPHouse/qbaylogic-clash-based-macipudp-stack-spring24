@@ -22,7 +22,7 @@ import Clash.Prelude hiding ( concat )
 import Clash.Prelude qualified as C
 import Clash.Sized.Vector ( unsafeFromList )
 
-import Clash.Cores.Ethernet.PacketStream
+import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Util
 

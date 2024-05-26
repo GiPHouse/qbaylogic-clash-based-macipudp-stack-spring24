@@ -29,8 +29,8 @@ import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.InterpacketGapInserter
-import Clash.Cores.Ethernet.PacketStream
+import Clash.Cores.Ethernet.Mac.InterpacketGapInserter
+import Protocols.Extra.PacketStream
 
 genVec :: (KnownNat n, 1 <= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)

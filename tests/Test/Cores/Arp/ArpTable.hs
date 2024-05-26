@@ -28,10 +28,10 @@ import Protocols
 import Protocols.Df hiding ( fst, snd )
 
 -- Me
-import Clash.Cores.Arp.ArpTable
-import Clash.Cores.Arp.ArpTypes
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.Arp.ArpTable
+import Clash.Cores.Ethernet.Arp.ArpTypes
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 
 createDomain vSystem

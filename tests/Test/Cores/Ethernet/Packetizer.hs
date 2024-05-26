@@ -10,7 +10,7 @@ import Prelude
 
 import Clash.Prelude
 
-import Clash.Cores.Ethernet.PacketStream
+import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Util
 

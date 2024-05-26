@@ -96,47 +96,46 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Clash.Cores.Arp.ArpManager
-    Clash.Cores.Arp.ArpReceiver
-    Clash.Cores.Arp.ArpTable
-    Clash.Cores.Arp.ArpTransmitter
-    Clash.Cores.Arp.ArpTypes
-    Clash.Lattice.ECP5.Colorlight.TopEntity
-    Clash.Cores.Ethernet.Depacketizer
-    Clash.Cores.Ethernet.DepacketizeToDf
-    Clash.Cores.Ethernet.EthernetTypes
-    Clash.Cores.Ethernet.MacDepacketizer
-    Clash.Cores.Ethernet.RGMII
-    Clash.Cores.Ethernet.MacPacketizer
-    Clash.Cores.Ethernet.IpPacketizer
-    Clash.Cores.Ethernet.PacketizeFromDf
-    Clash.Cores.Ethernet.Packetizer
-    Clash.Cores.Ethernet.PacketArbiter
-    Clash.Cores.Ethernet.PacketBuffer
-    Clash.Cores.Ethernet.PacketDispatcher
-    Clash.Cores.Ethernet.PacketStream
-    Clash.Cores.Ethernet.PaddingInserter
-    Clash.Cores.Ethernet.PreambleInserter
-    Clash.Cores.Ethernet.PreambleStripper
-    Clash.Cores.Ethernet.UpConverter
-    Clash.Cores.Ethernet.DownConverter
-    Clash.Cores.Ethernet.RxStack
-    Clash.Cores.Ethernet.TxStack
-    Clash.Cores.Ethernet.EchoStack
-    Clash.Cores.Ethernet.Util
-    Clash.Cores.Ethernet.InterpacketGapInserter
-    Clash.Cores.Ethernet.AsyncFIFO
-    Clash.Cores.Ethernet.InternetChecksum
-    Clash.Cores.Ethernet.FrameCheckSequence
-    Clash.Cores.IP.IPv4Types
-    Clash.Cores.IP.IcmpTypes
-    Clash.Cores.IP.Icmp
-    Clash.Cores.IP.IPDepacketizer
-    Clash.Lattice.ECP5.Prims
+    Clash.Cores.Ethernet.Arp.ArpManager
+    Clash.Cores.Ethernet.Arp.ArpTable
+    Clash.Cores.Ethernet.Arp.ArpReceiver
+    Clash.Cores.Ethernet.Arp.ArpTransmitter
+    Clash.Cores.Ethernet.Arp.ArpTypes
+    Clash.Cores.Ethernet.Examples.EchoStack
+    Clash.Cores.Ethernet.Examples.RxStack
+    Clash.Cores.Ethernet.Examples.TxStack
+    Clash.Cores.Ethernet.Icmp.IcmpTypes
+    Clash.Cores.Ethernet.IP.InternetChecksum
+    Clash.Cores.Ethernet.IP.IPDepacketizer
+    Clash.Cores.Ethernet.IP.IPPacketizer
+    Clash.Cores.Ethernet.IP.IPv4Types
+    Clash.Cores.Ethernet.Mac.EthernetTypes
+    Clash.Cores.Ethernet.Mac.FrameCheckSequence
+    Clash.Cores.Ethernet.Mac.InterpacketGapInserter
+    Clash.Cores.Ethernet.Mac.MacDepacketizer
+    Clash.Cores.Ethernet.Mac.MacPacketizer
+    Clash.Cores.Ethernet.Mac.PaddingInserter
+    Clash.Cores.Ethernet.Mac.PreambleInserter
+    Clash.Cores.Ethernet.Mac.PreambleStripper
+    Clash.Cores.Ethernet.Icmp
     Clash.Lattice.ECP5.Colorlight.CRG
+    Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Lattice.ECP5.Prims
+    Clash.Lattice.ECP5.RGMII
+    Protocols.Extra.PacketStream.AsyncFIFO
+    Protocols.Extra.PacketStream.Depacketizer
+    Protocols.Extra.PacketStream.DownConverter
+    Protocols.Extra.PacketStream.PacketArbiter
+    Protocols.Extra.PacketStream.PacketBuffer
+    Protocols.Extra.PacketStream.PacketDispatcher
+    Protocols.Extra.PacketStream.PacketizeFromDf
+    Protocols.Extra.PacketStream.Packetizer
+    Protocols.Extra.PacketStream.UpConverter
+    Protocols.Extra.PacketStream
   other-modules:
     Clash.Signal.Extra
     Clash.Sized.Vector.Extra
+    Data.Maybe.Extra
     Protocols.Df.Extra
   default-language: Haskell2010
   build-depends:

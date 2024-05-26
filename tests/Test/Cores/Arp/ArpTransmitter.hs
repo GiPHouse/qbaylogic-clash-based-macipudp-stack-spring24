@@ -19,11 +19,11 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 import Protocols.Hedgehog
 
-import Clash.Cores.Arp.ArpTransmitter
-import Clash.Cores.Arp.ArpTypes
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.Arp.ArpTransmitter
+import Clash.Cores.Ethernet.Arp.ArpTypes
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+import Protocols.Extra.PacketStream
 
 import Test.Cores.Ethernet.Packetizer
 

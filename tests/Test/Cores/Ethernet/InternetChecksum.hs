@@ -25,7 +25,7 @@ import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-cores
-import Clash.Cores.Ethernet.InternetChecksum
+import Clash.Cores.Ethernet.IP.InternetChecksum
 import Data.Proxy
 
 uncurryS ::

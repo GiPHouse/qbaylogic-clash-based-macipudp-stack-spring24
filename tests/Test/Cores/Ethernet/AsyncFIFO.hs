@@ -27,8 +27,8 @@ import Protocols
 import Protocols.Hedgehog
 
 -- Me
-import Clash.Cores.Ethernet.AsyncFIFO
-import Clash.Cores.Ethernet.PacketStream ( PacketStream, PacketStreamM2S(PacketStreamM2S) )
+import Protocols.Extra.PacketStream ( PacketStream, PacketStreamM2S(PacketStreamM2S) )
+import Protocols.Extra.PacketStream.AsyncFIFO
 
 genVec :: (KnownNat n, 1 C.<= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)

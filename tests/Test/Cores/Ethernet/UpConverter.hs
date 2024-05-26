@@ -33,8 +33,8 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.UpConverter
+import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.UpConverter
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

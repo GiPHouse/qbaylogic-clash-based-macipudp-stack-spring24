@@ -40,10 +40,10 @@ import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 
 -- fcs inserter
-import Clash.Cores.Ethernet.FrameCheckSequence
+import Clash.Cores.Ethernet.Mac.FrameCheckSequence
 
 -- packetstream
-import Clash.Cores.Ethernet.PacketStream
+import Protocols.Extra.PacketStream
 
 -- proxy
 import Control.Monad

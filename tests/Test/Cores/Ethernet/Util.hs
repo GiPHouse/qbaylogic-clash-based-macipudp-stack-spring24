@@ -15,10 +15,10 @@ import Data.Maybe qualified as M
 import Clash.Prelude qualified as C
 
 -- ethernet modules
-import Clash.Cores.Ethernet.PacketStream
 import Clash.Sized.Vector qualified as Vec
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
+import Protocols.Extra.PacketStream
 
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
 chunkBy _ [] = []

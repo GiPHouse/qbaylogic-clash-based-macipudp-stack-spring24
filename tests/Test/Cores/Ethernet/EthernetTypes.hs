@@ -29,9 +29,9 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.IPv4Types ( IPv4Address(..) )
+import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address(..) )
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+import Protocols.Extra.PacketStream
 
 
 -- | Test the IPv4Address to EthernetHeader converter.

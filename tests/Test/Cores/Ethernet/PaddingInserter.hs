@@ -30,8 +30,8 @@ import Protocols.Hedgehog
 import Test.Cores.Ethernet.Util
 
 -- ethernet modules
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.Ethernet.PaddingInserter
+import Clash.Cores.Ethernet.Mac.PaddingInserter
+import Protocols.Extra.PacketStream
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

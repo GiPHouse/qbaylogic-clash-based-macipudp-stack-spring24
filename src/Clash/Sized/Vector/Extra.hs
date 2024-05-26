@@ -1,3 +1,7 @@
+{-|
+Module      : Clash.Sized.Vector.Extra
+Description : ...
+-}
 module Clash.Sized.Vector.Extra
   ( dropLe
   , takeLe
