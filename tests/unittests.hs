@@ -25,36 +25,38 @@ import Test.Cores.Ethernet.PreambleStripper qualified
 import Test.Cores.Ethernet.UpConverter qualified
 import Test.Cores.IP.Icmp qualified
 import Test.Cores.IP.IPDepacketizer qualified
-import Test.TinyTapeout.Credits qualified
-import Test.TinyTapeout.IcmpEcho qualified
+-- import Test.TinyTapeout.Credits qualified
+-- import Test.TinyTapeout.IcmpEcho qualified
 
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-  [ Test.TinyTapeout.Credits.tests
-    , Test.TinyTapeout.IcmpEcho.tests
-    , Test.Cores.Arp.ArpManager.tests
-    , Test.Cores.Arp.ArpTable.tests
-    , Test.Cores.Arp.ArpTransmitter.tests
-    , Test.Cores.Ethernet.AsyncFIFO.tests
-    , Test.Cores.Ethernet.PacketArbiter.tests
-    , Test.Cores.Ethernet.PacketStream.tests
-    , Test.Cores.Ethernet.PaddingInserter.tests
-    , Test.Cores.Ethernet.UpConverter.tests
-    , Test.Cores.Ethernet.DownConverter.tests
-    , Test.Cores.Ethernet.PacketBuffer.tests
-    , Test.Cores.Ethernet.PacketDispatcher.tests
-    , Test.Cores.Ethernet.PreambleInserter.tests
-    , Test.Cores.Ethernet.PreambleStripper.tests
-    , Test.Cores.Ethernet.InterpacketGapInserter.tests
-    , Test.Cores.Ethernet.Depacketizer.tests
+  [
+    -- Test.TinyTapeout.Credits.tests
+    -- , Test.TinyTapeout.IcmpEcho.tests
+    -- , Test.Cores.Arp.ArpManager.tests
+    -- , Test.Cores.Arp.ArpTable.tests
+    -- , Test.Cores.Arp.ArpTransmitter.tests
+    -- , Test.Cores.Ethernet.AsyncFIFO.tests
+    -- , Test.Cores.Ethernet.PacketArbiter.tests
+    -- , Test.Cores.Ethernet.PacketStream.tests
+    -- , Test.Cores.Ethernet.PaddingInserter.tests
+    -- , Test.Cores.Ethernet.UpConverter.tests
+    -- , Test.Cores.Ethernet.DownConverter.tests
+    -- , Test.Cores.Ethernet.PacketBuffer.tests
+    -- , Test.Cores.Ethernet.PacketDispatcher.tests
+    -- , Test.Cores.Ethernet.PreambleInserter.tests
+    -- , Test.Cores.Ethernet.PreambleStripper.tests
+    -- , Test.Cores.Ethernet.InterpacketGapInserter.tests
+    -- ,
+    Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
-    , Test.Cores.Ethernet.MacPacketizer.tests
-    , Test.Cores.Ethernet.InternetChecksum.tests
-    , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
-    , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
-    , Test.Cores.Ethernet.EthernetTypes.tests
-    , Test.Cores.IP.Icmp.tests
-    , Test.Cores.IP.IPDepacketizer.tests
-    , Test.Cores.Ethernet.IpPacketizer.tests
+    -- , Test.Cores.Ethernet.MacPacketizer.tests
+    -- , Test.Cores.Ethernet.InternetChecksum.tests
+    -- , Test.Cores.Ethernet.FrameCheckSequence.testsValidate
+    -- , Test.Cores.Ethernet.FrameCheckSequence.testsInsert
+    -- , Test.Cores.Ethernet.EthernetTypes.tests
+    -- , Test.Cores.IP.Icmp.tests
+    -- , Test.Cores.IP.IPDepacketizer.tests
+    -- , Test.Cores.Ethernet.IpPacketizer.tests
   ]

@@ -1,5 +1,6 @@
 module Clash.Sized.Vector.Extra (
     takeLe
+  , dropLe
   , appendVec
   , foldPipeline
   , PipelineLatency
@@ -9,6 +10,7 @@ import Clash.Prelude
 
 import Data.Proxy
 import Data.Type.Equality
+
 -- | Like 'take' but uses a 'Data.Type.Ord.<=' constraint
 takeLe
   :: forall (n :: Nat)
@@ -21,6 +23,19 @@ takeLe
   -- ^ input vector
   -> Vec n a
 takeLe SNat vs = leToPlus @n @m $ takeI vs
+
+-- | Like 'take' but uses a 'Data.Type.Ord.<=' constraint
+dropLe
+  :: forall (n :: Nat)
+            (m :: Nat)
+            a
+   . n <= m
+  => SNat n
+  -- ^ How many elements to take
+  -> Vec m a
+  -- ^ input vector
+  -> Vec (m - n) a
+dropLe SNat vs = leToPlus @n @m $ dropI vs
 
 -- | Take the first 'valid' elements of 'xs', append 'ys', then pad with 0s
 appendVec
