@@ -44,8 +44,8 @@ python_test: /run/netns/colorlight prog
 
 HASKELL_SOURCES=$(shell find src -type f -iname '*.hs')
 
-target=Clash.Lattice.ECP5.Colorlight.TopEntity
-# target=Clash.TinyTapeout.EthernetMac.TopEntity
+# target=Clash.Lattice.ECP5.Colorlight.TopEntity
+target=Clash.TinyTapeout.EthernetMac.TopEntity
 
 verilog=verilog/${target}.topEntity/topEntity.v
 netlist=netlist/synth.json
@@ -77,6 +77,36 @@ ${pnr}: ${netlist} pinout.lpf
 		--speed 6 \
 		--package CABGA256 \
 		--randomize-seed --timing-allow-fail
+
+.PHONY: pnr
+pnr: $(pnr)
+
+netlist_resource=netlist/resource.json
+resource_check_pnr=netlist/resource.cfg
+
+.PHONY: resource_check
+resource_check: $(verilog)
+
+${netlist_resource}: ${verilog}
+	mkdir -p netlist
+	yosys \
+		-m ${YOSYS_ECP5_INFER_OUTREG_LIB} \
+		-p "synth_ecp5 -no-rw-check -abc2 -top Clash_Lattice_ECP5_Colorlight_TopEntity_topEntity_macDepacketizerC" \
+		-p "ecp5_infer_bram_outreg" \
+		-p "write_json ${netlist_resource}" \
+		verilog/${target}.topEntity/*.v
+
+.PHONY: resource_check_pnr
+resource_check_pnr: $(resource_check_pnr)
+
+${resource_check_pnr}: ${netlist_resource} pinout.lpf
+	nextpnr-ecp5 --json ${netlist_resource} \
+		--lpf pinout.lpf \
+		--textcfg ${resource_check_pnr} --25k \
+		--speed 6 \
+		--package CABGA256 \
+		--randomize-seed --timing-allow-fail \
+		--lpf-allow-unconstrained
 
 .PHONY: pnr
 pnr: $(pnr)

@@ -7,11 +7,8 @@ Module      : Clash.Cores.Ethernet.Depacketizer
 Description : Generic depacketizer for stripping headers from beginning of packets
 -}
 module Clash.Cores.Ethernet.Depacketizer
-  -- (depacketizerC)
-  where
-import Data.Constraint ( Dict(..), (:-)(..) )
+  (depacketizerC) where
 import Data.Maybe
-import Unsafe.Coerce ( unsafeCoerce )
 
 import Clash.Prelude
 import Clash.Sized.Vector.Extra
@@ -40,19 +37,19 @@ type DepacketizerCt (headerBytes :: Nat) (dataWidth :: Nat)
 data DepacketizerState (headerBytes :: Nat)  (dataWidth :: Nat)
   = Parse
       { _aborted :: Bool
-      , _parseBuf :: Vec headerBytes (BitVector 8)
+      , _parseBuf :: Vec (dataWidth * headerBytes `DivRU` dataWidth) (BitVector 8)
       , _fwdBuf :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8)
       , _counter :: Index (headerBytes `DivRU` dataWidth)
       }
   | Forward
       { _aborted :: Bool
-      , _parseBuf :: Vec headerBytes (BitVector 8)
+      , _parseBuf :: Vec (dataWidth * headerBytes `DivRU` dataWidth) (BitVector 8)
       , _fwdBuf :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8)
       , _counter :: Index (headerBytes `DivRU` dataWidth)
       }
   | LastForward
       { _aborted :: Bool
-      , _parseBuf :: Vec headerBytes (BitVector 8)
+      , _parseBuf :: Vec (dataWidth * headerBytes `DivRU` dataWidth) (BitVector 8)
       , _fwdBuf :: Vec (ForwardBufSize headerBytes dataWidth) (BitVector 8)
       , _counter :: Index (headerBytes `DivRU` dataWidth)
       , _last_idx :: Index dataWidth
@@ -75,6 +72,7 @@ depacketizerT
   => BitPack header
   => DepacketizerCt headerBytes dataWidth
   => ForwardBufSize headerBytes dataWidth <= dataWidth
+  => headerBytes <= dataWidth * headerBytes `DivRU` dataWidth
   => (header -> metaIn -> metaOut)
   -> DepacketizerState headerBytes dataWidth
   -> (Maybe (PacketStreamM2S dataWidth metaIn), PacketStreamS2M)
@@ -131,7 +129,7 @@ depacketizerT toMetaOut st@Forward {..} (Just pkt@PacketStreamM2S{..}, bwdIn) = 
     newLast = fmap adjustLast _last
     outPkt = pkt { _abort = nextAborted
                  , _data = dataOut
-                 , _meta = toMetaOut (bitCoerce _parseBuf) _meta
+                 , _meta = toMetaOut (bitCoerce $ takeLe (SNat @headerBytes) _parseBuf) _meta
                  , _last = either Just (const Nothing) =<< newLast
                  }
 
@@ -154,7 +152,7 @@ depacketizerT toMetaOut st@LastForward{..} (fwdIn, bwdIn) = (nextStOut, (bwdIn, 
     outPkt = PacketStreamM2S
                { _abort = _aborted || _abort inPkt
                , _data = _fwdBuf ++ repeat @(dataWidth - ForwardBufSize headerBytes dataWidth) defaultByte
-               , _meta = toMetaOut (bitCoerce _parseBuf) (_meta inPkt)
+               , _meta = toMetaOut (bitCoerce $ takeLe (SNat @headerBytes) _parseBuf) (_meta inPkt)
                , _last = Just $ (fromJustX $ _last inPkt) - natToNum @(headerBytes `Mod` dataWidth)
                }
     nextStOut = if _ready bwdIn then Parse False _parseBuf _fwdBuf maxBound else st
@@ -180,10 +178,11 @@ depacketizerC
 depacketizerC toMetaOut = forceResetSanity |> fromSignals outCircuit
   where
     modProof = compareSNat (SNat @(headerBytes `Mod` dataWidth)) (SNat @dataWidth)
+    divProof = compareSNat (SNat @headerBytes) (SNat @(dataWidth * headerBytes `DivRU` dataWidth))
 
     outCircuit
-      = case modProof of
-          SNatLE -> case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) (SNat @dataWidth) of
+      = case (modProof, divProof) of
+          (SNatLE, SNatLE) -> case compareSNat (SNat @(ForwardBufSize headerBytes dataWidth)) (SNat @dataWidth) of
             SNatLE -> mealyB (depacketizerT @headerBytes toMetaOut) (Parse False (repeat undefined) (repeat undefined) maxBound)
             _ -> errorX "depacketizer1: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"
           _ -> errorX "depacketizer0: Absurd, Report this to the Clash compiler team: https://github.com/clash-lang/clash-compiler/issues"

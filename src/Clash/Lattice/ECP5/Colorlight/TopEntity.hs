@@ -77,15 +77,15 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx _eth1_rx =
     ethRxEn = enableGen @DomEth0
     ethTxEn = enableGen @DomEthTx
 
-    phyStack
-      = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
-        |> exposeClockResetEnable (stackSeperateDoms ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
-        |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
-
     -- phyStack
     --   = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
     --     |> exposeClockResetEnable (stackSeperateDoms ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
     --     |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
+
+    phyStack
+      = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
+        |> exposeClockResetEnable (echoStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
+        |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
 
     uartTxBit = uartRxBit
 
