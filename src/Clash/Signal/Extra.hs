@@ -5,9 +5,9 @@ Module      : Clash.Signal.Extra
 Description : Extra utility functions for working with signals.
 -}
 module Clash.Signal.Extra
-    ( registerN
-    , secondTimer
-    ) where
+  ( registerN
+  , secondTimer
+  ) where
 
 import Clash.Prelude
 

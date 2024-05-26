@@ -5,12 +5,10 @@ Module      : Clash.Cores.Ethernet.Icmp
 Description : ...
 -}
 module Clash.Cores.Ethernet.Icmp
-  (
-    icmpReceiverC
-    , icmpTransmitterC
-    , icmpEchoResponderC
-  )
-  where
+  ( icmpReceiverC
+  , icmpTransmitterC
+  , icmpEchoResponderC
+  ) where
 
 import Clash.Prelude
 

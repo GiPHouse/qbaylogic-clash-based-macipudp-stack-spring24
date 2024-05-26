@@ -3,7 +3,8 @@ Module      : Protocols.Extra.PacketStream.AsyncFIFO
 Description : Provides `asyncFifoC` for crossing clock domains in the packet stream protocol.
 -}
 module Protocols.Extra.PacketStream.AsyncFIFO
-  (asyncFifoC) where
+  ( asyncFifoC
+  ) where
 
 import Clash.Explicit.Prelude ( asyncFIFOSynchronizer )
 import Clash.Prelude hiding ( empty )

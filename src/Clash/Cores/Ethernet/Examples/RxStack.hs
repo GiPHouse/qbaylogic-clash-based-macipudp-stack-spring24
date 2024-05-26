@@ -5,8 +5,8 @@ Module      : Clash.Cores.Ethernet.Examples.RxStack
 Description : Provides the entire receive stack as a circuit.
 -}
 module Clash.Cores.Ethernet.Examples.RxStack
-( rxStack
-) where
+  ( rxStack
+  ) where
 
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog

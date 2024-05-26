@@ -5,9 +5,9 @@ Module      : Protocols.Extra.PacketStream.PacketBuffer
 Description : FIFO-like circuit for packet streams.
 -}
 module Protocols.Extra.PacketStream.PacketBuffer
-    ( packetBufferC
-    , overflowDropPacketBufferC
-    ) where
+  ( packetBufferC
+  , overflowDropPacketBufferC
+  ) where
 
 import Clash.Prelude
 

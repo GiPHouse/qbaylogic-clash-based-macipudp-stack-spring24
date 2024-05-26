@@ -9,11 +9,9 @@ Module      : Clash.Cores.Ethernet.Mac.FrameCheckSequence
 Description : ...
 -}
 module Clash.Cores.Ethernet.Mac.FrameCheckSequence
-  (
-    fcsInserterC
+  ( fcsInserterC
   , fcsValidatorC
-  )
-  where
+  ) where
 
 -- crc
 import Clash.Cores.Crc

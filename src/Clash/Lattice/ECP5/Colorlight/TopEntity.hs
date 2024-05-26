@@ -7,7 +7,9 @@
 Module      : Clash.Lattice.ECP5.Colorlight.TopEntity
 Description : Contains the top entity.
 -}
-module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
+module Clash.Lattice.ECP5.Colorlight.TopEntity
+  ( topEntity
+  ) where
 
 import Clash.Annotations.TH
 import Clash.Cores.Crc ( deriveHardwareCrc )

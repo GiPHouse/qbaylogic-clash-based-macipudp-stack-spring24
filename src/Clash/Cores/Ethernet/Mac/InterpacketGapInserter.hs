@@ -5,7 +5,8 @@ Module      : Clash.Cores.Ethernet.Mac.InterpacketGapInserter
 Description : Circuit for inserting the interpacket gap between ethernet frames.
 -}
 module Clash.Cores.Ethernet.Mac.InterpacketGapInserter
-  (interpacketGapInserterC) where
+  ( interpacketGapInserterC
+  ) where
 
 import Clash.Prelude
 

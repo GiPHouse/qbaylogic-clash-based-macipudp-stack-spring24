@@ -6,8 +6,8 @@ Module      : Clash.Cores.Ethernet.Examples.EchoStack
 Description : Simple Ethernet echo stack.
 -}
 module Clash.Cores.Ethernet.Examples.EchoStack
-( echoStackC
-) where
+  ( echoStackC
+  ) where
 
 -- import prelude
 import Clash.Prelude

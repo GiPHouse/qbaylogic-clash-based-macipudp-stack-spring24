@@ -5,7 +5,10 @@ Module      : Protocols.Df.Extra
 Description : ...
 -}
 module Protocols.Df.Extra
-  (filterS, mapS, partitionS) where
+  ( filterS
+  , mapS
+  , partitionS
+  ) where
 
 import Clash.Prelude
 

@@ -3,11 +3,9 @@ Module      : Clash.Cores.Ethernet.Icmp.ICMPTypes.hs
 Description : Provides various data types, aliases and constants for ICMP.
 -}
 module Clash.Cores.Ethernet.Icmp.IcmpTypes
-(
-  IcmpHeader(..),
-  IcmpHeaderLite(..)
-)
-where
+( IcmpHeader(..)
+, IcmpHeaderLite(..)
+) where
 
 import Clash.Prelude
 

@@ -3,8 +3,8 @@ Module      : Data.Maybe.Extra
 Description : Utility module, only for very small util functions.
 -}
 module Data.Maybe.Extra
-    ( toMaybe
-    ) where
+  ( toMaybe
+  ) where
 
 import Clash.Prelude
 
