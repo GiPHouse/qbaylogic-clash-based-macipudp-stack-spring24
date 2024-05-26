@@ -1,17 +1,20 @@
 {-|
-Module      : Protocols.Extra.PacketStream.PacketArbiter
-Description : Provides a packet arbiter, for merging packet streams.
+Module      : Protocols.Extra.PacketStream.PacketRouting
+Description : Provides a packet arbiter and dispatcher, for merging and splitting packet streams.
 -}
-module Protocols.Extra.PacketStream.PacketArbiter
+module Protocols.Extra.PacketStream.PacketRouting
   ( packetArbiterC
   , ArbiterMode(..)
+  , packetDispatcherC
   ) where
 
 import Clash.Prelude
+import Data.Bifunctor ( Bifunctor(second) )
 import Data.Bifunctor qualified as B
 import Data.Maybe
 import Protocols
 import Protocols.Extra.PacketStream
+
 
 -- | Collect mode for `packetArbiterC`
 data ArbiterMode
@@ -49,3 +52,27 @@ packetArbiterC mode = Circuit (B.first unbundle . mealyB go (maxBound, True) . B
           (_, False) -> i
           (RoundRobin, _) -> satSucc SatWrap i -- next index
           (Parallel, _) -> fromMaybe maxBound $ fold @(p - 1) (<|>) (zipWith (<$) indicesI fwds) -- index of last sink with data
+
+-- | Routes packets depending on their metadata, using given routing functions.
+--
+-- Data is sent to at most one element of the output vector, for which the
+-- dispatch function evaluates to true on the metadata of the input. If none of
+-- the functions evaluate to true, the input is dropped. If more than one of the
+-- predicates are true, the first one is picked.
+--
+-- Sends out packets in the same clock cycle as they are received.
+packetDispatcherC
+  :: forall (dom :: Domain) (p :: Nat) (n :: Nat) (a :: Type)
+   . ( HiddenClockResetEnable dom
+     , KnownNat p
+     )
+  => Vec p (a -> Bool)
+  -- ^ Dispatch function. If function at index i returns true for the metaData it
+  -- dispatches the current packet to that sink.
+  -> Circuit (PacketStream dom n a) (Vec p (PacketStream dom n a))
+packetDispatcherC fs = Circuit (second unbundle . unbundle . fmap go . bundle . second bundle)
+  where
+    go (Just x, bwds) = case findIndex id $ zipWith ($) fs (pure $ _meta x) of
+      Just i -> (bwds !! i, replace i (Just x) (repeat Nothing))
+      _ -> (PacketStreamS2M True, repeat Nothing)
+    go _ = (PacketStreamS2M False, repeat Nothing)

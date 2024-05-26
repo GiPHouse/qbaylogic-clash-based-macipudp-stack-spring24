@@ -27,7 +27,7 @@ import Protocols.Hedgehog
 
 -- Me
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.PacketDispatcher
+import Protocols.Extra.PacketStream.PacketRouting ( packetDispatcherC )
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

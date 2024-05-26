@@ -122,11 +122,10 @@ library
     Protocols.Extra.PacketStream.AsyncFIFO
     Protocols.Extra.PacketStream.Depacketizer
     Protocols.Extra.PacketStream.DownConverter
-    Protocols.Extra.PacketStream.PacketArbiter
     Protocols.Extra.PacketStream.PacketBuffer
-    Protocols.Extra.PacketStream.PacketDispatcher
     Protocols.Extra.PacketStream.PacketizeFromDf
     Protocols.Extra.PacketStream.Packetizer
+    Protocols.Extra.PacketStream.PacketRouting
     Protocols.Extra.PacketStream.UpConverter
     Protocols.Extra.PacketStream
   other-modules:
