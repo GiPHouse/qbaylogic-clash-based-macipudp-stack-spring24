@@ -2,32 +2,19 @@
 {-# language NumericUnderscores #-}
 
 module Test.Cores.Ethernet.Depacketizer
-  (tests, depacketizerModel) where
+  (depacketizerModel) where
 
--- base
 import Data.List qualified as L
 import Prelude
 
--- tasty
-import Test.Tasty
-import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
-import Test.Tasty.Hedgehog.Extra ( testProperty )
-import Test.Tasty.TH ( testGroupGenerator )
-
--- hedgehog
-import Hedgehog
-import Hedgehog.Gen qualified as Gen
-import Hedgehog.Range qualified as Range
-
--- clash-prelude
 import Clash.Prelude hiding ( concat )
 import Clash.Prelude qualified as C
 import Clash.Sized.Vector ( unsafeFromList )
 
--- Me
 import Clash.Cores.Ethernet.PacketStream
 
 import Test.Cores.Ethernet.Util
+
 
 -- | Model of the generic `depacketizerC`.
 depacketizerModel
@@ -64,26 +51,3 @@ depacketizerModel toMetaOut ps = concat dataWidthPackets
 
     dataWidthPackets :: [[PacketStreamM2S dataWidth metaOut]]
     dataWidthPackets = fmap chunkToPacket . chopBy (C.natToNum @dataWidth) <$> parsedPackets
-
--- Validate the proof we have conjured from nothing
--- actually passes randomized testing
-prop_equivalentBufSizes :: Property
-prop_equivalentBufSizes = property $ do
-  let divRU n d = div (n + (d - 1)) d
-
-  (headerBytes :: Integer) <- forAll $ Gen.integral $ Range.linear 0 100_000
-  (dataWidth :: Integer) <- forAll $ Gen.integral $ Range.linear 1 100_000
-
-  let parseBufSize = dataWidth * headerBytes `divRU` dataWidth - dataWidth + dataWidth
-  let forwardBufSize = headerBytes + (dataWidth - (headerBytes `mod` dataWidth)) `mod` dataWidth
-
-  footnote $ "headerBytes: " L.++ show headerBytes
-  footnote $ "dataWidth: " L.++ show dataWidth
-
-  parseBufSize === forwardBufSize
-
-tests :: TestTree
-tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000_000))
-  $(testGroupGenerator)

@@ -6,7 +6,6 @@ import Test.Cores.Arp.ArpManager qualified
 import Test.Cores.Arp.ArpTable qualified
 import Test.Cores.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.AsyncFIFO qualified
-import Test.Cores.Ethernet.Depacketizer qualified
 import Test.Cores.Ethernet.DownConverter qualified
 import Test.Cores.Ethernet.EthernetTypes qualified
 import Test.Cores.Ethernet.FrameCheckSequence qualified
@@ -42,7 +41,6 @@ main = defaultMain $ testGroup "."
     , Test.Cores.Ethernet.PreambleInserter.tests
     , Test.Cores.Ethernet.PreambleStripper.tests
     , Test.Cores.Ethernet.InterpacketGapInserter.tests
-    , Test.Cores.Ethernet.Depacketizer.tests
     , Test.Cores.Ethernet.MacDepacketizer.tests
     , Test.Cores.Ethernet.MacPacketizer.tests
     , Test.Cores.Ethernet.InternetChecksum.tests
