@@ -56,6 +56,8 @@ common common-options
 
     -fconstraint-solver-iterations=10
 
+    -fplugin Protocols.Plugin
+
     -- Clash needs access to the source code in compiled modules
     -fexpose-all-unfoldings
 
@@ -95,11 +97,13 @@ library
   hs-source-dirs: src
   exposed-modules:
     Clash.Cores.Arp.ArpManager
+    Clash.Cores.Arp.ArpReceiver
     Clash.Cores.Arp.ArpTable
     Clash.Cores.Arp.ArpTransmitter
     Clash.Cores.Arp.ArpTypes
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Cores.Ethernet.Depacketizer
+    Clash.Cores.Ethernet.DepacketizeToDf
     Clash.Cores.Ethernet.EthernetTypes
     Clash.Cores.Ethernet.MacDepacketizer
     Clash.Cores.Ethernet.RGMII
@@ -131,8 +135,9 @@ library
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.Colorlight.CRG
   other-modules:
-    Clash.Sized.Vector.Extra
     Clash.Signal.Extra
+    Clash.Sized.Vector.Extra
+    Protocols.Df.Extra
   default-language: Haskell2010
   build-depends:
     interpolate,
@@ -165,6 +170,7 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Arp.ArpManager
+    Test.Cores.Arp.ArpReceiver
     Test.Cores.Arp.ArpTable
     Test.Cores.Arp.ArpTransmitter
     Test.Cores.Ethernet.Depacketizer
