@@ -106,8 +106,7 @@ library
     Clash.Cores.Ethernet.Examples.TxStack
     Clash.Cores.Ethernet.Icmp.IcmpTypes
     Clash.Cores.Ethernet.IP.InternetChecksum
-    Clash.Cores.Ethernet.IP.IPDepacketizer
-    Clash.Cores.Ethernet.IP.IPPacketizer
+    Clash.Cores.Ethernet.IP.IPPacketizers
     Clash.Cores.Ethernet.IP.IPv4Types
     Clash.Cores.Ethernet.Mac.EthernetTypes
     Clash.Cores.Ethernet.Mac.FrameCheckSequence

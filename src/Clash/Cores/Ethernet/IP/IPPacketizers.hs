@@ -1,9 +1,11 @@
 {-|
-Module      : Clash.Cores.Ethernet.IP.IPDepacketizer
-Description : Strips the IP header from packets.
+Module      : Clash.Cores.Ethernet.IP.IPPacketizers
+Description : Specialized packetizer and depacketizer for IP headers.
 -}
-module Clash.Cores.Ethernet.IP.IPDepacketizer
-  ( ipDepacketizerC
+module Clash.Cores.Ethernet.IP.IPPacketizers
+  ( ipPacketizerC
+  , ipLitePacketizerC
+  , ipDepacketizerC
   , ipDepacketizerLiteC
   ) where
 
@@ -11,12 +13,81 @@ import Clash.Cores.Ethernet.IP.InternetChecksum
 import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Prelude
+import Data.Functor
 import Data.Maybe
 import Data.Type.Equality
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Depacketizer ( depacketizerC )
+import Protocols.Extra.PacketStream.Packetizer
 
+
+-- | Packetize a packet stream with the IPv4HeaderLite meta data
+-- giving default values for header data that are not in IPv4HeaderLite.
+ipLitePacketizerC
+  :: forall (dom :: Domain)
+            (dataWidth :: Nat) .
+  ( HiddenClockResetEnable dom
+  , KnownDomain dom
+  , 1 <= dataWidth
+  , KnownNat dataWidth)
+  => Circuit (PacketStream dom dataWidth IPv4HeaderLite) (PacketStream dom dataWidth IPv4Address)
+ipLitePacketizerC = fromLiteC |> ipPacketizerC
+
+-- | Packetize a packet stream with the IPv4Header meta data.
+ipPacketizerC
+  :: forall (dom :: Domain)
+            (dataWidth :: Nat)
+   . ( HiddenClockResetEnable dom
+     , KnownDomain dom
+     , 1 <= dataWidth
+     , KnownNat dataWidth
+     )
+  => Circuit (PacketStream dom dataWidth IPv4Header) (PacketStream dom dataWidth IPv4Address)
+ipPacketizerC = setChecksumC |> packetizerC _ipv4Destination id
+
+-- | Internal state of `setChecksumC`
+data ChecksumS
+  = Wait    -- ^ Waiting for new packet
+  | Compute -- ^ Computing checksum
+  | Forward (BitVector 16) -- ^ Forwarding data
+  deriving (Eq, Generic, NFDataX)
+
+-- | Set the checksum in the IPv4Header of the metatype
+setChecksumC
+  :: forall dom dataWidth
+   . HiddenClockResetEnable dom
+  => KnownDomain dom
+  => Circuit (PacketStream dom dataWidth IPv4Header) (PacketStream dom dataWidth IPv4Header)
+setChecksumC = Circuit $ \(fwdInS, bwdInS) ->
+  let
+    s = register Wait s'
+    (s', unbundle -> (bwdOutS, fwdOutS)) = unbundle $ bundle (s, fwdInS, bwdInS, counter, checksum) <&> \case
+      (Wait, Just _, _, _, _)         -> (Compute, stall)
+      (Wait, _, _, _, _)              -> (Wait, stall)
+      (Compute, fwdIn, bwdIn, 0, c)   -> go c fwdIn bwdIn
+      (Compute, _, _, _, _)           -> (Compute, stall)
+      (Forward c, fwdIn, bwdIn, _, _) -> go c fwdIn bwdIn
+
+    go c fwdIn bwdIn = (s'', (bwdIn, replaceChecksum c fwdIn))
+      where
+        s'' | isJust fwdIn && isJust (_last (fromJustX fwdIn)) = Wait
+            | otherwise = Forward c
+
+    stall = (PacketStreamS2M False, Nothing)
+    replaceChecksum c mp = ((\h -> h {_ipv4Checksum = c}) <$>) <$> mp
+
+    -- Calculating the checksum
+    replaceBuffer = (s .==. pure Wait) .&&. isJust <$> fwdInS
+    ipHeader = bitCoerce . _meta . fromJustX <$> fwdInS
+    buffer :: Signal dom (Vec 10 (BitVector 16))
+    counter :: Signal dom (Index 11)
+    buffer = register (ensureSpine defaultBytes) (mux replaceBuffer ipHeader ((<<+ defaultBytes) <$> buffer))
+    counter = register 0 $ mux replaceBuffer 10 (satPred SatBound <$> counter)
+    checksum = complement <$> internetChecksum replaceBuffer (Just . head <$> buffer)
+
+    defaultBytes = errorX "ipPacketizerC: undefined value in header register"
+   in (bwdOutS, fwdOutS)
 
 -- | Parses the IPv4 header. Does not support parsing options in the header.
 -- If the checksum is invalid or options are given, the abort bit is set.
@@ -51,10 +122,10 @@ ipDepacketizerLiteC
 ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
 
 data VerifyChecksumS n
-  = Check (BitVector 16) (Index (1 + 20 `Div` n)) (BitVector 8)
+  = DeCheck (BitVector 16) (Index (1 + 20 `Div` n)) (BitVector 8)
   -- ^ Checking. Contains accumulator, remaining bytes, and byte from previous
   -- packet in case of odd data widths
-  | Forward Bool
+  | DeForward Bool
   -- ^ Forwarding. Bool is True if checksum was invalid
   deriving (Generic, NFDataX)
 
@@ -69,16 +140,16 @@ verifyChecksum
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
 verifyChecksum = case (sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)), compareSNat (SNat @(20 `Mod` n)) (SNat @n)) of
-    (Just Refl, SNatLE) -> Circuit $ mealyB go (Check 0 0 undefined)
+    (Just Refl, SNatLE) -> Circuit $ mealyB go (DeCheck 0 0 undefined)
     _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n"
   where
     go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n, 20 `Mod` n <= n)
       => VerifyChecksumS n
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
       -> (VerifyChecksumS n, (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
-    go (Forward invalid) (mp, bwd) = (Forward invalid, (bwd, (\p -> p {_abort = _abort p || invalid}) <$> mp))
-    go s@(Check {}) (Nothing, bwd) = (s, (bwd, Nothing))
-    go s@(Check acc i byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
+    go (DeForward invalid) (mp, bwd) = (DeForward invalid, (bwd, (\p -> p {_abort = _abort p || invalid}) <$> mp))
+    go s@(DeCheck {}) (Nothing, bwd) = (s, (bwd, Nothing))
+    go s@(DeCheck acc i byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
       where
         containsData = i == maxBound
 
@@ -108,7 +179,7 @@ verifyChecksum = case (sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)), 
         i' = satSucc SatBound i
         s'
           | not inReady = s
-          | isJust (_last fwdIn) = Forward invalid
-          | otherwise = Check acc' i' byte'
+          | isJust (_last fwdIn) = DeForward invalid
+          | otherwise = DeCheck acc' i' byte'
 
         fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || invalid } else fwdIn
