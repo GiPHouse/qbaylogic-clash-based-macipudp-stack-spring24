@@ -37,7 +37,6 @@ data IcmpHeaderLite = IcmpHeaderLite {
   _checksumL :: BitVector 16
   } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
-
 icmpEchoResponderC ::
   forall (dom :: Domain) (dataWidth :: Nat).
   HiddenClockResetEnable dom

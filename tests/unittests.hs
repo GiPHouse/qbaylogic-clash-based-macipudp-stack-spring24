@@ -2,7 +2,6 @@ import Prelude
 
 import Test.Tasty
 
-import Test.Cores.Ethernet.Arp qualified
 import Test.Cores.Ethernet.Arp.ArpManager qualified
 import Test.Cores.Ethernet.Arp.ArpTable qualified
 import Test.Cores.Ethernet.Icmp qualified
@@ -34,7 +33,6 @@ main = defaultMain $ testGroup "."
   , Test.Cores.Ethernet.Mac.MacPacketizers.tests
   , Test.Cores.Ethernet.Mac.PaddingInserter.tests
   , Test.Cores.Ethernet.Mac.Preamble.tests
-  , Test.Cores.Ethernet.Arp.tests
   , Test.Cores.Ethernet.Icmp.tests
   , Test.Protocols.Extra.PacketStream.AsyncFIFO.tests
   , Test.Protocols.Extra.PacketStream.Converters.tests

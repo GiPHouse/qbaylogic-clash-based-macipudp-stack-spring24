@@ -111,7 +111,6 @@ library
     Clash.Cores.Ethernet.Mac.MacPacketizers
     Clash.Cores.Ethernet.Mac.PaddingInserter
     Clash.Cores.Ethernet.Mac.Preamble
-    Clash.Cores.Ethernet.Arp
     Clash.Cores.Ethernet.Icmp
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.TopEntity
@@ -169,7 +168,6 @@ test-suite test-library
     Test.Cores.Ethernet.Mac.MacPacketizers
     Test.Cores.Ethernet.Mac.PaddingInserter
     Test.Cores.Ethernet.Mac.Preamble
-    Test.Cores.Ethernet.Arp
     Test.Cores.Ethernet.Icmp
     Test.Protocols.Extra.PacketStream.AsyncFIFO
     Test.Protocols.Extra.PacketStream.Converters
