@@ -20,8 +20,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
-import Test.Protocols.Extra.PacketStream.Depacketizer ( depacketizerModel )
-import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
+import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC, macPacketizerC )

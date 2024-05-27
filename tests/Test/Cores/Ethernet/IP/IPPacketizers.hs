@@ -28,8 +28,7 @@ import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 import Test.Cores.Ethernet.IP.InternetChecksum ( pureInternetChecksum )
 import Test.Cores.Ethernet.Util
-import Test.Protocols.Extra.PacketStream.Depacketizer ( depacketizerModel )
-import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
+import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)

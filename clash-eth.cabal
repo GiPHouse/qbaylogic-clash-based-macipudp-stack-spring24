@@ -163,7 +163,6 @@ test-suite test-library
     Test.Cores.Ethernet.Arp.ArpManager
     Test.Cores.Ethernet.Arp.ArpTable
     Test.Cores.Ethernet.Arp
-    Test.Protocols.Extra.PacketStream.Depacketizer
     Test.Cores.Ethernet.Util
     Test.Protocols.Extra.PacketStream
     Test.Cores.Ethernet.Mac.PaddingInserter
@@ -176,7 +175,7 @@ test-suite test-library
     Test.Cores.Ethernet.Mac.FrameCheckSequence
     Test.Protocols.Extra.PacketStream.AsyncFIFO
     Test.Cores.Ethernet.IP.InternetChecksum
-    Test.Protocols.Extra.PacketStream.Packetizer
+    Test.Protocols.Extra.PacketStream.Packetizers
     Test.Cores.Ethernet.Mac.MacPacketizers
     Test.Cores.Ethernet.Mac.EthernetTypes
     Test.Cores.Ethernet.Icmp

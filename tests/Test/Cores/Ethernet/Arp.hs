@@ -26,8 +26,7 @@ import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 import Test.Cores.Ethernet.Util ( fullPackets )
-import Test.Protocols.Extra.PacketStream.Depacketizer
-import Test.Protocols.Extra.PacketStream.Packetizer
+import Test.Protocols.Extra.PacketStream.Packetizers
 
 import Data.List qualified as L
 
