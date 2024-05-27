@@ -165,10 +165,9 @@ test-suite test-library
     Test.Cores.Ethernet.Arp
     Test.Protocols.Extra.PacketStream.Depacketizer
     Test.Cores.Ethernet.Util
-    Test.Protocols.Extra.PacketStream.PacketArbiter
     Test.Protocols.Extra.PacketStream
     Test.Cores.Ethernet.Mac.PaddingInserter
-    Test.Protocols.Extra.PacketStream.PacketDispatcher
+    Test.Protocols.Extra.PacketStream.PacketRouting
     Test.Cores.Ethernet.Mac.Preamble
     Test.Protocols.Extra.PacketStream.DownConverter
     Test.Protocols.Extra.PacketStream.UpConverter

@@ -17,9 +17,8 @@ import Test.Cores.Ethernet.Mac.Preamble qualified
 import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
 import Test.Protocols.Extra.PacketStream.DownConverter qualified
-import Test.Protocols.Extra.PacketStream.PacketArbiter qualified
+import Test.Protocols.Extra.PacketStream.PacketRouting qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
-import Test.Protocols.Extra.PacketStream.PacketDispatcher qualified
 import Test.Protocols.Extra.PacketStream.UpConverter qualified
 
 main :: IO ()
@@ -29,13 +28,12 @@ main = defaultMain $ testGroup "."
   , Test.Cores.Ethernet.Arp.ArpTable.tests
   , Test.Cores.Ethernet.Arp.testsTransmitter
   , Test.Protocols.Extra.PacketStream.AsyncFIFO.tests
-  , Test.Protocols.Extra.PacketStream.PacketArbiter.tests
+  , Test.Protocols.Extra.PacketStream.PacketRouting.tests
   , Test.Protocols.Extra.PacketStream.tests
   , Test.Cores.Ethernet.Mac.PaddingInserter.tests
   , Test.Protocols.Extra.PacketStream.UpConverter.tests
   , Test.Protocols.Extra.PacketStream.DownConverter.tests
   , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
-  , Test.Protocols.Extra.PacketStream.PacketDispatcher.tests
   , Test.Cores.Ethernet.Mac.Preamble.tests
   , Test.Cores.Ethernet.Mac.InterpacketGapInserter.tests
   , Test.Cores.Ethernet.Mac.MacPacketizers.tests
