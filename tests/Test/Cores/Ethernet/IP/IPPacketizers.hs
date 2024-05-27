@@ -83,12 +83,6 @@ testSetChecksumC _ = idWithModelSingleDomain
 prop_ip_set_checksum_d8 :: Property
 prop_ip_set_checksum_d8 = testSetChecksumC C.d8
 
-testsPacketizer :: TestTree
-testsPacketizer =
-    localOption (mkTimeout 20_000_000 {- 20 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
-
 -- | Tests the IP depacketizer for arbitrary packets
 testIPDepacketizer
   :: forall (dataWidth :: C.Nat)
@@ -172,8 +166,8 @@ prop_ip_depacketizer_d20 = testIPDepacketizer C.d20
 prop_ip_depacketizer_d28 :: Property
 prop_ip_depacketizer_d28 = testIPDepacketizer C.d28
 
-testsDepacketizer :: TestTree
-testsDepacketizer =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
+tests :: TestTree
+tests =
+    localOption (mkTimeout 20_000_000 {- 20 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)

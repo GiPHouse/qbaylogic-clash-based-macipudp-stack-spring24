@@ -126,12 +126,6 @@ prop_fcsinserter_d2 = fcsinserterTest C.d2
 prop_fcsinserter_d4 = fcsinserterTest C.d4
 prop_fcsinserter_d8 = fcsinserterTest C.d8
 
-testsInsert :: TestTree
-testsInsert =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
-
 modelValidate
   :: C.KnownNat dataWidth
   => 1 C.<= dataWidth
@@ -206,8 +200,8 @@ prop_fcsvalidator_d2 = fcsvalidatorTest C.d2
 prop_fcsvalidator_d4 = fcsvalidatorTest C.d4
 prop_fcsvalidator_d8 = fcsvalidatorTest C.d8
 
-testsValidate :: TestTree
-testsValidate =
+tests :: TestTree
+tests =
     localOption (mkTimeout 12_000_000 {- 12 seconds -})
   $ localOption (HedgehogTestLimit (Just 1_000))
   $(testGroupGenerator)

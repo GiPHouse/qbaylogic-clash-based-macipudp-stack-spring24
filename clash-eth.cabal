@@ -164,7 +164,6 @@ test-suite test-library
     Test.Cores.Ethernet.Arp.ArpTable
     Test.Cores.Ethernet.Arp
     Test.Protocols.Extra.PacketStream.Depacketizer
-    Test.Cores.Ethernet.Mac.MacDepacketizer
     Test.Cores.Ethernet.Util
     Test.Protocols.Extra.PacketStream.PacketArbiter
     Test.Protocols.Extra.PacketStream
@@ -181,7 +180,7 @@ test-suite test-library
     Test.Cores.Ethernet.Mac.AsyncFIFO
     Test.Cores.Ethernet.IP.InternetChecksum
     Test.Protocols.Extra.PacketStream.Packetizer
-    Test.Cores.Ethernet.Mac.MacPacketizer
+    Test.Cores.Ethernet.Mac.MacPacketizers
     Test.Cores.Ethernet.Mac.EthernetTypes
     Test.Cores.Ethernet.Icmp
   build-depends:

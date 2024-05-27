@@ -12,8 +12,7 @@ import Test.Cores.Ethernet.Mac.AsyncFIFO qualified
 import Test.Cores.Ethernet.Mac.EthernetTypes qualified
 import Test.Cores.Ethernet.Mac.FrameCheckSequence qualified
 import Test.Cores.Ethernet.Mac.InterpacketGapInserter qualified
-import Test.Cores.Ethernet.Mac.MacDepacketizer qualified
-import Test.Cores.Ethernet.Mac.MacPacketizer qualified
+import Test.Cores.Ethernet.Mac.MacPacketizers qualified
 import Test.Cores.Ethernet.Mac.PaddingInserter qualified
 import Test.Cores.Ethernet.Mac.PreambleInserter qualified
 import Test.Cores.Ethernet.Mac.PreambleStripper qualified
@@ -41,13 +40,10 @@ main = defaultMain $ testGroup "."
   , Test.Cores.Ethernet.Mac.PreambleInserter.tests
   , Test.Cores.Ethernet.Mac.PreambleStripper.tests
   , Test.Cores.Ethernet.Mac.InterpacketGapInserter.tests
-  , Test.Cores.Ethernet.Mac.MacDepacketizer.tests
-  , Test.Cores.Ethernet.Mac.MacPacketizer.tests
+  , Test.Cores.Ethernet.Mac.MacPacketizers.tests
   , Test.Cores.Ethernet.IP.InternetChecksum.tests
-  , Test.Cores.Ethernet.Mac.FrameCheckSequence.testsValidate
-  , Test.Cores.Ethernet.Mac.FrameCheckSequence.testsInsert
+  , Test.Cores.Ethernet.Mac.FrameCheckSequence.tests
   , Test.Cores.Ethernet.Mac.EthernetTypes.tests
   , Test.Cores.Ethernet.Icmp.tests
-  , Test.Cores.Ethernet.IP.IPPacketizers.testsDepacketizer
-  , Test.Cores.Ethernet.IP.IPPacketizers.testsPacketizer
+  , Test.Cores.Ethernet.IP.IPPacketizers.tests
   ]
