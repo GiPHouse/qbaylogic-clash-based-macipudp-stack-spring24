@@ -29,7 +29,6 @@ import Protocols.Hedgehog
 
 -- ethernet
 import Clash.Cores.Ethernet.Icmp
-import Clash.Cores.Ethernet.Icmp.IcmpTypes
 import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Clash.Cores.Ethernet.IP.IPv4Types
 

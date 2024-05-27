@@ -5,7 +5,9 @@ Module      : Clash.Cores.Ethernet.Icmp
 Description : Top level ICMP module.
 -}
 module Clash.Cores.Ethernet.Icmp
-  ( icmpReceiverC
+  ( IcmpHeader(..)
+  , IcmpHeaderLite(..)
+  , icmpReceiverC
   , icmpTransmitterC
   , icmpEchoResponderC
   ) where
@@ -16,9 +18,25 @@ import Protocols ( Circuit, (|>) )
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Packetizers ( depacketizerC, packetizerC )
 
-import Clash.Cores.Ethernet.Icmp.IcmpTypes ( IcmpHeader(..), IcmpHeaderLite(..) )
 import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address, IPv4HeaderLite(..) )
+
+import Control.DeepSeq ( NFData )
+
+
+-- | Full ICMP header
+data IcmpHeader = IcmpHeader {
+  _type :: BitVector 8,
+  _code :: BitVector 8,
+  _checksum :: BitVector 16
+  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
+-- | Small ICMP header with only the type
+data IcmpHeaderLite = IcmpHeaderLite {
+  _typeL :: BitVector 8,
+  _checksumL :: BitVector 16
+  } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
+
 
 icmpEchoResponderC ::
   forall (dom :: Domain) (dataWidth :: Nat).
