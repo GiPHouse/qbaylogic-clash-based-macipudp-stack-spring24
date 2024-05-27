@@ -30,7 +30,7 @@ import Protocols.Extra.PacketStream.PacketBuffer ( overflowDropPacketBufferC, pa
 import Protocols.Hedgehog
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra as U
+import Test.Protocols.Extra.PacketStream as U
 
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)

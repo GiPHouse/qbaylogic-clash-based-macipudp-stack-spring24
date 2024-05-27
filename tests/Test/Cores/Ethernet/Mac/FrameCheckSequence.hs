@@ -36,7 +36,8 @@ import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream
+    ( chopPacket, chunkByPacket, downConvert, fullPackets, upConvert )
 
 -- ethernet
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence

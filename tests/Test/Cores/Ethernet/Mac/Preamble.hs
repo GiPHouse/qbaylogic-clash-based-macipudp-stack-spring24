@@ -32,7 +32,7 @@ import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.Preamble ( preambleInserterC, preambleStripperC )
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream ( chunkByPacket, fullPackets )
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 

@@ -33,7 +33,7 @@ import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra ( fullPackets )
+import Test.Protocols.Extra.PacketStream ( fullPackets )
 import Test.Protocols.Extra.PacketStream.Packetizers
 
 

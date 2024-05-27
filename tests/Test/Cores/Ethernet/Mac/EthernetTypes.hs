@@ -27,7 +27,7 @@ import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream ( fullPackets )
 
 -- ethernet
 import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address(..) )

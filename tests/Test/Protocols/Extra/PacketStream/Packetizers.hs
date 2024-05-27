@@ -32,7 +32,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols.Extra.PacketStream
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream hiding ( tests )
 
 
 -- | Model of the generic `packetizerC`.

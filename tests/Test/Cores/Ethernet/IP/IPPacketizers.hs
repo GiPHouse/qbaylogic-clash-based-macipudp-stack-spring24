@@ -34,7 +34,7 @@ import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 -- tests
 import Test.Cores.Ethernet.IP.InternetChecksum ( pureInternetChecksum )
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream ( chopBy, chunkByPacket, fullPackets )
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 

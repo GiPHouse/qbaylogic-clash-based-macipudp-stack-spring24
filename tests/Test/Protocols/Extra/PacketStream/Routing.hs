@@ -29,7 +29,7 @@ import Protocols.Extra.PacketStream.Routing
 import Protocols.Hedgehog
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream ( chunkByPacket, fullPackets )
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

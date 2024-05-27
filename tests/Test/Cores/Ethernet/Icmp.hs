@@ -33,7 +33,7 @@ import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Clash.Cores.Ethernet.IP.IPv4Types
 
 -- tests
-import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream ( fullPackets, genValidPacket )
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 
