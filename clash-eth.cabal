@@ -175,7 +175,7 @@ test-suite test-library
     Test.Protocols.Extra.PacketStream.DownConverter
     Test.Protocols.Extra.PacketStream.UpConverter
     Test.Protocols.Extra.PacketStream.PacketBuffer
-    Test.Cores.Ethernet.IP.IPPacketizer
+    Test.Cores.Ethernet.IP.IPPacketizers
     Test.Cores.Ethernet.Mac.InterpacketGapInserter
     Test.Cores.Ethernet.Mac.FrameCheckSequence
     Test.Cores.Ethernet.Mac.AsyncFIFO
@@ -184,7 +184,6 @@ test-suite test-library
     Test.Cores.Ethernet.Mac.MacPacketizer
     Test.Cores.Ethernet.Mac.EthernetTypes
     Test.Cores.Ethernet.Icmp
-    Test.Cores.Ethernet.IP.IPDepacketizer
   build-depends:
     clash-eth,
     QuickCheck,

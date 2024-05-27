@@ -7,8 +7,7 @@ import Test.Cores.Ethernet.Arp.ArpManager qualified
 import Test.Cores.Ethernet.Arp.ArpTable qualified
 import Test.Cores.Ethernet.Icmp qualified
 import Test.Cores.Ethernet.IP.InternetChecksum qualified
-import Test.Cores.Ethernet.IP.IPDepacketizer qualified
-import Test.Cores.Ethernet.IP.IPPacketizer qualified
+import Test.Cores.Ethernet.IP.IPPacketizers qualified
 import Test.Cores.Ethernet.Mac.AsyncFIFO qualified
 import Test.Cores.Ethernet.Mac.EthernetTypes qualified
 import Test.Cores.Ethernet.Mac.FrameCheckSequence qualified
@@ -49,6 +48,6 @@ main = defaultMain $ testGroup "."
   , Test.Cores.Ethernet.Mac.FrameCheckSequence.testsInsert
   , Test.Cores.Ethernet.Mac.EthernetTypes.tests
   , Test.Cores.Ethernet.Icmp.tests
-  , Test.Cores.Ethernet.IP.IPDepacketizer.tests
-  , Test.Cores.Ethernet.IP.IPPacketizer.tests
+  , Test.Cores.Ethernet.IP.IPPacketizers.testsDepacketizer
+  , Test.Cores.Ethernet.IP.IPPacketizers.testsPacketizer
   ]
