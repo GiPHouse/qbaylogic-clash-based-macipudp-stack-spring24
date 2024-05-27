@@ -162,23 +162,23 @@ test-suite test-library
   other-modules:
     Test.Cores.Ethernet.Arp.ArpManager
     Test.Cores.Ethernet.Arp.ArpTable
-    Test.Cores.Ethernet.Arp
-    Test.Protocols.Extra.PacketStream.Extra
-    Test.Protocols.Extra.PacketStream
-    Test.Cores.Ethernet.Mac.PaddingInserter
-    Test.Protocols.Extra.PacketStream.PacketRouting
-    Test.Cores.Ethernet.Mac.Preamble
-    Test.Protocols.Extra.PacketStream.Converters
-    Test.Protocols.Extra.PacketStream.PacketBuffer
-    Test.Cores.Ethernet.IP.IPPacketizers
-    Test.Cores.Ethernet.Mac.InterpacketGapInserter
-    Test.Cores.Ethernet.Mac.FrameCheckSequence
-    Test.Protocols.Extra.PacketStream.AsyncFIFO
     Test.Cores.Ethernet.IP.InternetChecksum
-    Test.Protocols.Extra.PacketStream.Packetizers
-    Test.Cores.Ethernet.Mac.MacPacketizers
+    Test.Cores.Ethernet.IP.IPPacketizers
     Test.Cores.Ethernet.Mac.EthernetTypes
+    Test.Cores.Ethernet.Mac.FrameCheckSequence
+    Test.Cores.Ethernet.Mac.InterpacketGapInserter
+    Test.Cores.Ethernet.Mac.MacPacketizers
+    Test.Cores.Ethernet.Mac.PaddingInserter
+    Test.Cores.Ethernet.Mac.Preamble
+    Test.Cores.Ethernet.Arp
     Test.Cores.Ethernet.Icmp
+    Test.Protocols.Extra.PacketStream.AsyncFIFO
+    Test.Protocols.Extra.PacketStream.Converters
+    Test.Protocols.Extra.PacketStream.Extra
+    Test.Protocols.Extra.PacketStream.PacketBuffer
+    Test.Protocols.Extra.PacketStream.Packetizers
+    Test.Protocols.Extra.PacketStream.PacketRouting
+    Test.Protocols.Extra.PacketStream
   build-depends:
     clash-eth,
     QuickCheck,

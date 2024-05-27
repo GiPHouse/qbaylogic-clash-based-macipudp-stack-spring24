@@ -18,26 +18,28 @@ import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
 import Test.Protocols.Extra.PacketStream.Converters qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
+import Test.Protocols.Extra.PacketStream.Packetizers qualified
 import Test.Protocols.Extra.PacketStream.PacketRouting qualified
+
 
 main :: IO ()
 main = defaultMain $ testGroup "."
   [ Test.Cores.Ethernet.Arp.ArpManager.tests
-  , Test.Cores.Ethernet.Arp.testsReceiver
   , Test.Cores.Ethernet.Arp.ArpTable.tests
-  , Test.Cores.Ethernet.Arp.testsTransmitter
-  , Test.Protocols.Extra.PacketStream.AsyncFIFO.tests
-  , Test.Protocols.Extra.PacketStream.PacketRouting.tests
-  , Test.Protocols.Extra.PacketStream.tests
-  , Test.Cores.Ethernet.Mac.PaddingInserter.tests
-  , Test.Protocols.Extra.PacketStream.Converters.tests
-  , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
-  , Test.Cores.Ethernet.Mac.Preamble.tests
+  , Test.Cores.Ethernet.IP.InternetChecksum.tests
+  , Test.Cores.Ethernet.IP.IPPacketizers.tests
+  , Test.Cores.Ethernet.Mac.EthernetTypes.tests
+  , Test.Cores.Ethernet.Mac.FrameCheckSequence.tests
   , Test.Cores.Ethernet.Mac.InterpacketGapInserter.tests
   , Test.Cores.Ethernet.Mac.MacPacketizers.tests
-  , Test.Cores.Ethernet.IP.InternetChecksum.tests
-  , Test.Cores.Ethernet.Mac.FrameCheckSequence.tests
-  , Test.Cores.Ethernet.Mac.EthernetTypes.tests
+  , Test.Cores.Ethernet.Mac.PaddingInserter.tests
+  , Test.Cores.Ethernet.Mac.Preamble.tests
+  , Test.Cores.Ethernet.Arp.tests
   , Test.Cores.Ethernet.Icmp.tests
-  , Test.Cores.Ethernet.IP.IPPacketizers.tests
+  , Test.Protocols.Extra.PacketStream.AsyncFIFO.tests
+  , Test.Protocols.Extra.PacketStream.Converters.tests
+  , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
+  , Test.Protocols.Extra.PacketStream.Packetizers.tests
+  , Test.Protocols.Extra.PacketStream.PacketRouting.tests
+  , Test.Protocols.Extra.PacketStream.tests
   ]

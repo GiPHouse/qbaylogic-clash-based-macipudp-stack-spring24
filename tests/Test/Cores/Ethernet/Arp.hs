@@ -87,12 +87,6 @@ prop_arp_transmitter_d28 = arpTransmitterPropertyGenerator C.d28
 prop_arp_transmitter_d29 :: Property
 prop_arp_transmitter_d29 = arpTransmitterPropertyGenerator C.d29
 
-testsTransmitter :: TestTree
-testsTransmitter =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
-
 -- | generates 1/4 well-formed ARP requests intended for us,
 -- 1/4 well-formed ARP requests intended for us but aborted,
 -- 1/2 non-ARP request packet streams (with varying length and content).
@@ -239,8 +233,8 @@ prop_arp_receiver_d28 = arpReceiverPropertyGenerator C.d28
 prop_arp_receiver_d29 :: Property
 prop_arp_receiver_d29 = arpReceiverPropertyGenerator C.d29
 
-testsReceiver :: TestTree
-testsReceiver =
-    localOption (mkTimeout 10_000_000 {- 12 seconds -})
+tests :: TestTree
+tests =
+    localOption (mkTimeout 12_000_000 {- 12 seconds -})
   C.$ localOption (HedgehogTestLimit (C.Just 1_000))
   $(testGroupGenerator)
