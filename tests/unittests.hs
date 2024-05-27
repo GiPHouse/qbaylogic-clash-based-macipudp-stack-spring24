@@ -16,10 +16,9 @@ import Test.Cores.Ethernet.Mac.PaddingInserter qualified
 import Test.Cores.Ethernet.Mac.Preamble qualified
 import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
-import Test.Protocols.Extra.PacketStream.DownConverter qualified
-import Test.Protocols.Extra.PacketStream.PacketRouting qualified
+import Test.Protocols.Extra.PacketStream.Converters qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
-import Test.Protocols.Extra.PacketStream.UpConverter qualified
+import Test.Protocols.Extra.PacketStream.PacketRouting qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
@@ -31,8 +30,7 @@ main = defaultMain $ testGroup "."
   , Test.Protocols.Extra.PacketStream.PacketRouting.tests
   , Test.Protocols.Extra.PacketStream.tests
   , Test.Cores.Ethernet.Mac.PaddingInserter.tests
-  , Test.Protocols.Extra.PacketStream.UpConverter.tests
-  , Test.Protocols.Extra.PacketStream.DownConverter.tests
+  , Test.Protocols.Extra.PacketStream.Converters.tests
   , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
   , Test.Cores.Ethernet.Mac.Preamble.tests
   , Test.Cores.Ethernet.Mac.InterpacketGapInserter.tests
