@@ -2,7 +2,7 @@
 
 {-|
 Module      : Clash.Cores.Ethernet.Icmp
-Description : ...
+Description : Top level ICMP module.
 -}
 module Clash.Cores.Ethernet.Icmp
   ( icmpReceiverC

@@ -4,7 +4,7 @@
 
 {-|
 Module      : Clash.Cores.Ethernet.Arp
-Description : ...
+Description : Top level ARP module.
 -}
 module Clash.Cores.Ethernet.Arp
   ( arpTransmitter

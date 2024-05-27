@@ -2,7 +2,7 @@
 
 {-|
 Module      : Protocols.Df.Extra
-Description : ...
+Description : Extra utility functions for working with df.
 -}
 module Protocols.Df.Extra
   ( filterS

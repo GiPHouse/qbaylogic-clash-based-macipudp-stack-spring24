@@ -49,7 +49,7 @@ genPackets genMeta =
   genMeta <*>
   Gen.enumBounded
 
--- | Tests the IP depacketizer for arbitrary packets
+-- | Tests the IP packetizer for arbitrary packets
 testSetChecksumC
   :: forall (dataWidth :: C.Nat)
    . ( C.KnownNat dataWidth

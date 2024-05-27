@@ -1,6 +1,6 @@
 {-|
 Module      : Clash.Sized.Vector.Extra
-Description : ...
+Description : Extra utility functions for working with sized vectors.
 -}
 module Clash.Sized.Vector.Extra
   ( dropLe

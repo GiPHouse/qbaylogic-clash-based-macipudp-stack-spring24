@@ -6,7 +6,7 @@
 
 {-|
 Module      : Clash.Cores.Ethernet.Mac.FrameCheckSequence
-Description : ...
+Description : Provides circuits to insert and validate the FCS of an ethernet frame.
 -}
 module Clash.Cores.Ethernet.Mac.FrameCheckSequence
   ( fcsInserterC
