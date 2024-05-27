@@ -1,6 +1,6 @@
 {-# language FlexibleContexts #-}
 {-# language RecordWildCards #-}
-module Test.Cores.Ethernet.Util where
+module Test.Protocols.Extra.PacketStream.Extra where
 
 -- prelude
 import Prelude

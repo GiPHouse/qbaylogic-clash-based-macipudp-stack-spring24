@@ -25,7 +25,7 @@ import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packet
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC, macPacketizerC )
 
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

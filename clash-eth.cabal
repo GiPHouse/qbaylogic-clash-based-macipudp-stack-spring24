@@ -163,7 +163,7 @@ test-suite test-library
     Test.Cores.Ethernet.Arp.ArpManager
     Test.Cores.Ethernet.Arp.ArpTable
     Test.Cores.Ethernet.Arp
-    Test.Cores.Ethernet.Util
+    Test.Protocols.Extra.PacketStream.Extra
     Test.Protocols.Extra.PacketStream
     Test.Cores.Ethernet.Mac.PaddingInserter
     Test.Protocols.Extra.PacketStream.PacketRouting

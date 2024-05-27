@@ -22,7 +22,7 @@ import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.PacketRouting
 import Protocols.Hedgehog
 
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 import Data.List ( groupBy, sortOn )
 

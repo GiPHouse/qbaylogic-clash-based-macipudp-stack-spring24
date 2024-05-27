@@ -30,7 +30,7 @@ import Protocols
 import Protocols.Hedgehog
 
 -- util module
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 -- data module
 import Data.List qualified as L

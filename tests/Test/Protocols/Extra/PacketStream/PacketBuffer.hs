@@ -29,7 +29,7 @@ import Protocols.Hedgehog
 -- Me
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.PacketBuffer ( overflowDropPacketBufferC, packetBufferC )
-import Test.Cores.Ethernet.Util as U
+import Test.Protocols.Extra.PacketStream.Extra as U
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

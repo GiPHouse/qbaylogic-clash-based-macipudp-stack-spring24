@@ -31,7 +31,7 @@ import Clash.Cores.Ethernet.Icmp.IcmpTypes
 import Clash.Cores.Ethernet.IP.IPv4Types
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel )
 
 -- clash-cores

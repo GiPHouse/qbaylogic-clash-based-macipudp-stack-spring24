@@ -25,7 +25,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 import Protocols.Extra.PacketStream
 
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 import Data.List qualified as L
 

@@ -23,7 +23,7 @@ import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Converters
 import Protocols.Hedgehog
 
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 import Data.Maybe qualified as M
 

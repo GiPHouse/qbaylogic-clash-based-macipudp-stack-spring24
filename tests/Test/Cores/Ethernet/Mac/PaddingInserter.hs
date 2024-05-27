@@ -27,7 +27,7 @@ import Protocols
 import Protocols.Hedgehog
 
 -- util module
-import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Extra
 
 -- ethernet modules
 import Clash.Cores.Ethernet.Mac.PaddingInserter
