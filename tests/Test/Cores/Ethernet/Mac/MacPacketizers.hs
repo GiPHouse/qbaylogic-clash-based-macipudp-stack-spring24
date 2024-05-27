@@ -4,28 +4,35 @@
 
 module Test.Cores.Ethernet.Mac.MacPacketizers where
 
+-- base
 import Prelude
 
+-- clash-prelude
 import Clash.Prelude hiding ( concatMap )
 import Clash.Prelude qualified as C
 
+-- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
+-- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
+-- clash-protocols
 import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
-import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
+-- ethernet
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC, macPacketizerC )
 
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

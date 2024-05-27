@@ -4,28 +4,33 @@
 
 module Test.Protocols.Extra.PacketStream.Converters where
 
+-- base
+import Data.Maybe qualified as M
 import Prelude
 
+-- clash-prelude
 import Clash.Prelude ( type (<=) )
 import Clash.Prelude qualified as C
 
+-- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
+-- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
+-- clash-protocols
 import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.Converters
 import Protocols.Hedgehog
 
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
-
-import Data.Maybe qualified as M
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

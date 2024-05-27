@@ -5,11 +5,12 @@
 module Test.Protocols.Extra.PacketStream.PacketBuffer where
 
 -- base
+import Data.Int ( Int16 )
 import Prelude
+
 -- clash-prelude
 import Clash.Prelude hiding ( drop, take, undefined, (++) )
 import Clash.Prelude qualified as C
-import Data.Int ( Int16 )
 
 -- hedgehog
 import Hedgehog as H
@@ -24,12 +25,13 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
-import Protocols.Hedgehog
-
--- Me
 import Protocols.Extra.PacketStream
 import Protocols.Extra.PacketStream.PacketBuffer ( overflowDropPacketBufferC, packetBufferC )
+import Protocols.Hedgehog
+
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra as U
+
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

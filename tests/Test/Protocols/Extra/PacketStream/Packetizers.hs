@@ -9,25 +9,30 @@ module Test.Protocols.Extra.PacketStream.Packetizers
   , tests
   ) where
 
+-- base
+import Data.List qualified as L
 import Prelude
 
+-- clash
 import Clash.Prelude
 import Clash.Sized.Vector ( unsafeFromList )
 
+-- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
+-- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
+-- clash-protocols
 import Protocols.Extra.PacketStream
 
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
-
-import Data.List qualified as L
 
 
 -- | Model of the generic `packetizerC`.

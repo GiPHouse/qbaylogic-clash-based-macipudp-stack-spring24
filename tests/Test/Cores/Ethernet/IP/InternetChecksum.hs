@@ -6,6 +6,7 @@ module Test.Cores.Ethernet.IP.InternetChecksum where
 
 -- base
 import Data.Maybe
+import Data.Proxy
 import Numeric ( showHex )
 import Prelude
 
@@ -24,9 +25,9 @@ import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
--- clash-cores
+-- ethernet
 import Clash.Cores.Ethernet.IP.InternetChecksum
-import Data.Proxy
+
 
 uncurryS ::
   (C.Signal dom a -> C.Signal dom b -> C.Signal dom c)

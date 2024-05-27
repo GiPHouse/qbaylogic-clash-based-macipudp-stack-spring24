@@ -6,9 +6,8 @@
 module Test.Cores.Ethernet.Arp.ArpTable where
 
 -- base
-import Prelude
-
 import Data.List qualified as L
+import Prelude
 
 -- clash-prelude
 import Clash.Prelude hiding ( repeat )
@@ -27,7 +26,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 import Protocols
 import Protocols.Df hiding ( fst, snd )
 
--- Me
+-- ethernet
 import Clash.Cores.Ethernet.Arp.ArpTable
 import Clash.Cores.Ethernet.Arp.ArpTypes
 import Clash.Cores.Ethernet.IP.IPv4Types

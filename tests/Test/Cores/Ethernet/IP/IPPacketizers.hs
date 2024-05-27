@@ -4,28 +4,35 @@
 
 module Test.Cores.Ethernet.IP.IPPacketizers where
 
+-- base
 import Control.Monad
 import Prelude
 
+-- clash
 import Clash.Prelude qualified as C
 import Clash.Sized.Vector qualified as C
 
+-- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
+-- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
+-- clash-protocols
 import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
+-- ethernet
 import Clash.Cores.Ethernet.IP.IPPacketizers ( ipDepacketizerC, ipPacketizerC )
 import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.Mac.EthernetTypes
 
+-- tests
 import Test.Cores.Ethernet.IP.InternetChecksum ( pureInternetChecksum )
 import Test.Protocols.Extra.PacketStream.Extra
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )

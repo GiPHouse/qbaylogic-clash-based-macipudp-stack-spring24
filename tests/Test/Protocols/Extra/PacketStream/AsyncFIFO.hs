@@ -24,11 +24,10 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
-import Protocols.Hedgehog
-
--- Me
 import Protocols.Extra.PacketStream ( PacketStream, PacketStreamM2S(PacketStreamM2S) )
 import Protocols.Extra.PacketStream.AsyncFIFO
+import Protocols.Hedgehog
+
 
 genVec :: (KnownNat n, 1 C.<= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)

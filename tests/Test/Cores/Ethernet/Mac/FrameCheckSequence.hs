@@ -9,9 +9,14 @@
 module Test.Cores.Ethernet.Mac.FrameCheckSequence where
 
 -- base
+import Control.Monad
+import Data.List qualified as L
+import Data.Proxy
 import Prelude
 
--- clash-prelude
+-- clash
+import Clash.Cores.Crc
+import Clash.Cores.Crc.Catalog
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -27,27 +32,15 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- util module
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
 
--- data module
-import Data.List qualified as L
-
--- crc module
-import Clash.Cores.Crc
-import Clash.Cores.Crc.Catalog
-
--- fcs inserter
+-- ethernet
 import Clash.Cores.Ethernet.Mac.FrameCheckSequence
 
--- packetstream
-import Protocols.Extra.PacketStream
-
--- proxy
-import Control.Monad
-import Data.Proxy
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d1)
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) C.d8 C.d2)

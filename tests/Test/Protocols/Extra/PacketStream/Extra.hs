@@ -2,23 +2,22 @@
 {-# language RecordWildCards #-}
 module Test.Protocols.Extra.PacketStream.Extra where
 
--- prelude
+-- base
+import Data.List qualified as L
+import Data.Maybe qualified as M
 import Prelude
 
--- list
-import Data.List qualified as L
-
--- maybe
-import Data.Maybe qualified as M
-
--- clash-prelude
+-- clash
 import Clash.Prelude qualified as C
-
--- ethernet modules
 import Clash.Sized.Vector qualified as Vec
+
+-- clash-protocols
+import Protocols.Extra.PacketStream
+
+-- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
-import Protocols.Extra.PacketStream
+
 
 chunkBy :: (a -> Bool) -> [a] -> [[a]]
 chunkBy _ [] = []

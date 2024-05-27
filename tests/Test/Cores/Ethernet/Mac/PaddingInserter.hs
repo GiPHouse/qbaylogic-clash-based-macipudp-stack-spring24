@@ -24,14 +24,14 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- util module
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
 
--- ethernet modules
+-- ethernet
 import Clash.Cores.Ethernet.Mac.PaddingInserter
-import Protocols.Extra.PacketStream
 
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)

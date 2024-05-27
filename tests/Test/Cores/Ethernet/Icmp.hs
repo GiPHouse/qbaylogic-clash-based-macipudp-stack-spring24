@@ -23,21 +23,20 @@ import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
+import Protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- Me
+-- ethernet
 import Clash.Cores.Ethernet.Icmp
 import Clash.Cores.Ethernet.Icmp.IcmpTypes
-import Clash.Cores.Ethernet.IP.IPv4Types
-import Protocols.Extra.PacketStream
-
-import Test.Protocols.Extra.PacketStream.Extra
-import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel )
-
--- clash-cores
 import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
-import Protocols
-import Test.Protocols.Extra.PacketStream.Packetizers ( packetizerModel )
+import Clash.Cores.Ethernet.IP.IPv4Types
+
+-- tests
+import Test.Protocols.Extra.PacketStream.Extra
+import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
+
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

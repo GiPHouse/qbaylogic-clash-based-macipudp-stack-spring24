@@ -23,15 +23,15 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- util module
+-- tests
 import Test.Protocols.Extra.PacketStream.Extra
 
--- ethernet modules
+-- ethernet
 import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address(..) )
 import Clash.Cores.Ethernet.Mac.EthernetTypes
-import Protocols.Extra.PacketStream
 
 
 -- | Test the IPv4Address to EthernetHeader converter.

@@ -26,10 +26,9 @@ import Test.Tasty.TH ( testGroupGenerator )
 -- clash-protocols
 import Protocols
 import Protocols.DfConv qualified as DfConv
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- Me
-import Protocols.Extra.PacketStream
 
 genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)

@@ -5,23 +5,28 @@
 
 module Test.Cores.Ethernet.Arp.ArpManager where
 
+-- base
+import Data.List qualified as L
 import Prelude
 
-import Data.List qualified as L
-
+-- clash-prelude
 import Clash.Prelude hiding ( repeat )
 import Clash.Prelude qualified as C
 
+-- hedgehog
 import Hedgehog
 
+-- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
+-- clash-protocols
 import Protocols
 import Protocols.Df hiding ( fst, snd )
 
+-- ethernet
 import Clash.Cores.Ethernet.Arp.ArpManager
 import Clash.Cores.Ethernet.Arp.ArpTypes
 import Clash.Cores.Ethernet.IP.IPv4Types

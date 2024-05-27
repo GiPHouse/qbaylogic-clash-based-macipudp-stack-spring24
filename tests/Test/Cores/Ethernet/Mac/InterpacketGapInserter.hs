@@ -5,9 +5,8 @@
 module Test.Cores.Ethernet.Mac.InterpacketGapInserter where
 
 -- base
-import Prelude
-
 import Data.List qualified as L
+import Prelude
 
 -- clash-prelude
 import Clash.Prelude hiding ( repeat )
@@ -26,11 +25,12 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- Me
+-- ethernet
 import Clash.Cores.Ethernet.Mac.InterpacketGapInserter
-import Protocols.Extra.PacketStream
+
 
 genVec :: (KnownNat n, 1 <= n) => Gen a -> Gen (Vec n a)
 genVec gen = sequence (C.repeat gen)
