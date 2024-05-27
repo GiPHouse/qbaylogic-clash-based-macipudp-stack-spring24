@@ -2,35 +2,30 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Cores.Ethernet.Mac.PreambleInserter where
+module Test.Cores.Ethernet.Mac.Preamble where
 
--- base
 import Prelude
 
--- clash-prelude
 import Clash.Prelude hiding ( concatMap )
 import Clash.Prelude qualified as C
 
--- hedgehog
 import Hedgehog
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
 
--- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
--- clash-protocols
+import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
--- Me
 import Clash.Cores.Ethernet.Mac.EthernetTypes
-import Clash.Cores.Ethernet.Mac.Preamble ( preambleInserterC )
-import Protocols.Extra.PacketStream
+import Clash.Cores.Ethernet.Mac.Preamble ( preambleInserterC, preambleStripperC )
 
 import Test.Cores.Ethernet.Util
+import Test.Protocols.Extra.PacketStream.Depacketizer ( depacketizerModel )
 import Test.Protocols.Extra.PacketStream.Packetizer ( packetizerModel )
 
 import Data.List qualified as L
@@ -85,6 +80,60 @@ prop_preamble_inserter_d14 = preambleInserterPropertyGenerator d14
 -- | dataWidth > header byte size
 prop_preamble_inserter_d15 :: Property
 prop_preamble_inserter_d15 = preambleInserterPropertyGenerator d15
+
+preambleStripperPropertyGenerator
+  :: forall (dataWidth :: Nat) .
+     1 <= dataWidth
+  => SNat dataWidth
+  -> Property
+preambleStripperPropertyGenerator SNat =
+  propWithModelSingleDomain
+    @C.System
+    defExpectOptions
+    (fmap fullPackets (Gen.list (Range.linear 1 100) genPackets))
+    (C.exposeClockResetEnable model)
+    (C.exposeClockResetEnable @C.System preambleStripperC)
+    (===)
+    where
+      model ps = validateAll (depacketizerModel const ps)
+
+      validateAll :: [PacketStreamM2S dataWidth Preamble] -> [PacketStreamM2S dataWidth ()]
+      validateAll ps = L.concatMap validatePreamble (chunkByPacket ps)
+
+      validatePreamble :: [PacketStreamM2S dataWidth Preamble] -> [PacketStreamM2S dataWidth ()]
+      validatePreamble ps = if C.last (_meta $ Prelude.head ps) == startFrameDelimiter
+                            then L.map (\p -> p {_meta = ()}) ps
+                            else []
+      genPackets =
+          PacketStreamM2S <$>
+          genVec Gen.enumBounded <*>
+          Gen.maybe Gen.enumBounded <*>
+          Gen.enumBounded <*>
+          Gen.enumBounded
+
+-- | n mod dataWidth ~ 1
+prop_preamble_stripper_d1 :: Property
+prop_preamble_stripper_d1 = preambleStripperPropertyGenerator d1
+
+-- | n mod dataWidth ~ 3
+prop_preamble_stripper_d5 :: Property
+prop_preamble_stripper_d5 = preambleStripperPropertyGenerator d5
+
+-- | n mod dataWidth ~ 0
+prop_preamble_stripper_d4 :: Property
+prop_preamble_stripper_d4 = preambleStripperPropertyGenerator d4
+
+-- | dataWidth < header byte size
+prop_preamble_stripper_d7 :: Property
+prop_preamble_stripper_d7 = preambleStripperPropertyGenerator d7
+
+-- | dataWidth ~ header byte size
+prop_preamble_stripper_d8 :: Property
+prop_preamble_stripper_d8 = preambleStripperPropertyGenerator d8
+
+-- | dataWidth > header byte size
+prop_preamble_stripper_d9 :: Property
+prop_preamble_stripper_d9 = preambleStripperPropertyGenerator d9
 
 tests :: TestTree
 tests =

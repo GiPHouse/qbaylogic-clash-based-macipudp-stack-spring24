@@ -14,8 +14,7 @@ import Test.Cores.Ethernet.Mac.FrameCheckSequence qualified
 import Test.Cores.Ethernet.Mac.InterpacketGapInserter qualified
 import Test.Cores.Ethernet.Mac.MacPacketizers qualified
 import Test.Cores.Ethernet.Mac.PaddingInserter qualified
-import Test.Cores.Ethernet.Mac.PreambleInserter qualified
-import Test.Cores.Ethernet.Mac.PreambleStripper qualified
+import Test.Cores.Ethernet.Mac.Preamble qualified
 import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.DownConverter qualified
 import Test.Protocols.Extra.PacketStream.PacketArbiter qualified
@@ -37,8 +36,7 @@ main = defaultMain $ testGroup "."
   , Test.Protocols.Extra.PacketStream.DownConverter.tests
   , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
   , Test.Protocols.Extra.PacketStream.PacketDispatcher.tests
-  , Test.Cores.Ethernet.Mac.PreambleInserter.tests
-  , Test.Cores.Ethernet.Mac.PreambleStripper.tests
+  , Test.Cores.Ethernet.Mac.Preamble.tests
   , Test.Cores.Ethernet.Mac.InterpacketGapInserter.tests
   , Test.Cores.Ethernet.Mac.MacPacketizers.tests
   , Test.Cores.Ethernet.IP.InternetChecksum.tests

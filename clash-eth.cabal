@@ -169,8 +169,7 @@ test-suite test-library
     Test.Protocols.Extra.PacketStream
     Test.Cores.Ethernet.Mac.PaddingInserter
     Test.Protocols.Extra.PacketStream.PacketDispatcher
-    Test.Cores.Ethernet.Mac.PreambleInserter
-    Test.Cores.Ethernet.Mac.PreambleStripper
+    Test.Cores.Ethernet.Mac.Preamble
     Test.Protocols.Extra.PacketStream.DownConverter
     Test.Protocols.Extra.PacketStream.UpConverter
     Test.Protocols.Extra.PacketStream.PacketBuffer
