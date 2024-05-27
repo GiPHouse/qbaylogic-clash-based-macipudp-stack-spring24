@@ -8,7 +8,6 @@ import Test.Cores.Ethernet.Arp.ArpTable qualified
 import Test.Cores.Ethernet.Icmp qualified
 import Test.Cores.Ethernet.IP.InternetChecksum qualified
 import Test.Cores.Ethernet.IP.IPPacketizers qualified
-import Test.Cores.Ethernet.Mac.AsyncFIFO qualified
 import Test.Cores.Ethernet.Mac.EthernetTypes qualified
 import Test.Cores.Ethernet.Mac.FrameCheckSequence qualified
 import Test.Cores.Ethernet.Mac.InterpacketGapInserter qualified
@@ -16,6 +15,7 @@ import Test.Cores.Ethernet.Mac.MacPacketizers qualified
 import Test.Cores.Ethernet.Mac.PaddingInserter qualified
 import Test.Cores.Ethernet.Mac.Preamble qualified
 import Test.Protocols.Extra.PacketStream qualified
+import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
 import Test.Protocols.Extra.PacketStream.DownConverter qualified
 import Test.Protocols.Extra.PacketStream.PacketArbiter qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
@@ -28,7 +28,7 @@ main = defaultMain $ testGroup "."
   , Test.Cores.Ethernet.Arp.testsReceiver
   , Test.Cores.Ethernet.Arp.ArpTable.tests
   , Test.Cores.Ethernet.Arp.testsTransmitter
-  , Test.Cores.Ethernet.Mac.AsyncFIFO.tests
+  , Test.Protocols.Extra.PacketStream.AsyncFIFO.tests
   , Test.Protocols.Extra.PacketStream.PacketArbiter.tests
   , Test.Protocols.Extra.PacketStream.tests
   , Test.Cores.Ethernet.Mac.PaddingInserter.tests

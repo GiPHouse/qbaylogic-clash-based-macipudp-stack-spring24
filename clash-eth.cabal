@@ -176,7 +176,7 @@ test-suite test-library
     Test.Cores.Ethernet.IP.IPPacketizers
     Test.Cores.Ethernet.Mac.InterpacketGapInserter
     Test.Cores.Ethernet.Mac.FrameCheckSequence
-    Test.Cores.Ethernet.Mac.AsyncFIFO
+    Test.Protocols.Extra.PacketStream.AsyncFIFO
     Test.Cores.Ethernet.IP.InternetChecksum
     Test.Protocols.Extra.PacketStream.Packetizer
     Test.Cores.Ethernet.Mac.MacPacketizers

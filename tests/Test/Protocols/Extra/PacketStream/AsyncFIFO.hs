@@ -3,7 +3,7 @@
 {-# language RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Test.Cores.Ethernet.Mac.AsyncFIFO where
+module Test.Protocols.Extra.PacketStream.AsyncFIFO where
 
 -- base
 import Prelude
