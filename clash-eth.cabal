@@ -161,9 +161,8 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Ethernet.Arp.ArpManager
-    Test.Cores.Ethernet.Arp.ArpReceiver
     Test.Cores.Ethernet.Arp.ArpTable
-    Test.Cores.Ethernet.Arp.ArpTransmitter
+    Test.Cores.Ethernet.Arp
     Test.Protocols.Extra.PacketStream.Depacketizer
     Test.Cores.Ethernet.Mac.MacDepacketizer
     Test.Cores.Ethernet.Util

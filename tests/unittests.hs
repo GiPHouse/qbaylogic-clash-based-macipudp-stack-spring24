@@ -2,10 +2,9 @@ import Prelude
 
 import Test.Tasty
 
+import Test.Cores.Ethernet.Arp qualified
 import Test.Cores.Ethernet.Arp.ArpManager qualified
-import Test.Cores.Ethernet.Arp.ArpReceiver qualified
 import Test.Cores.Ethernet.Arp.ArpTable qualified
-import Test.Cores.Ethernet.Arp.ArpTransmitter qualified
 import Test.Cores.Ethernet.Icmp qualified
 import Test.Cores.Ethernet.IP.InternetChecksum qualified
 import Test.Cores.Ethernet.IP.IPDepacketizer qualified
@@ -19,19 +18,19 @@ import Test.Cores.Ethernet.Mac.MacPacketizer qualified
 import Test.Cores.Ethernet.Mac.PaddingInserter qualified
 import Test.Cores.Ethernet.Mac.PreambleInserter qualified
 import Test.Cores.Ethernet.Mac.PreambleStripper qualified
-import Test.Protocols.Extra.PacketStream.UpConverter qualified
 import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.DownConverter qualified
 import Test.Protocols.Extra.PacketStream.PacketArbiter qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
 import Test.Protocols.Extra.PacketStream.PacketDispatcher qualified
+import Test.Protocols.Extra.PacketStream.UpConverter qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
   [ Test.Cores.Ethernet.Arp.ArpManager.tests
-  , Test.Cores.Ethernet.Arp.ArpReceiver.tests
+  , Test.Cores.Ethernet.Arp.testsReceiver
   , Test.Cores.Ethernet.Arp.ArpTable.tests
-  , Test.Cores.Ethernet.Arp.ArpTransmitter.tests
+  , Test.Cores.Ethernet.Arp.testsTransmitter
   , Test.Cores.Ethernet.Mac.AsyncFIFO.tests
   , Test.Protocols.Extra.PacketStream.PacketArbiter.tests
   , Test.Protocols.Extra.PacketStream.tests
