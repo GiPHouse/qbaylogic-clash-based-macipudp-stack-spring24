@@ -2,7 +2,7 @@
 {-# language NumericUnderscores #-}
 {-# language RecordWildCards #-}
 
-module Test.Protocols.Extra.PacketStream.PacketRouting where
+module Test.Protocols.Extra.PacketStream.Routing where
 
 -- base
 import Data.List ( groupBy, sortOn )
@@ -25,7 +25,7 @@ import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
 import Protocols.Extra.PacketStream
-import Protocols.Extra.PacketStream.PacketRouting
+import Protocols.Extra.PacketStream.Routing
 import Protocols.Hedgehog
 
 -- tests
@@ -41,7 +41,7 @@ prop_packetarbiter_roundrobin_id = makePropPacketArbiter C.d1 C.d2 RoundRobin
 
 -- | Tests the parallel packet arbiter with one source; essentially an id test
 prop_packetarbiter_parallel_id :: Property
-prop_packetarbiter_parallel_id = makePropPacketArbiter C.d1 C.d2 Protocols.Extra.PacketStream.PacketRouting.Parallel
+prop_packetarbiter_parallel_id = makePropPacketArbiter C.d1 C.d2 Protocols.Extra.PacketStream.Routing.Parallel
 
 -- Tests the round-robin arbiter with five sources
 prop_packetarbiter_roundrobin :: Property
@@ -49,7 +49,7 @@ prop_packetarbiter_roundrobin = makePropPacketArbiter C.d5 C.d2 RoundRobin
 
 -- Tests the parallel arbiter with five sources
 prop_packetarbiter_parallel :: Property
-prop_packetarbiter_parallel = makePropPacketArbiter C.d5 C.d2 Protocols.Extra.PacketStream.PacketRouting.Parallel
+prop_packetarbiter_parallel = makePropPacketArbiter C.d5 C.d2 Protocols.Extra.PacketStream.Routing.Parallel
 
 -- | Tests a packet arbiter for any data width and number of sources. In particular,
 -- tests that packets from all sources are sent out unmodified in the same order

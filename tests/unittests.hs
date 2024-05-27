@@ -19,7 +19,7 @@ import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
 import Test.Protocols.Extra.PacketStream.Converters qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
 import Test.Protocols.Extra.PacketStream.Packetizers qualified
-import Test.Protocols.Extra.PacketStream.PacketRouting qualified
+import Test.Protocols.Extra.PacketStream.Routing qualified
 
 
 main :: IO ()
@@ -40,6 +40,6 @@ main = defaultMain $ testGroup "."
   , Test.Protocols.Extra.PacketStream.Converters.tests
   , Test.Protocols.Extra.PacketStream.PacketBuffer.tests
   , Test.Protocols.Extra.PacketStream.Packetizers.tests
-  , Test.Protocols.Extra.PacketStream.PacketRouting.tests
+  , Test.Protocols.Extra.PacketStream.Routing.tests
   , Test.Protocols.Extra.PacketStream.tests
   ]

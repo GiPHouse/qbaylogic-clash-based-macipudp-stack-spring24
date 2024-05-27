@@ -121,7 +121,7 @@ library
     Protocols.Extra.PacketStream.Converters
     Protocols.Extra.PacketStream.PacketBuffer
     Protocols.Extra.PacketStream.Packetizers
-    Protocols.Extra.PacketStream.PacketRouting
+    Protocols.Extra.PacketStream.Routing
     Protocols.Extra.PacketStream
   other-modules:
     Clash.Signal.Extra
@@ -176,7 +176,7 @@ test-suite test-library
     Test.Protocols.Extra.PacketStream.Extra
     Test.Protocols.Extra.PacketStream.PacketBuffer
     Test.Protocols.Extra.PacketStream.Packetizers
-    Test.Protocols.Extra.PacketStream.PacketRouting
+    Test.Protocols.Extra.PacketStream.Routing
     Test.Protocols.Extra.PacketStream
   build-depends:
     clash-eth,

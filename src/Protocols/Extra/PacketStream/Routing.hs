@@ -1,8 +1,8 @@
 {-|
-Module      : Protocols.Extra.PacketStream.PacketRouting
+Module      : Protocols.Extra.PacketStream.Routing
 Description : Provides a packet arbiter and dispatcher, for merging and splitting packet streams.
 -}
-module Protocols.Extra.PacketStream.PacketRouting
+module Protocols.Extra.PacketStream.Routing
   ( packetArbiterC
   , ArbiterMode(..)
   , packetDispatcherC
