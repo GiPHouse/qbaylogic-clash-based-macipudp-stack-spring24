@@ -96,47 +96,36 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Clash.Cores.Arp.ArpManager
-    Clash.Cores.Arp.ArpReceiver
-    Clash.Cores.Arp.ArpTable
-    Clash.Cores.Arp.ArpTransmitter
-    Clash.Cores.Arp.ArpTypes
-    Clash.Lattice.ECP5.Colorlight.TopEntity
-    Clash.Cores.Ethernet.Depacketizer
-    Clash.Cores.Ethernet.DepacketizeToDf
-    Clash.Cores.Ethernet.EthernetTypes
-    Clash.Cores.Ethernet.MacDepacketizer
-    Clash.Cores.Ethernet.RGMII
-    Clash.Cores.Ethernet.MacPacketizer
-    Clash.Cores.Ethernet.IpPacketizer
-    Clash.Cores.Ethernet.PacketizeFromDf
-    Clash.Cores.Ethernet.Packetizer
-    Clash.Cores.Ethernet.PacketArbiter
-    Clash.Cores.Ethernet.PacketBuffer
-    Clash.Cores.Ethernet.PacketDispatcher
-    Clash.Cores.Ethernet.PacketStream
-    Clash.Cores.Ethernet.PaddingInserter
-    Clash.Cores.Ethernet.PreambleInserter
-    Clash.Cores.Ethernet.PreambleStripper
-    Clash.Cores.Ethernet.UpConverter
-    Clash.Cores.Ethernet.DownConverter
-    Clash.Cores.Ethernet.RxStack
-    Clash.Cores.Ethernet.TxStack
-    Clash.Cores.Ethernet.EchoStack
-    Clash.Cores.Ethernet.Util
-    Clash.Cores.Ethernet.InterpacketGapInserter
-    Clash.Cores.Ethernet.AsyncFIFO
-    Clash.Cores.Ethernet.InternetChecksum
-    Clash.Cores.Ethernet.FrameCheckSequence
-    Clash.Cores.IP.IPv4Types
-    Clash.Cores.IP.IcmpTypes
-    Clash.Cores.IP.Icmp
-    Clash.Cores.IP.IPDepacketizer
-    Clash.Lattice.ECP5.Prims
+    Clash.Cores.Ethernet.Arp.ArpManager
+    Clash.Cores.Ethernet.Arp.ArpTable
+    Clash.Cores.Ethernet.Arp.ArpTypes
+    Clash.Cores.Ethernet.Examples.EchoStack
+    Clash.Cores.Ethernet.Examples.RxStack
+    Clash.Cores.Ethernet.Examples.TxStack
+    Clash.Cores.Ethernet.IP.InternetChecksum
+    Clash.Cores.Ethernet.IP.IPPacketizers
+    Clash.Cores.Ethernet.IP.IPv4Types
+    Clash.Cores.Ethernet.Mac.EthernetTypes
+    Clash.Cores.Ethernet.Mac.FrameCheckSequence
+    Clash.Cores.Ethernet.Mac.InterpacketGapInserter
+    Clash.Cores.Ethernet.Mac.MacPacketizers
+    Clash.Cores.Ethernet.Mac.PaddingInserter
+    Clash.Cores.Ethernet.Mac.Preamble
+    Clash.Cores.Ethernet.Icmp
     Clash.Lattice.ECP5.Colorlight.CRG
+    Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Lattice.ECP5.Prims
+    Clash.Lattice.ECP5.RGMII
+    Protocols.Extra.PacketStream.AsyncFIFO
+    Protocols.Extra.PacketStream.Converters
+    Protocols.Extra.PacketStream.PacketBuffer
+    Protocols.Extra.PacketStream.Packetizers
+    Protocols.Extra.PacketStream.Routing
+    Protocols.Extra.PacketStream
   other-modules:
     Clash.Signal.Extra
     Clash.Sized.Vector.Extra
+    Data.Maybe.Extra
     Protocols.Df.Extra
   default-language: Haskell2010
   build-depends:
@@ -169,32 +158,23 @@ test-suite test-library
   ghc-options: -threaded
   main-is: unittests.hs
   other-modules:
-    Test.Cores.Arp.ArpManager
-    Test.Cores.Arp.ArpReceiver
-    Test.Cores.Arp.ArpTable
-    Test.Cores.Arp.ArpTransmitter
-    Test.Cores.Ethernet.Depacketizer
-    Test.Cores.Ethernet.MacDepacketizer
-    Test.Cores.Ethernet.Util
-    Test.Cores.Ethernet.PacketArbiter
-    Test.Cores.Ethernet.PacketStream
-    Test.Cores.Ethernet.PaddingInserter
-    Test.Cores.Ethernet.PacketDispatcher
-    Test.Cores.Ethernet.PreambleInserter
-    Test.Cores.Ethernet.PreambleStripper
-    Test.Cores.Ethernet.DownConverter
-    Test.Cores.Ethernet.UpConverter
-    Test.Cores.Ethernet.PacketBuffer
-    Test.Cores.Ethernet.IpPacketizer
-    Test.Cores.Ethernet.InterpacketGapInserter
-    Test.Cores.Ethernet.FrameCheckSequence
-    Test.Cores.Ethernet.AsyncFIFO
-    Test.Cores.Ethernet.InternetChecksum
-    Test.Cores.Ethernet.Packetizer
-    Test.Cores.Ethernet.MacPacketizer
-    Test.Cores.Ethernet.EthernetTypes
-    Test.Cores.IP.Icmp
-    Test.Cores.IP.IPDepacketizer
+    Test.Cores.Ethernet.Arp.ArpManager
+    Test.Cores.Ethernet.Arp.ArpTable
+    Test.Cores.Ethernet.IP.InternetChecksum
+    Test.Cores.Ethernet.IP.IPPacketizers
+    Test.Cores.Ethernet.Mac.EthernetTypes
+    Test.Cores.Ethernet.Mac.FrameCheckSequence
+    Test.Cores.Ethernet.Mac.InterpacketGapInserter
+    Test.Cores.Ethernet.Mac.MacPacketizers
+    Test.Cores.Ethernet.Mac.PaddingInserter
+    Test.Cores.Ethernet.Mac.Preamble
+    Test.Cores.Ethernet.Icmp
+    Test.Protocols.Extra.PacketStream.AsyncFIFO
+    Test.Protocols.Extra.PacketStream.Converters
+    Test.Protocols.Extra.PacketStream.PacketBuffer
+    Test.Protocols.Extra.PacketStream.Packetizers
+    Test.Protocols.Extra.PacketStream.Routing
+    Test.Protocols.Extra.PacketStream
   build-depends:
     clash-eth,
     QuickCheck,

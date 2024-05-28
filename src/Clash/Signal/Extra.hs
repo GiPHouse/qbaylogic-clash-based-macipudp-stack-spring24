@@ -1,16 +1,16 @@
-{-|
-Module      : Clash.Signal.Extra
-Description : Extra utility functions for working with signals
--}
-
 {-# language FlexibleContexts #-}
 
+{-|
+Module      : Clash.Signal.Extra
+Description : Extra utility functions for working with signals.
+-}
 module Clash.Signal.Extra
-    ( registerN
-    , secondTimer
-    ) where
+  ( registerN
+  , secondTimer
+  ) where
 
 import Clash.Prelude
+
 
 -- | a chain of registers of length n. So the delay from input -> output is n cycles.
 registerN

@@ -1,12 +1,21 @@
 {-# language PartialTypeSignatures #-}
 
+{-|
+Module      : Protocols.Df.Extra
+Description : Extra utility functions for working with df.
+-}
 module Protocols.Df.Extra
-  (filterS, mapS, partitionS) where
+  ( filterS
+  , mapS
+  , partitionS
+  ) where
 
 import Clash.Prelude
-import Data.Bifunctor as B
+
 import Protocols
 import Protocols.Df qualified as Df
+
+import Data.Bifunctor as B
 
 
 -- | Like `filter`, but can reason over signals.

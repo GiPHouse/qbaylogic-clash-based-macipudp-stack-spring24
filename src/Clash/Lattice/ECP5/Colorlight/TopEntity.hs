@@ -5,22 +5,27 @@
 
 {-|
 Module      : Clash.Lattice.ECP5.Colorlight.TopEntity
-Description : Contains the top entity
+Description : Contains the top entity.
 -}
-module Clash.Lattice.ECP5.Colorlight.TopEntity ( topEntity ) where
+module Clash.Lattice.ECP5.Colorlight.TopEntity
+  ( topEntity
+  ) where
 
 import Clash.Annotations.TH
 import Clash.Cores.Crc ( deriveHardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
-import Clash.Cores.Ethernet.EchoStack ( echoStackC )
-import Clash.Cores.Ethernet.RGMII
-    ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )
 import Clash.Explicit.Prelude
+import Clash.Prelude ( exposeClockResetEnable )
+
+import Protocols ( toSignals, (|>) )
+
+import Clash.Cores.Ethernet.Examples.EchoStack ( echoStackC )
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
-import Clash.Prelude ( exposeClockResetEnable )
+import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )
+
 import Data.Proxy ( Proxy(Proxy) )
-import Protocols ( toSignals, (|>) )
+
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 
