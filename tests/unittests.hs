@@ -5,6 +5,7 @@ import Test.Tasty
 import Test.Cores.Ethernet.Arp.ArpManager qualified
 import Test.Cores.Ethernet.Arp.ArpTable qualified
 import Test.Cores.Ethernet.Icmp qualified
+import Test.Cores.Ethernet.IP.EthernetStream qualified
 import Test.Cores.Ethernet.IP.InternetChecksum qualified
 import Test.Cores.Ethernet.IP.IPPacketizers qualified
 import Test.Cores.Ethernet.Mac.EthernetTypes qualified
@@ -25,6 +26,7 @@ main :: IO ()
 main = defaultMain $ testGroup "."
   [ Test.Cores.Ethernet.Arp.ArpManager.tests
   , Test.Cores.Ethernet.Arp.ArpTable.tests
+  , Test.Cores.Ethernet.IP.EthernetStream.tests
   , Test.Cores.Ethernet.IP.InternetChecksum.tests
   , Test.Cores.Ethernet.IP.IPPacketizers.tests
   , Test.Cores.Ethernet.Mac.EthernetTypes.tests
