@@ -5,11 +5,12 @@
 module Test.Cores.Ethernet.Icmp where
 
 -- base
+import Data.Bifunctor ( bimap, second )
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude hiding ( concatMap )
 import Clash.Prelude qualified as C
+import Clash.Sized.Vector qualified as V
 
 -- hedgehog
 import Hedgehog
@@ -23,124 +24,157 @@ import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
-import Protocols
 import Protocols.Extra.PacketStream
 import Protocols.Hedgehog
 
 -- ethernet
 import Clash.Cores.Ethernet.Icmp
-import Clash.Cores.Ethernet.IP.InternetChecksum ( onesComplementAdd )
 import Clash.Cores.Ethernet.IP.IPv4Types
 
 -- tests
-import Test.Protocols.Extra.PacketStream ( fullPackets, genValidPacket )
+import Test.Cores.Ethernet.IP.InternetChecksum ( pureInternetChecksum )
+import Test.Protocols.Extra.PacketStream ( chopBy, chunkByPacket )
 import Test.Protocols.Extra.PacketStream.Packetizers ( depacketizerModel, packetizerModel )
 
+genViaBits :: C.BitPack a => Gen a
+genViaBits = C.unpack <$> Gen.enumBounded
 
-genVec :: (C.KnownNat n, 1 <= n) => Gen a -> Gen (C.Vec n a)
+genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
 
 genIpAddr :: Gen IPv4Address
 genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
 
-ourIpAddr :: IPv4Address
-ourIpAddr = IPv4Address (C.repeat @4 0x3)
+genIPv4HeaderLite :: Gen IPv4HeaderLite
+genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> pure 0
 
-genRandomWord :: Gen (PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite))
-genRandomWord = do
-  icmp <- IcmpHeaderLite 0x8 <$> Gen.enumBounded
-  ipv4 <- IPv4HeaderLite <$> genIpAddr <*> pure ourIpAddr <*> pure 2
-  dat <- genVec Gen.enumBounded
+packetize
+  :: 1 C.<= dataWidth
+  => C.KnownNat dataWidth
+  => [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
+  -> [PacketStreamM2S dataWidth IPv4HeaderLite]
+packetize = packetizerModel fst (fromIcmpLite . snd)
 
-  return $ PacketStreamM2S dat Nothing (ipv4, icmp) False
-
-genRandomPacket :: Gen [PacketStreamM2S 4 IPv4HeaderLite]
-genRandomPacket = packetizerModel fst snd <$> genValidPacket (Range.linear 0 10) genRandomWord
-
-depacketize :: [PacketStreamM2S 4 IPv4HeaderLite] -> [PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite)]
-depacketize = depacketizerModel f
+depacketize
+  :: 1 C.<= dataWidth
+  => C.KnownNat dataWidth
+  => [PacketStreamM2S dataWidth IPv4HeaderLite]
+  -> [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
+depacketize inFragments = outFragments
   where
-    f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
-    f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})
+    goodHeader hdr = _type hdr == 8 && _code hdr == 0
+    outFragments = fmap (fmap (second toIcmpLite))
+      $ filter (goodHeader . snd . _meta)
+      $ depacketizerModel (\icmpHdr ipHdr -> (ipHdr, icmpHdr)) inFragments
 
-icmpReceiverPropertyGenerator
-  :: forall (dataWidth :: Nat).
-  1 <= dataWidth
-  => SNat dataWidth
+alignTo :: Int -> a -> [a] -> [a]
+alignTo n a xs = xs ++ replicate (n - mod (length xs) n) a
+
+updateLast :: (a -> a) -> [a] -> [a]
+updateLast _ [] = []
+updateLast f xs = (init xs) ++ [f $ last xs]
+
+-- This generates a packet with a valid ICMP header prepended including
+-- a correct checksum
+genValidIcmpRequestPacket
+  :: forall dataWidth
+   . 1 C.<= dataWidth
+  => C.KnownNat dataWidth
+  => Gen [PacketStreamM2S dataWidth IPv4HeaderLite]
+genValidIcmpRequestPacket = do
+  let saneHeader chkSum hdr = hdr { _type = 8, _code = 0, _checksum = chkSum }
+  rawHeader <- fmap (saneHeader 0) $ genViaBits @IcmpHeader
+  let rawHeaderWords = V.toList (C.bitCoerce rawHeader :: C.Vec 2 (C.BitVector 16))
+  payloadWords <- Gen.list (Range.linear 1 50) (Gen.enumBounded :: Gen (C.BitVector 16))
+
+  let checksum = pureInternetChecksum $ rawHeaderWords ++ payloadWords
+  let validHeader = saneHeader checksum rawHeader
+  let headerBytes = V.toList (C.bitCoerce validHeader :: C.Vec 4 (C.BitVector 8))
+  let dataBytes = payloadWords >>= \w -> V.toList (C.bitCoerce w :: C.Vec 2 (C.BitVector 8))
+
+  ipv4Hdr <- genViaBits @IPv4HeaderLite
+  let toFragments vs = PacketStreamM2S <$>
+                          (pure vs) <*>
+                          (pure Nothing) <*>
+                          (pure ipv4Hdr) <*>
+                          Gen.enumBounded
+  let dataWidth = C.natToNum @dataWidth
+  let totalBytes = headerBytes ++ dataBytes
+  let lastIdxRaw = mod (length totalBytes) dataWidth
+  let lastIdx = if lastIdxRaw == 0
+                  then C.natToNum @dataWidth - 1
+                  else lastIdxRaw
+  fmap (updateLast (\pkt -> pkt { _last = Just $ fromIntegral lastIdx }))
+    $ mapM toFragments
+    $ fmap (V.unsafeFromList @dataWidth)
+    $ chopBy dataWidth
+    $ alignTo dataWidth 0x00 totalBytes
+
+-- This function assumes all fragments belong to a single packet
+calcChecksum
+  :: forall dataWidth meta
+   . 1 C.<= dataWidth
+  => C.KnownNat dataWidth
+  => [PacketStreamM2S dataWidth meta]
+  -> C.BitVector 16
+calcChecksum fragments = checksum
+  where
+    dataToList PacketStreamM2S{..} = take validData $ V.toList _data
+      where
+        validData = 1 + (fromIntegral $ maybe maxBound id _last)
+    checksum = pureInternetChecksum
+                 $ fmap (C.pack . V.unsafeFromList @2)
+                 $ chopBy 2
+                 $ alignTo 2 0x00
+                 $ concatMap dataToList fragments
+
+icmpResponderPropertyGenerator
+  :: forall dataWidth
+   . 1 C.<= dataWidth
+  => C.SNat dataWidth
   -> Property
-icmpReceiverPropertyGenerator C.SNat =
-  propWithModelSingleDomain
+icmpResponderPropertyGenerator C.SNat =
+  idWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap fullPackets (Gen.list (Range.linear 1 100) (genPackets genIPv4HeaderLite)))
-    (C.exposeClockResetEnable model)
-    (C.exposeClockResetEnable @C.System icmpReceiverC)
-    (===)
-    where
-      f :: IcmpHeader -> IPv4HeaderLite -> (IPv4HeaderLite, IcmpHeaderLite)
-      f IcmpHeader{..} ipheader = (ipheader,  IcmpHeaderLite{_typeL = _type, _checksumL = _checksum})
-
-      model :: [PacketStreamM2S dataWidth IPv4HeaderLite] -> [PacketStreamM2S dataWidth (IPv4HeaderLite, IcmpHeaderLite)]
-      model = depacketizerModel f
-
-      genPackets :: Gen IPv4HeaderLite -> Gen (PacketStreamM2S dataWidth IPv4HeaderLite)
-      genPackets genMeta =
-        PacketStreamM2S <$>
-        genVec Gen.enumBounded <*>
-        Gen.maybe Gen.enumBounded <*>
-        genMeta <*>
-        Gen.enumBounded
-
-      testAddress :: Gen IPv4Address
-      testAddress = pure $ IPv4Address (C.repeat 0x00)
-
-      genIPv4HeaderLite :: Gen IPv4HeaderLite
-      genIPv4HeaderLite = IPv4HeaderLite <$> testAddress <*> testAddress <*> pure 0
-
-prop_icmp_receiver_d1 :: Property
-prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
-
-prop_icmp_receiver_d2 :: Property
-prop_icmp_receiver_d2 = icmpReceiverPropertyGenerator d2
-
-prop_icmp_receiver_d3 :: Property
-prop_icmp_receiver_d3 = icmpReceiverPropertyGenerator d3
-
-prop_icmp_receiver_d4 :: Property
-prop_icmp_receiver_d4 = icmpReceiverPropertyGenerator d4
-
--- | A  test for the working of the echo responder component
--- The correct updating of the checksum should be tested in hardware
-prop_icmp_echoResponder_response_type :: Property
-prop_icmp_echoResponder_response_type =
-    idWithModelSingleDomain
-    @C.System
-    defExpectOptions
-    genRandomPacket
-    (C.exposeClockResetEnable model)
-    (C.exposeClockResetEnable ckt)
+    (fmap concat $ Gen.list (Range.linear 1 10) genValidIcmpRequestPacket)
+    (C.exposeClockResetEnable (concatMap model . chunkByPacket))
+    (C.exposeClockResetEnable (icmpEchoResponderC $ pure ourIpAddr))
  where
-  ckt :: C.HiddenClockResetEnable C.System => Circuit (PacketStream C.System 4 IPv4HeaderLite) (PacketStream C.System 4 IPv4HeaderLite)
-  ckt = icmpEchoResponderC $ pure ourIpAddr
+  ourIpAddr = IPv4Address (C.repeat @4 0x3)
 
-  model :: [PacketStreamM2S 4 IPv4HeaderLite] -> [PacketStreamM2S 4 IPv4HeaderLite]
-  model packets = packetizerModel fst snd $ swapAdresses . adjustIcmpType <$> depacketized
+  model :: [PacketStreamM2S dataWidth IPv4HeaderLite] -> [PacketStreamM2S dataWidth IPv4HeaderLite]
+  model fragments = res
     where
-      depacketized = depacketize packets
+      res = packetize $ fmap (bimap swapIps (updateIcmp newChecksum)) <$> depacketize fragments
+      newFragments0 = packetize $ fmap (bimap swapIps (updateIcmp 0)) <$> depacketize fragments
+      newChecksum = calcChecksum newFragments0
+      swapIps ip@IPv4HeaderLite{..} = ip{_ipv4lSource = ourIpAddr, _ipv4lDestination = _ipv4lSource}
+      updateIcmp chk icmp = icmp {_checksumL = chk}
 
-      swapAdresses ::
-        PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite)
-        -> PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite)
-      swapAdresses = fmap (\(ip@IPv4HeaderLite{..}, icmp)
-        -> (ip{_ipv4lSource = ourIpAddr, _ipv4lDestination = _ipv4lSource}, icmp))
+prop_icmp_responder_d1 :: Property
+prop_icmp_responder_d1 = icmpResponderPropertyGenerator C.d1
 
-      adjustIcmpType ::
-        PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite)
-        -> PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite)
-      adjustIcmpType = fmap (\(ip, icmp@IcmpHeaderLite{..}) -> (ip, icmp{
-        _checksumL = onesComplementAdd (complement 0x0800) _checksumL,
-        _typeL = 0
-        }))
+prop_icmp_responder_d2 :: Property
+prop_icmp_responder_d2 = icmpResponderPropertyGenerator C.d2
+
+prop_icmp_responder_d3 :: Property
+prop_icmp_responder_d3 = icmpResponderPropertyGenerator C.d3
+
+prop_icmp_responder_d4 :: Property
+prop_icmp_responder_d4 = icmpResponderPropertyGenerator C.d4
+
+prop_icmp_responder_d5 :: Property
+prop_icmp_responder_d5 = icmpResponderPropertyGenerator C.d5
+
+prop_icmp_responder_d6 :: Property
+prop_icmp_responder_d6 = icmpResponderPropertyGenerator C.d6
+
+prop_icmp_responder_d7 :: Property
+prop_icmp_responder_d7 = icmpResponderPropertyGenerator C.d7
+
+prop_icmp_responder_d8 :: Property
+prop_icmp_responder_d8 = icmpResponderPropertyGenerator C.d8
 
 tests :: TestTree
 tests =
