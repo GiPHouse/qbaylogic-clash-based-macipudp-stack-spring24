@@ -5,29 +5,23 @@
 
 module Test.Cores.Ethernet.Arp.ArpTable where
 
--- base
 import Prelude
 
 import Data.List qualified as L
 
--- clash-prelude
 import Clash.Prelude hiding ( repeat )
 import Clash.Prelude qualified as C
 
--- hedgehog
 import Hedgehog
 
--- tasty
 import Test.Tasty
 import Test.Tasty.Hedgehog ( HedgehogTestLimit(HedgehogTestLimit) )
 import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
--- clash-protocols
 import Protocols
-import Protocols.Df hiding ( fst, snd )
+import Protocols.Df qualified as Df
 
--- Me
 import Clash.Cores.Ethernet.Arp.ArpTable
 import Clash.Cores.Ethernet.Arp.ArpTypes
 import Clash.Cores.Ethernet.Mac.EthernetTypes
@@ -75,17 +69,17 @@ prop_arp_table :: Property
 prop_arp_table = property $
   do L.map fst (sampleN 32 (bundle bwdOut)) === expectedBwdOut
     where
-      fwdIn :: [(Maybe IPv4Address, Data ArpEntry)]
-      fwdIn = [ (Nothing, NoData)
-              , (Nothing, Data arpEntry1)
-              , (Just ip1, Data arpEntry2)
-              , (Just ip1, Data arpEntry3)
-              , (Just ip1, Data arpEntry4)]
+      fwdIn :: [(Maybe IPv4Address, Df.Data ArpEntry)]
+      fwdIn = [ (Nothing, Df.NoData)
+              , (Nothing, Df.Data arpEntry1)
+              , (Just ip1, Df.Data arpEntry2)
+              , (Just ip1, Df.Data arpEntry3)
+              , (Just ip1, Df.Data arpEntry4)]
               L.++ L.cycle
-              [(Just ip1, NoData)
-              , (Just ip2, NoData)
-              , (Just ip3, NoData)
-              , (Just ip4, NoData)]
+              [(Just ip1, Df.NoData)
+              , (Just ip2, Df.NoData)
+              , (Just ip3, Df.NoData)
+              , (Just ip4, Df.NoData)]
 
       bwdOut :: (Signal TestDom10Hz (Maybe ArpResponse), Signal TestDom10Hz Ack)
       (bwdOut, _) = toSignals ckt (unbundle $ fromList fwdIn, ())
