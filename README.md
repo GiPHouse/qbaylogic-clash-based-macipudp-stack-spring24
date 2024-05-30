@@ -1,19 +1,26 @@
 [![](https://github.com/enjoy-digital/liteeth/workflows/ci/badge.svg)](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/actions)
 
+
 # Clash Ethernet
 A fully configurable Ethernet core written in [Clash](https://clash-lang.org/).
 
-<!-- omit in toc -->
 # Table of Contents
 - [Clash Ethernet](#clash-ethernet)
 - [Introduction](#introduction)
 - [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
 - [Resource Usage Comparison](#resource-usage-comparison)
 - [Documentation](#documentation)
-- [Working with this project](#working-with-this-project)
-  - [Running Python tests](#running-python-tests)
+- [<<<<<<< Updated upstream](#-updated-upstream)
+- [How to use as a user](#how-to-use-as-a-user)
+- [How to use as a developer](#how-to-use-as-a-developer)
 - [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
-
+- [>>>>>>> Stashed changes](#-stashed-changes)
+- [Working with this project](#working-with-this-project)
+    - [Running Python tests](#running-python-tests)
+- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers-1)
+- [Acknowledgements](#acknowledgements)
+- [>>>>>>> Stashed changes](#-stashed-changes-1)
+- [Acknowledgements](#acknowledgements-1)
 
 # Introduction
 Clash Ethernet is a fully configurable Ethernet core written in Clash.
@@ -52,7 +59,7 @@ Some of the benefits of using Clash-ethernet are:
   ```
   <!-- Source: IpDepacketizer.hs line 30 (probably not anymore after reorganization)-->
 
-  This verifies the checksum of a packet, then separates the header from the payload and finally verifies the contents of the header (```verifyLength``` is not the most descriptive name for what it does). 
+  This verifies the checksum of a packet, then separates the header from the payload and finally verifies the contents of the header (```verifyLength``` is not the most descriptive name for what it does).
   Doing the same in either Verilog or LiteEth would require
   significantly more work.
 
@@ -113,32 +120,50 @@ the starting point to the Clash Ethernet documentation.
 To get inspired, there are some examples for using Clash Ethernet in the
 ```examples/``` directory.
 
-# Working with this project
-It's required to have the [nix package manager](https://nixos.org/download.html) working.
+# How to use as a user
+Examples in the examples directory, maybe something on how to setup
+build environment?
 
-After installing nix you can obtain a dev/build environment with:
+For more information look at
+[Clash-protocols](https://github.com/clash-lang/clash-protocols). This
+is the overarching framework of which Clash Ethernet is a part.
 
-```bash
+# How to use as a developer
+The easiest way to setup a development environment to start hacking on
+Clash Ethernet is to install [nix](https://nixos.org/) (just the
+package manager, not the entire linux distribution).
+
+After you've installed `nix`, clone this repo and run `nix-shell`.
+
+```sh
+git clone https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24.git clash-ethernet
+cd clash-ethernet
 nix-shell
 ```
 
-This will install all the required dependencies into the current shell.
+`nix-shell` will take about 30 minutes to compile and install
+everything, after which you'll have all the tools required to start
+hacking. Subsequent invocations of `nix-shell` will only take 5
+seconds.
 
 There is a `Makefile` with the following targets:
 
-- `make clean`: Delete all build directories
-- `make format`: Run `stylish-haskell` formatter to format source code
-- `make test`: Run the test suite
-- `make verilog`: Synthesize verilog code from the Clash TopEntity
-- `make netlist`: Synthesize a json netlist
-- `make pnr`: Place and route the json netlist
-- `make bitstream`: Create a bitstream from the place and routed netlist
-- `make prog`: SRAM program the FPGA. This means the image is gone after a power
-   cycle. This is much faster then flashing.
-- `make flash`: Flash the bitstream and reboot FPGA
-- `make namespace`: Create a networking namespace "colorlight"
-- `make delete_namespace`: Delete the networking namespace "colorlight"
-- `make python_test`: Program the FPGA and run the Python test suite within a networking namespace.
+- `clean`: Delete all build directories
+- `format`: Run `stylish-haskell` formatter to format source code
+- `test`: Run the test suite
+- `verilog`: Synthesize verilog code from the Clash TopEntity
+- `netlist`: Synthesize a json netlist
+- `pnr`: Place and route the json netlist
+- `bitstream`: Create a bitstream from the place and routed
+  netlist
+- `prog`: SRAM program the FPGA. This means the image is gone
+   after a power cycle. This is much faster then flashing.
+- `flash`: Flash the bitstream and reboot FPGA
+- `namespace`: Create a networking namespace "colorlight"
+- `delete_namespace`: Delete the networking namespace
+  "colorlight"
+- `python_test`: Program the FPGA and run the Python test suite
+  within a networking namespace.
 
 A REPL can be started with:
 
@@ -164,3 +189,6 @@ If you find any bugs please report them
 [here](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/issues/).
 
 
+# Acknowledgements
+Thanks to all the members of the QbayLogic team of the Software
+Engineering course 2024.
