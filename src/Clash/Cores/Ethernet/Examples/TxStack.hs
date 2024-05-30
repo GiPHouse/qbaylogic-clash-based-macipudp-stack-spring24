@@ -45,5 +45,5 @@ txStack ethClk ethRst ethEn = ckt
       |> fcsInserterC
       |> preambleInserterC
       |> asyncFifoC d4 hasClock hasReset hasEnable ethClk ethRst ethEn
-      |> (exposeClockResetEnable downConverterC ethClk ethRst ethEn)
-      |> (exposeClockResetEnable interpacketGapInserterC ethClk ethRst ethEn) d12
+      |> exposeClockResetEnable downConverterC ethClk ethRst ethEn
+      |> exposeClockResetEnable interpacketGapInserterC ethClk ethRst ethEn d12

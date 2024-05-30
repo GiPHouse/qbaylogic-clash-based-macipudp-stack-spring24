@@ -12,17 +12,20 @@ module Clash.Lattice.ECP5.Colorlight.TopEntity
   ) where
 
 import Clash.Annotations.TH
-import Clash.Cores.Crc ( deriveHardwareCrc )
-import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
+
 import Clash.Explicit.Prelude
 import Clash.Prelude ( exposeClockResetEnable )
 
-import Protocols ( toSignals, (|>) )
-
-import Clash.Cores.Ethernet.Examples.EchoStack ( echoStackC )
+import Clash.Cores.Crc ( deriveHardwareCrc )
+import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
+import Clash.Cores.Ethernet.Examples.ArpStack
+import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address(IPv4Address) )
+import Clash.Cores.Ethernet.Mac.EthernetTypes ( MacAddress(MacAddress) )
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )
+
+import Protocols ( toSignals, (|>) )
 
 import Data.Proxy ( Proxy(Proxy) )
 
@@ -80,9 +83,14 @@ topEntity clk25 uartRxBit _dq_in _mdio_in eth0_rx _eth1_rx =
     ethRxEn = enableGen @DomEth0
     ethTxEn = enableGen @DomEthTx
 
+    -- Replace this with your FPGA's MAC address
+    ourMac = MacAddress (0x00 :> 0xE0 :> 0x6C :> 0x38 :> 0xCF :> 0xF0 :> Nil)
+    -- Hardcoded IPv4
+    ourIPv4 = IPv4Address (192 :> 168 :> 1 :> 123 :> Nil)
+
     phyStack
       = exposeClockResetEnable (unsafeRgmiiRxC @DomEth0 @DomDDREth0 (delayg d80) iddrx1f) ethRxClk ethRxRst ethRxEn
-        |> exposeClockResetEnable (echoStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn) clk50 rst50 en50
+        |> exposeClockResetEnable (arpStackC ethRxClk ethRxRst ethRxEn ethTxClk ethTxRst ethTxEn (pure ourMac) (pure ourIPv4)) clk50 rst50 en50
         |> exposeClockResetEnable (rgmiiTxC @DomEthTx @DomDDREth0 (delayg d0) oddrx1f) ethTxClk ethTxRst ethTxEn
 
     uartTxBit = uartRxBit

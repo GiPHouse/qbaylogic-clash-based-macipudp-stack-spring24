@@ -96,9 +96,11 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
+    Clash.Cores.Ethernet.Arp
     Clash.Cores.Ethernet.Arp.ArpManager
     Clash.Cores.Ethernet.Arp.ArpTable
     Clash.Cores.Ethernet.Arp.ArpTypes
+    Clash.Cores.Ethernet.Examples.ArpStack
     Clash.Cores.Ethernet.Examples.EchoStack
     Clash.Cores.Ethernet.Examples.RxStack
     Clash.Cores.Ethernet.Examples.TxStack
