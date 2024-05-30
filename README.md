@@ -22,23 +22,20 @@ So far, we have implemented the following internet protocols:
 TODO:
 - add speed comparisons for different protocols
 - perhaps just write the table out in sentences
-| Feature               | Clash Ethernet     | Verilog | LiteEth                  |
-|-----------------------|:------------------:|:-------:|:------------------------:|
-| Data width (in bytes) | Fully configurable | 1 or 8  | 1, 2, 4 or (partially) 8 |
-| Protocols:            |                    |         |                          |
-| \_ ARP*               | Yes                | Yes     | Yes                      |
-| \_ DHCP               | No                 | No      | Yes                      |
-| \_ ICMP(echo)         | Yes                | No      | Yes                      |
-| \_ UDP                | No                 | Yes     | Yes                      |
+
+| Feature               | Clash Ethernet     |      Verilog     | LiteEth                  |
+|-----------------------|:------------------:|:----------------:|:------------------------:|
+| Data width (in bytes) | :white_check_mark:(Fully configurable) |      :x:(1 or 8)      | :x:(1, 2, 4 or (partially) 8) |
+| **Protocols:**        |                    |                  |                          |
+| \_ ARP*               | :white_check_mark: |:white_check_mark:| :white_check_mark:       |
+| \_ DHCP               | :x:                | :x:              | :white_check_mark:       |
+| \_ ICMP(echo)         | :white_check_mark: | :x:              | :white_check_mark:       |
+| \_ UDP                | :x:                |:white_check_mark:| :white_check_mark:       |
 
 \* Clash Ethernet and Verilog Ethernet have a full ARP table, LiteEth has only 2 registers.
 
 Some of the benefits of using Clash-ethernet are:
-- Every protocol is fully configurable in data width. This is
-  something that other libraries, such as
-  [LiteEth](https://github.com/enjoy-digital/liteeth) and
-  [verilog-ethernet](https://github.com/alexforencich/verilog-ethernet)
-  do not support.
+- Every protocol is fully configurable in data width. This is something that other libraries, such as [LiteEth](https://github.com/enjoy-digital/liteeth) and [verilog-ethernet](https://github.com/alexforencich/verilog-ethernet) do not support.
 
 - Clash makes it very easy to combine two or more components, by using
   the ```|>``` operator, to create a custom stack. For example:
@@ -48,20 +45,15 @@ Some of the benefits of using Clash-ethernet are:
   ```
   <!-- Source: IpDepacketizer.hs line 30 (probably not anymore after reorganization)-->
 
-  This verifies the checksum of a packet, then separates the header from
-  the payload and finally verifies the contents of the header
-  (```verifyLength``` is not the most descriptive name for what is
-  does).
-
-  Doing the same in either Verilog or LiteEth will require
+  This verifies the checksum of a packet, then separates the header from the payload and finally verifies the contents of the header (```verifyLength``` is not the most descriptive name for what it does). 
+  Doing the same in either Verilog or LiteEth would require
   significantly more work.
 
-- Every component in Clash Ethernet is fully tested with random input
-  data using
-  [Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) and
-  [Tasty](https://github.com/UnkindPartition/tasty).
+- Every component in Clash Ethernet is fully tested with random input data using [Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) and [Tasty](https://github.com/UnkindPartition/tasty).
 
   TODO: check test coverage of alternatives.
+  For Verilog Ethernet every component is tested using cocotb and icarusverilog.
+  For LiteEth every component is also tested?
 
 Something to consider when choosing to use Clash-ethernet is that, for
 now, it only work on an ECP5 with an RGMII chip. However more FPGA's
@@ -89,16 +81,14 @@ Features LiteEth:
 Perhaps a resource usage comparison using a simple MAC stack for each.
 This will also show where we stand in terms of logic usage.
 
-| Component   |   Clash-ethernet |         LiteEth | Verilog |
-|-------------|-----------------:|----------------:|--------:|
-| Logic LUTs  | 2448/24288 (10%) | 2421/43848 (5%) |         |
-| Carry LUTs  |   44/24288  (0%) |  124/43848 (0%) |         |
-| RAM LUTs    |  184/ 3036  (6%) |  348/ 5481 (6%) |         |
-| RAMW LUTs   |   92/ 6072  (1%) |  174/10962 (1%) |         |
-|-------------|-----------------:|----------------:|--------:|
-| Total LUT4s | 2768/24288 (11%) | 3067/43848 (6%) |         |
-|-------------|-----------------:|----------------:|--------:|
-| Total DFF's |   936/24288 (3%) | 1016/43848 (2%) |         |
+|     Component   | Clash-ethernet | LiteEth | Verilog |
+|-----------------|:--------------:|:-------:|:--------:|
+| Logic LUTs      | 2448           | 2421    |         |
+| Carry LUTs      | 44             | 124     |         |
+| RAM LUTs        | 184            | 348     |         |
+| RAMW LUTs       | 92             | 174     |         |
+| **Total LUT4s** | 2768           | 3067    |         |
+| **Total DFF's** | 936            | 1016    |         |
 
 The table above shows resource usage of Clash-ethernet compared to
 LithEth and Verilog, using a data width of 4 and a simple echo design.
@@ -108,10 +98,8 @@ terms of DFF's (D-Flip-Flops).
 TODO: add Verilog resource usage.
 
 # Documentation
-To generate a local html website of the Clash Ethernet documentation
+Clash Ethernet uses the [Nix package manager](https://nixos.org/) to setup its build environment. To generate a local html website of the Clash Ethernet documentation
 run the following commands:
-
-TODO: need explaination for nix????
 
 ```sh
 nix-shell
@@ -128,6 +116,8 @@ To get inspired, there are some examples for using Clash Ethernet in the
 # How to use as a user
 Examples in the examples directory, maybe something on how to setup build environment?
 
+For more information look at [Clash-protocols](https://github.com/clash-lang/clash-protocols). This is the overarching framework of which Clash Ethernet is a part.
+
 # How to use as a developer
 - install ```nix```, run ```nix-shell```
 
@@ -140,8 +130,8 @@ If you find any bugs please report them
 # Table of Contents
 - [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
-- [Comparison with other implementations](#comparison-with-other-implementations)
-- [Table comparing resource usage](#table-comparing-resource-usage)
+- [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
+- [Resource Usage Comparison](#resource-usage-comparison)
 - [Documentation](#documentation)
 - [How to use as a user](#how-to-use-as-a-user)
 - [How to use as a developer](#how-to-use-as-a-developer)
