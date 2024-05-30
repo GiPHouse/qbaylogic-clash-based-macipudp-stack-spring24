@@ -63,7 +63,7 @@ Some of the benefits of using Clash-ethernet are:
 
 Something to consider when choosing to use Clash-ethernet is that, for
 now, it only work on an ECP5 with an RGMII chip. However more FPGA's
-and chips are coming soon:tm:.
+and chips are coming soon™.
 
 
 
