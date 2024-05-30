@@ -1,7 +1,19 @@
 [![](https://github.com/enjoy-digital/liteeth/workflows/ci/badge.svg)](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/actions)
 
+# Clash Ethernet
+A fully configurable Ethernet core written in [Clash](https://clash-lang.org/).
+
+<!-- omit in toc -->
 # Table of Contents
-TODO
+- [Clash Ethernet](#clash-ethernet)
+- [Introduction](#introduction)
+- [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
+- [Resource Usage Comparison](#resource-usage-comparison)
+- [Documentation](#documentation)
+- [Working with this project](#working-with-this-project)
+  - [Running Python tests](#running-python-tests)
+- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
+
 
 # Introduction
 Clash Ethernet is a fully configurable Ethernet core written in Clash.
@@ -9,9 +21,9 @@ It aims to become part of the
 [clash-protocols](https://github.com/clash-lang/clash-protocols) library
 which exists to make it easy to develop and use on-chip communication
 protocols, with a focus on protocols in need of bidirectional
-communication. Clash Ethernet will to that the internet protocols.
+communication. Clash Ethernet will provide the internet protocols.
 
-So far, we have implemented the following internet protocols:
+So far, Clash Ethernet implements the following internet protocols:
 - Ethernet
 - ICMP
 - IP
@@ -19,18 +31,13 @@ So far, we have implemented the following internet protocols:
 
 # Comparison with Other Ethernet Stacks
 
-TODO:
-- add speed comparisons for different protocols
-- perhaps just write the table out in sentences
-
 | Feature               | Clash Ethernet     |      Verilog     | LiteEth                  |
 |-----------------------|:------------------:|:----------------:|:------------------------:|
-| Data width (in bytes) | :white_check_mark:(Fully configurable) |      :x:(1 or 8)      | :x:(1, 2, 4 or (partially) 8) |
-| **Protocols:**        |                    |                  |                          |
-| \_ ARP*               | :white_check_mark: |:white_check_mark:| :white_check_mark:       |
-| \_ DHCP               | :x:                | :x:              | :white_check_mark:       |
-| \_ ICMP(echo)         | :white_check_mark: | :x:              | :white_check_mark:       |
-| \_ UDP                | :x:                |:white_check_mark:| :white_check_mark:       |
+| Data width (in bytes) | :white_check_mark:(Fully configurable) |  :x:(1 or 8)      | :x:(1, 2, 4 or (partially) 8) |
+| ARP*                  | :white_check_mark: |:white_check_mark:| :white_check_mark:       |
+|  DHCP                 | :x:                | :x:              | :white_check_mark:       |
+| ICMP(echo)            | :white_check_mark: | :x:              | :white_check_mark:       |
+| UDP                   | :x:                |:white_check_mark:| :white_check_mark:       |
 
 \* Clash Ethernet and Verilog Ethernet have a full ARP table, LiteEth has only 2 registers.
 
@@ -51,9 +58,6 @@ Some of the benefits of using Clash-ethernet are:
 
 - Every component in Clash Ethernet is fully tested with random input data using [Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) and [Tasty](https://github.com/UnkindPartition/tasty).
 
-  TODO: check test coverage of alternatives.
-  For Verilog Ethernet every component is tested using cocotb and icarusverilog.
-  For LiteEth every component is also tested?
 
 Something to consider when choosing to use Clash-ethernet is that, for
 now, it only work on an ECP5 with an RGMII chip. However more FPGA's
@@ -75,11 +79,7 @@ Features LiteEth:
 - Etherbone (Wishbone over UDP: subordinate and manager support), UDP Streaming. -->
 
 
-
-
 # Resource Usage Comparison
-Perhaps a resource usage comparison using a simple MAC stack for each.
-This will also show where we stand in terms of logic usage.
 
 |     Component   | Clash-ethernet | LiteEth | Verilog |
 |-----------------|:--------------:|:-------:|:--------:|
@@ -112,32 +112,6 @@ the starting point to the Clash Ethernet documentation.
 
 To get inspired, there are some examples for using Clash Ethernet in the
 ```examples/``` directory.
-
-# How to use as a user
-Examples in the examples directory, maybe something on how to setup build environment?
-
-For more information look at [Clash-protocols](https://github.com/clash-lang/clash-protocols). This is the overarching framework of which Clash Ethernet is a part.
-
-# How to use as a developer
-- install ```nix```, run ```nix-shell```
-
-# How to contact maintainers/developers
-If you find any bugs please report them
-[here](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/issues/).
-
-
-<!-- omit in toc -->
-# Table of Contents
-- [Table of Contents](#table-of-contents)
-- [Introduction](#introduction)
-- [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
-- [Resource Usage Comparison](#resource-usage-comparison)
-- [Documentation](#documentation)
-- [How to use as a user](#how-to-use-as-a-user)
-- [How to use as a developer](#how-to-use-as-a-developer)
-- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
-- [Working with this project](#working-with-this-project)
-  - [Running Python tests](#running-python-tests)
 
 # Working with this project
 It's required to have the [nix package manager](https://nixos.org/download.html) working.
@@ -184,3 +158,9 @@ namspace with `sudo ip netns exec colorlight sudo wireshark`.
 The test suite can then be ran as normal.
 Alternatively, Python files can be ran manually with
 `sudo ip netns exec colorlight sudo ./<filename>`.
+
+# How to contact maintainers/developers
+If you find any bugs please report them
+[here](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/issues/).
+
+
