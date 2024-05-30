@@ -115,10 +115,6 @@ the starting point to the Clash Ethernet documentation.
 To get inspired, there are some examples for using Clash Ethernet in the
 ```examples/``` directory.
 
-# How to use as a user
-Examples in the examples directory, maybe something on how to setup
-build environment?
-
 For more information look at
 [Clash-protocols](https://github.com/clash-lang/clash-protocols). This
 is the overarching framework of which Clash Ethernet is a part.
