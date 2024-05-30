@@ -4,42 +4,68 @@
 TODO
 
 # Introduction
-Clash Ethernet is a fully configurable Ethernet core written in Clash. 
-It aims to become part of the 
-[clash-protocols](https://github.com/clash-lang/clash-protocols) library 
-which exists to make it easy to develop and use on-chip communication 
-protocols, with a focus on protocols in need of bidirectional communication.
+Clash Ethernet is a fully configurable Ethernet core written in Clash.
+It aims to become part of the
+[clash-protocols](https://github.com/clash-lang/clash-protocols) library
+which exists to make it easy to develop and use on-chip communication
+protocols, with a focus on protocols in need of bidirectional
+communication. Clash Ethernet will to that the internet protocols.
 
-This repo implements the following internet protocols:
+So far, we have implemented the following internet protocols:
 - Ethernet
 - ICMP
 - IP
 - ARP
 
-Every protocol is fully configurable in data width. This is something that other
-libraries, such as [LiteEth](https://github.com/enjoy-digital/liteeth) and
-[verilog-ethernet](https://github.com/alexforencich/verilog-ethernet) do not
-support.
+# Comparison with Other Ethernet Stacks
 
-# Comparison with other implementations
+TODO:
+- add speed comparisons for different protocols
+- perhaps just write the table out in sentences
+| Feature               | Clash Ethernet     | Verilog | LiteEth                  |
+|-----------------------|:------------------:|:-------:|:------------------------:|
+| Data width (in bytes) | Fully configurable | 1 or 8  | 1, 2, 4 or (partially) 8 |
+| Protocols:            |                    |         |                          |
+| \_ ARP*               | Yes                | Yes     | Yes                      |
+| \_ DHCP               | No                 | No      | Yes                      |
+| \_ ICMP(echo)         | Yes                | No      | Yes                      |
+| \_ UDP                | No                 | Yes     | Yes                      |
 
-TODO: add speed comparisons for different protocols
-| Feature | Clash Ethernet | Verilog | LiteEth |
-|-
-| Data width (in bytes) | Fully configurable | 1 or 8 | 1, 2, 4 or (partially) 8 |
-| protocols | ARP*, ICMP(echo), IP | ARP*, IP, UDP | ARP*, DHCP, ICMP(echo), UDP |
 \* Clash Ethernet and Verilog Ethernet have a full ARP table, LiteEth has only 2 registers.
 
-```
-verifyChecksum |> depacketizerC const |> verifyLength
-```
-Source: IpDepacketizer.hs line 30
-This verifies the checksum of a packet, then separates the header from the payload and finally verifies the contents of the header.
+Some of the benefits of using Clash-ethernet are:
+- Every protocol is fully configurable in data width. This is
+  something that other libraries, such as
+  [LiteEth](https://github.com/enjoy-digital/liteeth) and
+  [verilog-ethernet](https://github.com/alexforencich/verilog-ethernet)
+  do not support.
 
-- clash makes it easy to combine components to make custom stack by using the ```|>``` operator. TODO add example using ```|>```. Verilog and other will require lots of effort to do this.
-- Clash Ethernet: RGMII for ECP5, more coming in the future.
-- Verilog: multiple for multiple FPGA's
-- LiteEth: multiple for multiple FPGA's
+- Clash makes it very easy to combine two or more components, by using
+  the ```|>``` operator, to create a custom stack. For example:
+
+  ```
+  verifyChecksum |> depacketizerC const |> verifyLength
+  ```
+  <!-- Source: IpDepacketizer.hs line 30 (probably not anymore after reorganization)-->
+
+  This verifies the checksum of a packet, then separates the header from
+  the payload and finally verifies the contents of the header
+  (```verifyLength``` is not the most descriptive name for what is
+  does).
+
+  Doing the same in either Verilog or LiteEth will require
+  significantly more work.
+
+- Every component in Clash Ethernet is fully tested with random input
+  data using
+  [Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) and
+  [Tasty](https://github.com/UnkindPartition/tasty).
+
+  TODO: check test coverage of alternatives.
+
+Something to consider when choosing to use Clash-ethernet is that, for
+now, it only work on an ECP5 with an RGMII chip. However more FPGA's
+and chips are coming soon:tm:.
 
 
 
@@ -59,18 +85,56 @@ Features LiteEth:
 
 
 
-# Table comparing resource usage
-Perhaps a resource usage comparison using a simple MAC stack for each. This will also show where we stand in terms of logic usage.
+# Resource Usage Comparison
+Perhaps a resource usage comparison using a simple MAC stack for each.
+This will also show where we stand in terms of logic usage.
+
+| Component   |   Clash-ethernet |         LiteEth | Verilog |
+|-------------|-----------------:|----------------:|--------:|
+| Logic LUTs  | 2448/24288 (10%) | 2421/43848 (5%) |         |
+| Carry LUTs  |   44/24288  (0%) |  124/43848 (0%) |         |
+| RAM LUTs    |  184/ 3036  (6%) |  348/ 5481 (6%) |         |
+| RAMW LUTs   |   92/ 6072  (1%) |  174/10962 (1%) |         |
+|-------------|-----------------:|----------------:|--------:|
+| Total LUT4s | 2768/24288 (11%) | 3067/43848 (6%) |         |
+|-------------|-----------------:|----------------:|--------:|
+| Total DFF's |   936/24288 (3%) | 1016/43848 (2%) |         |
+
+The table above shows resource usage of Clash-ethernet compared to
+LithEth and Verilog, using a data width of 4 and a simple echo design.
+The data shows that Clash-ethernet is about 10% more efficient in
+terms of DFF's (D-Flip-Flops).
+
+TODO: add Verilog resource usage.
 
 # Documentation
-How to access the haddock
+To generate a local html website of the Clash Ethernet documentation
+run the following commands:
+
+TODO: need explaination for nix????
+
+```sh
+nix-shell
+cabal haddock
+```
+
+After ```cabal``` is finished it will print the ```<file-path>``` to
+an html file to stdout. Open the file in your browser and use it as
+the starting point to the Clash Ethernet documentation.
+
+To get inspired, there are some examples for using Clash Ethernet in the
+```examples/``` directory.
 
 # How to use as a user
 Examples in the examples directory, maybe something on how to setup build environment?
 
 # How to use as a developer
+- install ```nix```, run ```nix-shell```
 
 # How to contact maintainers/developers
+If you find any bugs please report them
+[here](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/issues/).
+
 
 <!-- omit in toc -->
 # Table of Contents
