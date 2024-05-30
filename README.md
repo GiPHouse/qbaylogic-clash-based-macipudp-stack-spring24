@@ -1,17 +1,15 @@
 [![](https://github.com/enjoy-digital/liteeth/workflows/ci/badge.svg)](https://github.com/GiPHouse/qbaylogic-clash-based-macipudp-stack-spring24/actions)
 
-
-# Clash Ethernet
+<!-- omit in toc -->
+# Cλash Ethernet 🙏✨
 A fully configurable Ethernet core written in [Clash](https://clash-lang.org/).
 
+<!-- omit in toc -->
 # Table of Contents
-- [Clash Ethernet](#clash-ethernet)
-- [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
 - [Resource Usage Comparison](#resource-usage-comparison)
 - [Documentation](#documentation)
-- [How to use as a user](#how-to-use-as-a-user)
 - [How to use as a developer](#how-to-use-as-a-developer)
     - [Running Python tests](#running-python-tests)
 - [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
@@ -35,7 +33,7 @@ So far, Clash Ethernet implements the following internet protocols:
 
 | Feature               | Clash Ethernet     |      Verilog     | LiteEth                  |
 |-----------------------|:------------------:|:----------------:|:------------------------:|
-| Data width (in bytes) | :white_check_mark:(Fully configurable) |  :x:(1 or 8)      | :x:(1, 2, 4 or (partially) 8) |
+| Data width<br>(in bytes) | :white_check_mark:<br>Fully configurable |  :x:<br>1 or 8      | :x:<br>1, 2, 4 or (partially) 8 |
 | ARP*                  | :white_check_mark: |:white_check_mark:| :white_check_mark:       |
 |  DHCP                 | :x:                | :x:              | :white_check_mark:       |
 | ICMP(echo)            | :white_check_mark: | :x:              | :white_check_mark:       |
