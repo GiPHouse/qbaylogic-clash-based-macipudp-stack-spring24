@@ -1,29 +1,28 @@
 {-|
-Module      : Clash.Cores.Ethernet.ArpStack
-Description : Fully functional ARP stack
+Module      : Clash.Cores.Ethernet.Examples.ArpStack
+Description : Fully functional ARP stack.
 -}
 
 {-# language FlexibleContexts #-}
 
-module Clash.Cores.Ethernet.ArpStack
+module Clash.Cores.Ethernet.Examples.ArpStack
 ( arpStackC
 ) where
 
 import Clash.Prelude
 
-import Clash.Cores.Arp
-import Clash.Cores.Arp.ArpTypes
-import Clash.Cores.Ethernet.EthernetTypes
-import Clash.Cores.Ethernet.RxStack
-import Clash.Cores.Ethernet.TxStack
-
 import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
-import Clash.Cores.Ethernet.PacketArbiter
-import Clash.Cores.Ethernet.PacketDispatcher
-import Clash.Cores.Ethernet.PacketStream
-import Clash.Cores.IP.IPv4Types
+import Clash.Cores.Ethernet.Arp
+import Clash.Cores.Ethernet.Arp.ArpTypes
+import Clash.Cores.Ethernet.Examples.RxStack
+import Clash.Cores.Ethernet.Examples.TxStack
+import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
+
 import Protocols
+import Protocols.Extra.PacketStream
+import Protocols.Extra.PacketStream.Routing
 
 
 -- | TODO replace this by the IPv4 -> Ethernet stream transformer

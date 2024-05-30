@@ -18,9 +18,9 @@ import Clash.Prelude ( exposeClockResetEnable )
 
 import Clash.Cores.Crc ( deriveHardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
-import Clash.Cores.Ethernet.ArpStack
-import Clash.Cores.Ethernet.Mac.EthernetTypes ( MacAddress(MacAddress) )
+import Clash.Cores.Ethernet.Examples.ArpStack
 import Clash.Cores.Ethernet.IP.IPv4Types ( IPv4Address(IPv4Address) )
+import Clash.Cores.Ethernet.Mac.EthernetTypes ( MacAddress(MacAddress) )
 import Clash.Lattice.ECP5.Colorlight.CRG
 import Clash.Lattice.ECP5.Prims
 import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiTxC, unsafeRgmiiRxC )

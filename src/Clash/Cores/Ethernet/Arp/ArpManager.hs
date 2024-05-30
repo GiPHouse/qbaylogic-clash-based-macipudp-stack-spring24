@@ -6,7 +6,11 @@
 Module      : Clash.Cores.Ethernet.Arp.ArpManager
 Description : Provides an ARP manager which handles ARP lookups from client circuits.
 -}
-module Clash.Cores.Ethernet.Arp.ArpManager where
+module Clash.Cores.Ethernet.Arp.ArpManager
+  ( arpManagerC
+  , arpReceiverC
+  , arpTransmitterC
+  ) where
 
 import Clash.Prelude
 import Clash.Signal.Extra
@@ -107,7 +111,7 @@ arpManagerC SNat = fromSignals ckt
           mealyB arpManagerT (AwaitLookup @maxWaitSeconds) (lookupIPv4S, arpResponseInS, ackInS, secondTimer)
 
 -- | Transmits ARP packets upon request.
-arpTransmitter
+arpTransmitterC
   :: forall (dom :: Domain)
             (dataWidth :: Nat)
    . HiddenClockResetEnable dom
@@ -118,7 +122,7 @@ arpTransmitter
   -> Signal dom IPv4Address
   -- ^ Our IPv4 address
   -> Circuit (Df dom ArpLite) (PacketStream dom dataWidth EthernetHeader)
-arpTransmitter ourMacS ourIPv4S = fromSignals bundleWithSrc |> packetizeFromDfC toEthernetHdr constructArpPkt
+arpTransmitterC ourMacS ourIPv4S = fromSignals bundleWithSrc |> packetizeFromDfC toEthernetHdr constructArpPkt
   where
     bundleWithSrc (fwdIn, bwdIn) = (bwdIn, go <$> bundle (ourMacS, ourIPv4S, fwdIn))
     go (ourMac, ourIPv4, maybeArpLite) = maybeArpLite >>= \arpLite -> Df.Data (ourMac, ourIPv4, arpLite)

@@ -17,8 +17,8 @@ import Protocols.Extra.PacketStream
 import Clash.Cores.Ethernet.Arp.ArpManager
 import Clash.Cores.Ethernet.Arp.ArpTable
 import Clash.Cores.Ethernet.Arp.ArpTypes
-import Clash.Cores.Ethernet.EthernetTypes
 import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 
 -- | A fully functional ARP stack which handles ARP lookups from client circuits.
@@ -62,9 +62,11 @@ arpC
   -> Circuit (PacketStream dom dataWidth EthernetHeader, ArpLookup dom)
              (PacketStream dom dataWidth EthernetHeader)
 arpC maxAge maxWait ourMacS ourIPv4S =
+  -- TODO waiting for an ARP reply in seconds is too coarse.
+  -- Make this timer less coarse, e.g. milliseconds
   circuit $ \(ethStream, lookupIn) -> do
     (entry, replyOut) <- arpReceiverC ourIPv4S -< ethStream
     (lookupOut, requestOut) <- arpManagerC maxWait -< lookupIn
     () <- arpTable maxAge -< (lookupOut, entry)
     arpPktOut <- Df.roundrobinCollect Df.Skip -< [replyOut, requestOut]
-    arpTransmitter ourMacS ourIPv4S -< arpPktOut
+    arpTransmitterC ourMacS ourIPv4S -< arpPktOut
