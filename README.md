@@ -6,21 +6,16 @@ A fully configurable Ethernet core written in [Clash](https://clash-lang.org/).
 
 # Table of Contents
 - [Clash Ethernet](#clash-ethernet)
+- [Table of Contents](#table-of-contents)
 - [Introduction](#introduction)
 - [Comparison with Other Ethernet Stacks](#comparison-with-other-ethernet-stacks)
 - [Resource Usage Comparison](#resource-usage-comparison)
 - [Documentation](#documentation)
-- [<<<<<<< Updated upstream](#-updated-upstream)
 - [How to use as a user](#how-to-use-as-a-user)
 - [How to use as a developer](#how-to-use-as-a-developer)
-- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
-- [>>>>>>> Stashed changes](#-stashed-changes)
-- [Working with this project](#working-with-this-project)
     - [Running Python tests](#running-python-tests)
-- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers-1)
+- [How to contact maintainers/developers](#how-to-contact-maintainersdevelopers)
 - [Acknowledgements](#acknowledgements)
-- [>>>>>>> Stashed changes](#-stashed-changes-1)
-- [Acknowledgements](#acknowledgements-1)
 
 # Introduction
 Clash Ethernet is a fully configurable Ethernet core written in Clash.
