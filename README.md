@@ -43,7 +43,7 @@ So far, Clash Ethernet implements the following internet protocols:
 
 \* Clash Ethernet and Verilog Ethernet have a full ARP table, LiteEth has only 2 registers.
 
-Some of the benefits of using Clash-ethernet are:
+Some of the benefits of using Clash Ethernet are:
 - Every protocol is fully configurable in data width. This is something that other libraries, such as [LiteEth](https://github.com/enjoy-digital/liteeth) and [verilog-ethernet](https://github.com/alexforencich/verilog-ethernet) do not support.
 
 - Clash makes it very easy to combine two or more components, by using
@@ -92,9 +92,9 @@ Features LiteEth:
 | **Total LUT4s** | 2768           | 3067    |         |
 | **Total DFF's** | 936            | 1016    |         |
 
-The table above shows resource usage of Clash-ethernet compared to
+The table above shows resource usage of Clash Ethernet compared to
 LithEth and Verilog, using a data width of 4 and a simple echo design.
-The data shows that Clash-ethernet is about 10% more efficient in
+The data shows that Clash Ethernet is about 10% more efficient in
 terms of DFF's (D-Flip-Flops).
 
 TODO: add Verilog resource usage.
