@@ -157,7 +157,7 @@ arpTransmitterPropertyGenerator C.SNat =
     defExpectOptions
     (Gen.list (Range.linear 1 100) genArpLite)
     (C.exposeClockResetEnable model)
-    (C.exposeClockResetEnable @C.System (arpTransmitter (pure ourMac) (pure ourIP)))
+    (C.exposeClockResetEnable @C.System (arpTransmitterC (pure ourMac) (pure ourIP)))
     (===)
     where
       model :: [ArpLite] -> [PacketStreamM2S dataWidth EthernetHeader]
