@@ -24,8 +24,8 @@ import Protocols.Df qualified as Df
 
 import Clash.Cores.Ethernet.Arp.ArpTable
 import Clash.Cores.Ethernet.Arp.ArpTypes
-import Clash.Cores.Ethernet.Mac.EthernetTypes
 import Clash.Cores.Ethernet.IP.IPv4Types
+import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 
 createDomain vSystem
