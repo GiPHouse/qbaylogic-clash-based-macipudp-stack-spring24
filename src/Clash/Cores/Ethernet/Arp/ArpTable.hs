@@ -8,39 +8,26 @@ Description : Provides a highly configurable ARP table.
 {-# language RecordWildCards #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Clash.Cores.Arp.ArpTable
+module Clash.Cores.Ethernet.Arp.ArpTable
   ( arpTable
-  , secondTimer
   ) where
+
+import Clash.Prelude
+import Clash.Signal.Extra
+
+import Protocols
+import Protocols.Df qualified as Df
+
+import Clash.Cores.Crc
+import Clash.Cores.Crc.Catalog
+import Clash.Cores.Ethernet.Arp.ArpTypes
+import Clash.Cores.Ethernet.IP.IPv4Types
 
 import Data.Bifunctor
 import Data.Proxy
 
-import Clash.Prelude
-
-import Protocols
-import Protocols.Df hiding ( fst, pure, second, snd )
-
-import Clash.Cores.Ethernet.Arp.ArpTypes
-import Clash.Cores.Crc
-import Clash.Cores.Crc.Catalog
-import Clash.Cores.Ethernet.IP.IPv4Types
-
 
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
-
--- | This register is `True` exactly every second.
-secondTimer
-  :: forall (dom :: Domain)
-   . HiddenClockResetEnable dom
-  => 1 <= DomainPeriod dom
-  => 1 <= 10^12 `Div` DomainPeriod dom
-  => KnownNat (DomainPeriod dom)
-  => Signal dom Bool
-secondTimer = isRising 0 $ msb <$> counter
-  where
-    counter :: Signal dom (Index (10^12 `Div` DomainPeriod dom))
-    counter = register maxBound (satPred SatWrap <$> counter)
 
 data ArpTableState depth
   = Initializing
@@ -57,8 +44,9 @@ data ArpTableState depth
   } deriving (Generic, Show, ShowX, NFDataX)
 
 arpTableT
-  :: forall (depth :: Nat)
-            (maxAgeSeconds :: Nat)
+  :: forall
+     (depth :: Nat)
+     (maxAgeSeconds :: Nat)
    . KnownNat depth
   => KnownNat maxAgeSeconds
   => 1 <= maxAgeSeconds
@@ -122,12 +110,14 @@ arpTableT Invalidating{..} (bramOtp, _, _, _, lookupCrc, _)
 --   by hashing the IPv4 address with CRC-32 and taking the last `depth` bits of this hash. By increasing the
 --   number of entries in the table, the chance of IPv4 addresses colliding is lower.
 arpTable
-  :: forall (dom :: Domain)
-            (depth :: Nat)
-            (maxAgeSeconds :: Nat)
+  :: forall
+     (dom :: Domain)
+     (depth :: Nat)
+     (maxAgeSeconds :: Nat)
    . HiddenClockResetEnable dom
+  => KnownDomain dom
   => 1 <= DomainPeriod dom
-  => 1 <= 10^12 `Div` DomainPeriod dom
+  => DomainPeriod dom <= 5 * 10^11
   => KnownNat (DomainPeriod dom)
   => HardwareCrc Crc32_ethernet 8 4
   => 1 <= maxAgeSeconds
@@ -145,7 +135,7 @@ arpTable SNat SNat = fromSignals ckt
       where
         -- We need to store insertion and lookup requests from last clock cycle,
         -- because the CRC output is delayed by one cycle.
-        insertReqLast = register Nothing (dataToMaybe <$> insertReq)
+        insertReqLast = register Nothing (Df.dataToMaybe <$> insertReq)
         lookupReqLast = register Nothing lookupReq
 
         -- Lookup requests are delayed by 2 clock cycles. This delay is necessary in order to
@@ -155,7 +145,7 @@ arpTable SNat SNat = fromSignals ckt
 
         crcLookupS, crcInsertS  :: Signal dom (Maybe (Index 4, Vec 4 (BitVector 8)))
         crcLookupS = fmap (fmap (\ip -> (maxBound, bitCoerce ip))) lookupReq
-        crcInsertS = fmap (fmap (\entry -> (maxBound, bitCoerce $ _arpIP entry))) (dataToMaybe <$> insertReq)
+        crcInsertS = fmap (fmap (\entry -> (maxBound, bitCoerce $ _arpIP entry))) (Df.dataToMaybe <$> insertReq)
 
         -- CRC-32 hashes of the IPv4 addresses for addressing purposes.
         -- Resets are constantly asserted, because we only need one clock cycle to calculate the CRC.
