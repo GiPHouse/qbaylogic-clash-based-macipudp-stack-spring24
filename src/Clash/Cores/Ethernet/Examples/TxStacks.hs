@@ -49,7 +49,6 @@ $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 myTxStack
   :: HiddenClockResetEnable dom
   => KnownDomain domEthTx
-  => HardwareCrc Crc32_ethernet 8 4
   => Clock domEthTx
   -> Reset domEthTx
   -> Enable domEthTx
