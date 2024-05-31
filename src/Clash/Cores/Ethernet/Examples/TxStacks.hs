@@ -10,10 +10,15 @@ Supports any data width bigger than zero.
 
 Example usage:
 
+>>> :set -XFlexibleContexts
+>>> :set -XMultiParamTypeClasses
 >>> import Clash.Prelude
+>>> import Clash.Cores.Crc
+>>> import Clash.Cores.Crc.Catalog
+>>> import Clash.Cores.Ethernet.Mac.EthernetTypes
+>>> import Data.Proxy
 >>> import Protocols
 >>> import Protocols.Extra.PacketStream
->>> import Clash.Cores.Ethernet.Mac.EthernetTypes
 
 The Ethernet TX PHY is completely interchangeable with this stack. In the example below,
 we use a dummy. You have to replace this dummy variable with an Ethernet TX PHY circuit
@@ -21,9 +26,13 @@ for your specific hardware (e.g. RGMII, MII or SGMII) that is adapted to the
 `PacketStream` protocol, i.e. with type:
 
 >>> :{
-dummyTxPhy :: Circuit (PacketStream domEthTx 1 ()) (PacketStream domEthTx 1 ())
+dummyTxPhy
+  :: HiddenClockResetEnable domEthTx
+  => Circuit (PacketStream domEthTx 1 ()) (PacketStream domEthTx 1 ())
 dummyTxPhy = undefined
 :}
+
+For example, the Lattice ECP5 board uses an RGMII PHY, found at `Clash.Lattice.ECP5.RGMII.rgmiiTxC`.
 
 `txStack` is the most common ethernet MAC TX stack that will be sufficient for
 most people. That is, it inserts an interpacket gap of 12 bytes, pads the payload
@@ -31,10 +40,24 @@ to 46 bytes and assumes that you process the bytes in a different clock domain t
 ethernet TX domain. All you have to do is specify the data width (in this example 4),
 the clock domains, and the TX PHY you want to use.
 
+The stack uses `Clash.Cores.Crc.crcEngine` internally to calculate the frame check
+sequence of the Ethernet frame. To be able to use this component, we need to use
+`Clash.Cores.Crc.deriveHardwareCrc` to derive the necessary instance.
+
 >>> :{
-myTxStack :: Circuit (PacketStream dom 4 EthernetHeader) (PacketStream domEthTx 1 ())
-myTxStack = txStack @4 |> dummyTxPhy
-}
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
+myTxStack
+  :: HiddenClockResetEnable dom
+  => KnownDomain domEthTx
+  => HardwareCrc Crc32_ethernet 8 4
+  => Clock domEthTx
+  -> Reset domEthTx
+  -> Enable domEthTx
+  -> Circuit (PacketStream dom 4 EthernetHeader) (PacketStream domEthTx 1 ())
+myTxStack ethTxClk ethTxRst ethTxEn =
+  txStack @4 ethTxClk ethTxRst ethTxEn
+  |> exposeClockResetEnable dummyTxPhy ethTxClk ethTxRst ethTxEn
+:}
 
 Need a TX stack that does it a little different? In this case, you can easily create a
 custom stack by importing the individual components and connecting them via the `|>`
@@ -50,13 +73,16 @@ This custom TX stack processes bytes in the ethernet TX domain. In this case, we
 `asyncFifoC` and `downConverterC`. We also use a bigger interpacket gap than usual, i.e. 16 bytes.
 
 >>> :{
-myCustomTxStack :: Circuit (PacketStream domEthTx 1 EthernetHeader) (PacketStream domEthTx 1 ())
+myCustomTxStack
+  :: HiddenClockResetEnable domEthTx
+  => HardwareCrc Crc32_ethernet 8 1
+  => Circuit (PacketStream domEthTx 1 EthernetHeader) (PacketStream domEthTx 1 ())
 myCustomTxStack =
   macPacketizerC
   |> paddingInserterC d60
   |> fcsInserterC
   |> preambleInserterC
-  |> (exposeClockResetEnable interpacketGapInserterC ethTxClk ethTxRst ethTxEn) d16
+  |> interpacketGapInserterC d16
   |> dummyTxPhy
 :}
 
