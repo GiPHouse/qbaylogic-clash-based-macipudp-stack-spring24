@@ -49,7 +49,7 @@ ourIpAddr = IPv4Address (C.repeat @4 0x3)
 genRandomWord :: Gen (PacketStreamM2S 4 (IPv4HeaderLite, IcmpHeaderLite))
 genRandomWord = do
   icmp <- IcmpHeaderLite 0x8 <$> Gen.enumBounded
-  ipv4 <- IPv4HeaderLite <$> genIpAddr <*> pure ourIpAddr <*> pure 2
+  ipv4 <- IPv4HeaderLite <$> genIpAddr <*> pure ourIpAddr <*> pure 0 <*> pure 2
   dat <- genVec Gen.enumBounded
 
   return $ PacketStreamM2S dat Nothing (ipv4, icmp) False
@@ -95,7 +95,7 @@ icmpReceiverPropertyGenerator C.SNat =
       testAddress = pure $ IPv4Address (C.repeat 0x00)
 
       genIPv4HeaderLite :: Gen IPv4HeaderLite
-      genIPv4HeaderLite = IPv4HeaderLite <$> testAddress <*> testAddress <*> pure 0
+      genIPv4HeaderLite = IPv4HeaderLite <$> testAddress <*> testAddress <*> pure 0 <*> pure 0
 
 prop_icmp_receiver_d1 :: Property
 prop_icmp_receiver_d1 = icmpReceiverPropertyGenerator d1
