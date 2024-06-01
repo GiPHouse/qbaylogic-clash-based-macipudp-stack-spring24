@@ -102,8 +102,8 @@ library
     Clash.Cores.Ethernet.Arp.ArpTypes
     Clash.Cores.Ethernet.Examples.ArpStack
     Clash.Cores.Ethernet.Examples.EchoStack
-    Clash.Cores.Ethernet.Examples.RxStack
-    Clash.Cores.Ethernet.Examples.TxStack
+    Clash.Cores.Ethernet.Examples.RxStacks
+    Clash.Cores.Ethernet.Examples.TxStacks
     Clash.Cores.Ethernet.IP.InternetChecksum
     Clash.Cores.Ethernet.IP.IPPacketizers
     Clash.Cores.Ethernet.IP.IPv4Types

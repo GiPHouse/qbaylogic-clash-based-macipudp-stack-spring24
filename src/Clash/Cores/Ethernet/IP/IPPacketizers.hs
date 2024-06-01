@@ -100,17 +100,17 @@ ipDepacketizerC
      , 1 <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n IPv4Header)
-ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyLength
+ipDepacketizerC = verifyChecksum |> depacketizerC const |> verifyIPHdr
   where
-    verifyLength = Circuit $ \(fwdIn, bwdIn) -> (bwdIn, (go <$>) <$> fwdIn)
+    verifyIPHdr = Circuit $ \(fwdIn, bwdIn) -> (bwdIn, (go <$>) <$> fwdIn)
     go p =
       let
        header = _meta p
        abort =
-         _ipv4Version header /= 4 ||
          _ipv4Ihl header /= 5 ||
+         _ipv4Version header /= 4 ||
          _ipv4FlagReserved header ||
-         _ipv4FlagMF header || _ipv4FragmentOffset header /= 0 -- drop fragmented packets
+         _ipv4FlagMF header
       in p {_abort = _abort p || abort}
 
 -- | Version of `ipDepacketizerC` that only keeps some of the IPv4 header fields.
@@ -124,7 +124,7 @@ ipDepacketizerLiteC
 ipDepacketizerLiteC = ipDepacketizerC |> toLiteC
 
 data VerifyChecksumS n
-  = DeCheck (BitVector 16) (Index (1 + 20 `Div` n)) (BitVector 8)
+  = DeCheck (BitVector 16) (Index (20 `DivRU` n)) (BitVector 8)
   -- ^ Checking. Contains accumulator, remaining bytes, and byte from previous
   -- packet in case of odd data widths
   | DeForward Bool
@@ -141,24 +141,36 @@ verifyChecksum
      , 1 <= n
      )
   => Circuit (PacketStream dom n EthernetHeader) (PacketStream dom n EthernetHeader)
-verifyChecksum = case (sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)), compareSNat (SNat @(20 `Mod` n)) (SNat @n)) of
-    (Just Refl, SNatLE) -> Circuit $ mealyB go (DeCheck 0 0 undefined)
+verifyChecksum = case (divProof, divModProof, modLeProof) of
+    (SNatLE, Just Refl, SNatLE) -> Circuit $ mealyB go (DeCheck 0 0 undefined)
     _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: 2 * (n `Div` 2) + n `Mod` 2 not equal to n"
   where
+    divProof = compareSNat d1 (SNat @(20 `DivRU` n))
+    divModProof = sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2))
+    modLeProof = compareSNat (SNat @(20 `Mod` n)) (SNat @n)
+
     go :: ( 2 * (n `Div` 2) + n `Mod` 2 ~ n, 20 `Mod` n <= n)
+      => 1 <= 20 `DivRU` n
       => VerifyChecksumS n
       -> (Maybe (PacketStreamM2S n EthernetHeader), PacketStreamS2M)
       -> (VerifyChecksumS n, (PacketStreamS2M, Maybe (PacketStreamM2S n EthernetHeader)))
-    go (DeForward invalid) (mp, bwd) = (DeForward invalid, (bwd, (\p -> p {_abort = _abort p || invalid}) <$> mp))
+    go (DeForward invalid) (fwd, bwd) = (nextSt, (bwd, (\p -> p {_abort = _abort p || invalid}) <$> fwd))
+      where
+        nextSt = if isJust fwd && _ready bwd && isJust (_last $ fromJustX fwd)
+           then DeCheck 0 0 undefined
+           else DeForward invalid
     go s@(DeCheck {}) (Nothing, bwd) = (s, (bwd, Nothing))
     go s@(DeCheck acc i byte) (Just fwdIn, PacketStreamS2M inReady) = (s', (PacketStreamS2M inReady, Just fwdOut))
       where
-        containsData = i == maxBound
+        finalHeaderFragment = i == maxBound
 
         -- Set all data bytes to zero
         (dataLo, dataHi0) = splitAtI @(20 `Mod` n) @(n - 20 `Mod` n) $ _data fwdIn
-        dataHi1 = if containsData then repeat 0 else dataHi0
-        header = dataLo ++ dataHi1
+        dataHi1 = if finalHeaderFragment then repeat 0 else dataHi0
+        -- If our datawidth is aligned we don't need to partial checksum of the data
+        header = case sameNat d0 (SNat @(20 `Mod` n)) of
+                   Just Refl -> _data fwdIn
+                   _         -> dataLo ++ dataHi1
 
         -- We verify that 2 * n Div 2 + n Mod 2 = n, and distinguish between
         -- even and odd data widths. For odd data widths, we have to save the
@@ -178,10 +190,12 @@ verifyChecksum = case (sameNat (SNat @n) (SNat @(2 * (n `Div` 2) + n `Mod` 2)), 
             _ -> errorX "ipDepacketizerC: absurd in verifyChecksum: n `Mod` 2 not equal to 0 or 1"
 
         invalid = acc' /= 0xFFFF -- Note that we haven't taken the complement
-        i' = satSucc SatBound i
         s'
           | not inReady = s
-          | isJust (_last fwdIn) = DeForward invalid
-          | otherwise = DeCheck acc' i' byte'
+          | isJust (_last fwdIn) = DeCheck 0 0 undefined
+          | finalHeaderFragment = DeForward invalid
+          | otherwise = DeCheck acc' (succ i) byte'
 
-        fwdOut = if containsData then fwdIn { _abort = _abort fwdIn || invalid } else fwdIn
+        fwdOut = if finalHeaderFragment
+                   then fwdIn { _abort = _abort fwdIn || invalid }
+                   else fwdIn

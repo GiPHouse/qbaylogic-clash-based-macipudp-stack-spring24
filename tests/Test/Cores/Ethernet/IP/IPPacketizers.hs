@@ -127,22 +127,28 @@ testIPDepacketizer _ = idWithModelSingleDomain
 
     genValidHeaders = concat <$> Gen.list (Range.linear 1 50) genValidHeaderPacket
 
-    model ps =
-     let
-       ps' = depacketizerModel const ps
-       aborts = (\h ->
-         pureInternetChecksum (C.bitCoerce h :: C.Vec 10 (C.BitVector 16)) /= 0 ||
-         _ipv4Ihl h /= 5 ||
-         _ipv4Version h /= 4 ||
-         _ipv4FlagReserved h ||
-         _ipv4FlagMF h || _ipv4FragmentOffset h /= 0
-         ) . _meta <$> ps'
-      in
-       concat $ zipWith (\qs abort -> (\q -> q {_abort = _abort q || abort}) <$> qs) (chunkByPacket ps') (aborts ++ repeat False)
+    model fragments = concat $ zipWith setAbort packets aborts
+      where
+        setAbort packet abort = (\f -> f {_abort = _abort f || abort}) <$> packet
+        validateHeader hdr =
+          pureInternetChecksum (C.bitCoerce hdr :: C.Vec 10 (C.BitVector 16)) /= 0 ||
+          _ipv4Ihl hdr /= 5 ||
+          _ipv4Version hdr /= 4 ||
+          _ipv4FlagReserved hdr ||
+          _ipv4FlagMF hdr
+        packets = chunkByPacket $ depacketizerModel const fragments
+        aborts = validateHeader . _meta . head <$> packets
+
 
 -- Odd data widths
 prop_ip_depacketizer_d1 :: Property
 prop_ip_depacketizer_d1 = testIPDepacketizer C.d1
+
+prop_ip_depacketizer_d3 :: Property
+prop_ip_depacketizer_d3 = testIPDepacketizer C.d3
+
+prop_ip_depacketizer_d5 :: Property
+prop_ip_depacketizer_d5 = testIPDepacketizer C.d5
 
 prop_ip_depacketizer_d7 :: Property
 prop_ip_depacketizer_d7 = testIPDepacketizer C.d7
@@ -159,6 +165,9 @@ prop_ip_depacketizer_d23 = testIPDepacketizer C.d23
 -- Even data widths
 prop_ip_depacketizer_d2 :: Property
 prop_ip_depacketizer_d2 = testIPDepacketizer C.d2
+
+prop_ip_depacketizer_d4 :: Property
+prop_ip_depacketizer_d4 = testIPDepacketizer C.d4
 
 prop_ip_depacketizer_d6 :: Property
 prop_ip_depacketizer_d6 = testIPDepacketizer C.d6

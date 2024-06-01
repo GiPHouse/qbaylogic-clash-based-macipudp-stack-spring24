@@ -12,6 +12,7 @@ module Clash.Cores.Ethernet.IP.IPv4Types
   , toLiteC
   , fromLite
   , fromLiteC
+  , ipv4Broadcast
   ) where
 
 import Clash.Prelude
@@ -26,6 +27,31 @@ import Data.Tuple
 -- | IPv4 address.
 newtype IPv4Address = IPv4Address (Vec 4 (BitVector 8))
   deriving (Generic, Show, ShowX, NFDataX, NFData, Eq, BitPack)
+
+bitCoerceMap2
+  :: forall a b
+   . BitPack a
+  => BitPack b
+  => BitSize a ~ BitSize b
+  => (a -> a -> a)
+  -> b -> b -> b
+bitCoerceMap2 f x y = bitCoerce $ f (bitCoerce x) (bitCoerce y)
+
+-- | `Bits` instance, borrowed from `BitVector`.
+instance Bits IPv4Address where
+  (.&.) = bitCoerceMap2 @(BitVector 32) (.&.)
+  (.|.) = bitCoerceMap2 @(BitVector 32) (.|.)
+  xor = bitCoerceMap2 @(BitVector 32) xor
+  complement = bitCoerceMap @(BitVector 32) complement
+  shift a n = bitCoerceMap @(BitVector 32) (`shift` n) a
+  rotate a n = bitCoerceMap @(BitVector 32) (`rotate` n) a
+  bitSize = bitSize . bitCoerce @IPv4Address @(BitVector 32)
+  bitSizeMaybe = bitSizeMaybe . bitCoerce @IPv4Address @(BitVector 32)
+  isSigned = isSigned . bitCoerce @IPv4Address @(BitVector 32)
+  testBit = testBit . bitCoerce @IPv4Address @(BitVector 32)
+  bit = bitCoerce @(BitVector 32) . bit
+  popCount = popCount . bitCoerce @IPv4Address @(BitVector 32)
+
 
 -- | (Almost) full IPv4 header. Does not contain options field.
 data IPv4Header = IPv4Header
@@ -71,7 +97,7 @@ fromLite header = IPv4Header { _ipv4Version = 4
                              , _ipv4Ihl = ipv4Ihl
                              , _ipv4Dscp = 0
                              , _ipv4Ecn = 0
-                             , _ipv4Length = _ipv4lPayloadLength header + zeroExtend (4 * ipv4Ihl)
+                             , _ipv4Length = _ipv4lPayloadLength header + 20
                              , _ipv4Id = 0
                              , _ipv4FlagReserved = False
                              , _ipv4FlagDF = False
@@ -92,3 +118,13 @@ fromLiteC :: Circuit (PacketStream dom n IPv4HeaderLite) (PacketStream dom n IPv
 fromLiteC = Circuit (swap . unbundle . go . bundle)
   where
     go = fmap $ B.first $ fmap $ fmap fromLite
+
+-- | Computes the IPv4 broadcast address.
+ipv4Broadcast
+  :: IPv4Address
+  -- ^ Host address
+  -> IPv4Address
+  -- ^ Subnet mask
+  -> IPv4Address
+  -- ^ Broadcast address
+ipv4Broadcast address subnet = address .|. complement subnet

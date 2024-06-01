@@ -29,3 +29,14 @@ def make_uart_packet(data: bytes):
     if data == b'':
         return b''
     return struct.pack("<H", len(data) - 1) + data
+
+def internet_checksum(data):
+    if len(data) % 2 != 0:
+        data += b'\x00'
+    
+    s = sum(struct.unpack("!%dH" % (len(data) // 2), data))
+    s = (s >> 16) + (s & 0xffff)
+    s += s >> 16
+    s = ~s & 0xffff
+    
+    return s

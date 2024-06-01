@@ -27,6 +27,8 @@ data UpConverterState (dataWidth :: Nat) =
     -- ^ Where in the buffer we need to write the next element
     _ucFlush   :: Bool,
     -- ^ If this is true the current state can presented as packetstream word
+    _ucFreshBuf  :: Bool,
+    -- ^ If this is true we need to start a fresh buffer
     _ucAborted :: Bool,
     -- ^ Current packet is aborted
     _ucLastIdx :: Maybe (Index dataWidth)
@@ -69,7 +71,8 @@ nextState st@(UpConverterState {..}) (Just PacketStreamM2S{..}) (PacketStreamS2M
       -- output fragment is accepted by the sink
       outReady = not _ucFlush || inReady
       bufFull = _ucIdx == maxBound
-      nextBuf = replace _ucIdx (head _data) _ucBuf
+      currBuf = if _ucFreshBuf then (repeat 0) else _ucBuf
+      nextBuf = replace _ucIdx (head _data) currBuf
 
       nextFlush = inLast || bufFull
       nextIdx = if nextFlush then 0 else _ucIdx + 1
@@ -78,6 +81,7 @@ nextState st@(UpConverterState {..}) (Just PacketStreamM2S{..}) (PacketStreamS2M
                     { _ucBuf =  nextBuf
                     , _ucIdx = nextIdx
                     , _ucFlush = nextFlush
+                    , _ucFreshBuf = nextFlush
                     , _ucAborted = nextAbort
                     , _ucLastIdx = toMaybe inLast _ucIdx
                     }
@@ -99,7 +103,7 @@ upConverter
   --   Output packet stream to the sink
 upConverter = mealyB go s0
   where
-    s0 = UpConverterState (repeat 0) 0 False False Nothing
+    s0 = UpConverterState (repeat undefined) 0 False True False Nothing
     go
       :: UpConverterState dataWidth
       -> (Maybe (PacketStreamM2S 1 ()), PacketStreamS2M)
