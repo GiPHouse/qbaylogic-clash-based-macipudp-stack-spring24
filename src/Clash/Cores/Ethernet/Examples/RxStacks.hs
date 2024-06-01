@@ -53,7 +53,7 @@ macRxStack ethClk ethRst ethEn macAddressS =
   where
     upConverterC' = exposeClockResetEnable upConverterC ethClk ethRst ethEn
     asyncFifoC' = asyncFifoC d4 ethClk ethRst ethEn hasClock hasReset hasEnable
-    isForMyMac myMac h = let to = _macDst h in to == myMac || to == broadcastMac
+    isForMyMac myMac (_macDst -> to) = to == myMac || to == broadcastMac
 
 -- | Processes received IP packets
 ipRxStack
@@ -79,4 +79,4 @@ ipRxStack ethClk ethRst ethEn macAddressS ipS = circuit $ \raw -> do
   ipDepacketizerLiteC |> filterMetaS (isForMyIp <$> ipS) -< ip
   where
     isIpv4 = (== 0x0800) . _etherType
-    isForMyIp (ip, subnet) h = let to = _ipv4lDestination h in to == ip || to == ipv4Broadcast ip subnet
+    isForMyIp (ip, subnet) (_ipv4lDestination -> to) = to == ip || to == ipv4Broadcast ip subnet
