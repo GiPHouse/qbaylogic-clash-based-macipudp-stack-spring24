@@ -90,8 +90,13 @@ fullStackC
   -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthTx 1 ())
 fullStackC rxClk rxRst rxEn txClk txRst txEn mac ip =
   macRxStack @4 rxClk rxRst rxEn mac
-  |> arpIcmpUdpStackC mac ip
+  |> arpIcmpUdpStackC mac ip (mapMeta $ B.second swapPorts)
   |> macTxStack txClk txRst txEn
+  where
+    swapPorts hdr@UdpHeaderLite{..} = hdr
+                                        { _udplSrcPort = _udplDstPort
+                                        , _udplDstPort = _udplSrcPort
+                                        }
 
 arpIcmpUdpStackC
   :: forall (dataWidth :: Nat) (dom :: Domain)
@@ -102,9 +107,13 @@ arpIcmpUdpStackC
   => DomainPeriod dom <= 5 * 10^11
   => KnownNat (DomainPeriod dom)
   => Signal dom MacAddress
+  -- ^ My MAC Address
   -> Signal dom (IPv4Address, IPv4Address)
+  -- ^ My IP address and the subnet
+  -> Circuit (PacketStream dom dataWidth (IPv4Address, UdpHeaderLite)) (PacketStream dom dataWidth (IPv4Address, UdpHeaderLite))
+  -- ^ UDP handler circuit
   -> Circuit (PacketStream dom dataWidth EthernetHeader) (PacketStream dom dataWidth EthernetHeader)
-arpIcmpUdpStackC macAddressS ipS = circuit $ \ethIn -> do
+arpIcmpUdpStackC macAddressS ipS udpCkt = circuit $ \ethIn -> do
   [arpEthIn, ipEthIn] <- packetDispatcherC (routeBy _etherType $ 0x0806 :> 0x0800 :> Nil) -< ethIn
   ipTx <- ipLitePacketizerC <| packetBufferC d10 d4 <| icmpUdpStack <| packetBufferC d10 d4 <| filterMetaS (isForMyIp <$> ipS) <| ipDepacketizerLiteC -< ipEthIn
   (ipEthOut, arpLookup) <- toEthernetStreamC macAddressS -< ipTx
@@ -116,10 +125,6 @@ arpIcmpUdpStackC macAddressS ipS = circuit $ \ethIn -> do
       [icmpIn, udpIn] <- packetDispatcherC (routeBy _ipv4lProtocol $ 0x0001 :> 0x0011 :> Nil) -< ipIn
       icmpOut <- icmpEchoResponderC @dom @dataWidth (fst <$> ipS) -< icmpIn
       udpInParsed <- udpDepacketizerC -< udpIn
-      udpOutParsed <- udpPacketizerC (fst <$> ipS) <| mapMeta (B.second swapPorts) -< udpInParsed
+      udpOutParsed <- udpPacketizerC (fst <$> ipS) <| udpCkt -< udpInParsed
       packetArbiterC RoundRobin -< [icmpOut, udpOutParsed]
     isForMyIp (ip, subnet) (_ipv4lDestination -> to) = to == ip || to == ipv4Broadcast ip subnet
-    swapPorts hdr@UdpHeaderLite{..} = hdr
-                                        { _udplSrcPort = _udplDstPort
-                                        , _udplDstPort = _udplSrcPort
-                                        } 
