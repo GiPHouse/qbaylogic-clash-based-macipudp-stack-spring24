@@ -15,14 +15,14 @@ module Clash.Cores.Ethernet.Examples.EchoStack
 import Clash.Prelude
 
 -- import ethernet
+import Clash.Cores.Ethernet.Arp
 import Clash.Cores.Ethernet.Examples.RxStacks
 import Clash.Cores.Ethernet.Examples.TxStacks
-import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader(..), MacAddress(..) )
-import Clash.Cores.Ethernet.Arp
 import Clash.Cores.Ethernet.IP.IPPacketizers
+import Clash.Cores.Ethernet.Mac.EthernetTypes ( EthernetHeader(..), MacAddress(..) )
 
-import Clash.Cores.Ethernet.IP.IPv4Types
 import Clash.Cores.Ethernet.IP.EthernetStream
+import Clash.Cores.Ethernet.IP.IPv4Types
 
 -- import protocols
 import Protocols
