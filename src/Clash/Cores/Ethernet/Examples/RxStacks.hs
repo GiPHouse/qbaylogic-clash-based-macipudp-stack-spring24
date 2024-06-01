@@ -28,16 +28,13 @@ import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 
 -- | Processes received ethernet frames
 macRxStack
-  :: forall
-  (dataWidth :: Nat)
-  (dom :: Domain)
-  (domEth :: Domain).
-  ( HiddenClockResetEnable dom
-  , KnownDomain domEth
-  , HardwareCrc Crc32_ethernet 8 dataWidth
-  )
-  => 1 <= dataWidth
-  => KnownNat dataWidth
+  :: forall (dataWidth :: Nat) (dom :: Domain) (domEth :: Domain)
+   . ( HiddenClockResetEnable dom
+     , KnownDomain domEth
+     , HardwareCrc Crc32_ethernet 8 dataWidth
+     , KnownNat dataWidth
+     , 1 <= dataWidth
+     )
   => Clock domEth
   -> Reset domEth
   -> Enable domEth
@@ -57,16 +54,13 @@ macRxStack ethClk ethRst ethEn macAddressS =
 
 -- | Processes received IP packets
 ipRxStack
-  :: forall
-  (dataWidth :: Nat)
-  (dom :: Domain)
-  (domEth :: Domain).
-  ( HiddenClockResetEnable dom
-  , KnownDomain domEth
-  , HardwareCrc Crc32_ethernet 8 dataWidth
-  )
-  => 1 <= dataWidth
-  => KnownNat dataWidth
+  :: forall (dataWidth :: Nat) (dom :: Domain) (domEth :: Domain)
+   . ( HiddenClockResetEnable dom
+     , KnownDomain domEth
+     , HardwareCrc Crc32_ethernet 8 dataWidth
+     , KnownNat dataWidth
+     , 1 <= dataWidth
+     )
   => Clock domEth
   -> Reset domEth
   -> Enable domEth
