@@ -7,6 +7,7 @@ Description : Simple Ethernet echo stack.
 -}
 module Clash.Cores.Ethernet.Examples.EchoStack
   ( ipEchoStackC
+  , fullStackC
   ) where
 
 -- import prelude
@@ -26,6 +27,8 @@ import Clash.Cores.Crc ( HardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
 
 import Clash.Cores.Ethernet.IP.IPv4Types
+
+import Clash.Cores.Ethernet.Icmp ( icmpEchoResponderC )
 
 -- | Processes IP packets and echoes them back
 ipEchoStackC
@@ -54,3 +57,28 @@ ipEchoStackC rxClk rxRst rxEn txClk txRst txEn mac ip = ckt
             |> packetBufferC d10 d4
             |> mapMeta swapIp
             |> ipTxStack @4 txClk txRst txEn mac
+fullStackC
+  :: forall
+       (dom :: Domain)
+       (domEthRx :: Domain)
+       (domEthTx :: Domain)
+   . KnownDomain dom
+  => KnownDomain domEthRx
+  => KnownDomain domEthTx
+  => HardwareCrc Crc32_ethernet 8 4
+  => HiddenClockResetEnable dom
+  => Clock domEthRx
+  -> Reset domEthRx
+  -> Enable domEthRx
+  -> Clock domEthTx
+  -> Reset domEthTx
+  -> Enable domEthTx
+  -> Signal dom MacAddress
+  -> Signal dom (IPv4Address, IPv4Address)
+  -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthTx 1 ())
+fullStackC rxClk rxRst rxEn txClk txRst txEn mac ip =
+  ipRxStack rxClk rxRst rxEn mac ip
+  |> filterMeta ((1 ==) . _ipv4lProtocol)
+  |> packetBufferC d10 d4
+  |> icmpEchoResponderC (fst <$> ip)
+  |> ipTxStack @4 txClk txRst txEn mac

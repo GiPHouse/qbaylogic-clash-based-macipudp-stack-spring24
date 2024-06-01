@@ -60,7 +60,7 @@ adjustIP ip hdr@IPv4HeaderLite {..} = hdr {
 
 adjustIcmp :: IcmpHeaderLite -> IcmpHeaderLite
 adjustIcmp IcmpHeaderLite {..}  =
-  IcmpHeaderLite { _typeL = 0 , _checksumL = onesComplementAdd (complement 0x0800) _checksumL }
+  IcmpHeaderLite { _typeL = 0, _checksumL = complement $ onesComplementAdd (complement _checksumL) 0xf7ff }
 
 icmpTransmitterC ::
   forall (dom::Domain) (n::Nat).
@@ -68,7 +68,10 @@ icmpTransmitterC ::
   => KnownNat n
   => 1 <= n
   => Circuit (PacketStream dom n (IPv4HeaderLite, IcmpHeaderLite)) (PacketStream dom n IPv4HeaderLite)
-icmpTransmitterC = packetizerC fst snd
+icmpTransmitterC = packetizerC fst (f . snd)
+  where
+    f :: IcmpHeaderLite -> IcmpHeader
+    f IcmpHeaderLite{..} = IcmpHeader{_type = _typeL, _code = 0, _checksum = _checksumL}
 
 -- | A circuit that parses an ICMP Header and output an IcmpHeaderLite
 icmpReceiverC :: forall (dom :: Domain) (dataWidth :: Nat).

@@ -76,6 +76,7 @@ data IPv4Header = IPv4Header
 data IPv4HeaderLite = IPv4HeaderLite
   { _ipv4lSource :: IPv4Address
   , _ipv4lDestination :: IPv4Address
+  , _ipv4lProtocol :: Unsigned 8
   , _ipv4lPayloadLength :: Unsigned 16
   } deriving (Show, ShowX, Eq, Generic, BitPack, NFDataX, NFData)
 
@@ -83,6 +84,7 @@ toLite :: IPv4Header -> IPv4HeaderLite
 toLite IPv4Header {..} = IPv4HeaderLite
   { _ipv4lSource = _ipv4Source
   , _ipv4lDestination = _ipv4Destination
+  , _ipv4lProtocol = _ipv4Protocol
   , _ipv4lPayloadLength = _ipv4Length - 20 -- We do not support IHLs other than 5
   }
 
@@ -104,7 +106,7 @@ fromLite header = IPv4Header { _ipv4Version = 4
                              , _ipv4FlagMF = False
                              , _ipv4FragmentOffset = 0
                              , _ipv4Ttl = 64
-                             , _ipv4Protocol = 0
+                             , _ipv4Protocol = _ipv4lProtocol header
                              , _ipv4Checksum = 0
                              , _ipv4Source = _ipv4lSource header
                              , _ipv4Destination = _ipv4lDestination header
