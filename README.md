@@ -79,9 +79,9 @@ and chips are coming soon™.
 | Total DFF's | 936            | 1016    |         |
 
 The table above shows resource usage of Clash Ethernet compared to
-LithEth and Verilog, using a data width of 4 and a simple echo design.
-The data shows that Clash Ethernet is about 10% more efficient in
-terms of DFF's (D-Flip-Flops).
+LithEth and Verilog, using a data width of 4 bytes and a simple echo
+design. The data shows that Clash Ethernet is about 10% more efficient
+in terms of DFF's (D-Flip-Flops).
 
 TODO: add Verilog resource usage.
 
@@ -104,6 +104,15 @@ To get inspired, there are some examples for using Clash Ethernet in the
 For more information look at
 [Clash-protocols](https://github.com/clash-lang/clash-protocols). This
 is the overarching framework of which Clash Ethernet is a part.
+
+To make working with your FPGA easier it could be useful to set some
+environment variables. You can use `env.sh` for this. To help you get
+started, this repo contains `env.sh.default`. To inherit the
+environment variables from `env.sh` to your current shell run:
+
+```sh
+. env.sh
+```
 
 # How to use as a developer
 The easiest way to setup a development environment to start hacking on
