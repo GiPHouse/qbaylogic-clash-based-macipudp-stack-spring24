@@ -71,7 +71,7 @@ toEthernetC macSrc = Circuit (swap . unbundle . helper macSrc . bundle)
     }
 
 hardCodedMac :: MacAddress
-hardCodedMac = MacAddress (0x8C :> 0x8C :> 0xAA :> 0xC8 :> 0x2B :> 0xEE :> Nil)
+hardCodedMac = MacAddress (0x00 :> 0xe0 :> 0x6c :> 0x38 :> 0xd0:> 0x2c :> Nil)
 
 -- | Broadcast MAC address.
 broadcastMac :: MacAddress
