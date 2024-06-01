@@ -8,8 +8,10 @@ Description : Simple Ethernet echo stack.
 module Clash.Cores.Ethernet.Examples.EchoStack
   ( ipEchoStackC
   , fullStackC
-  , arpIcmpStackC
+  , arpIcmpUdpStackC
   ) where
+
+import Data.Bifunctor qualified as B
 
 -- import prelude
 import Clash.Prelude
@@ -34,6 +36,7 @@ import Clash.Cores.Crc ( HardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
 
 import Clash.Cores.Ethernet.Icmp ( icmpEchoResponderC )
+import Clash.Cores.Ethernet.Udp
 
 
 -- | Processes IP packets and echoes them back
@@ -87,10 +90,10 @@ fullStackC
   -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthTx 1 ())
 fullStackC rxClk rxRst rxEn txClk txRst txEn mac ip =
   macRxStack @4 rxClk rxRst rxEn mac
-  |> arpIcmpStackC mac ip
+  |> arpIcmpUdpStackC mac ip
   |> macTxStack txClk txRst txEn
 
-arpIcmpStackC
+arpIcmpUdpStackC
   :: forall (dataWidth :: Nat) (dom :: Domain)
    . HiddenClockResetEnable dom
   => KnownNat dataWidth
@@ -101,15 +104,22 @@ arpIcmpStackC
   => Signal dom MacAddress
   -> Signal dom (IPv4Address, IPv4Address)
   -> Circuit (PacketStream dom dataWidth EthernetHeader) (PacketStream dom dataWidth EthernetHeader)
-arpIcmpStackC macAddressS ipS = circuit $ \ethIn -> do
+arpIcmpUdpStackC macAddressS ipS = circuit $ \ethIn -> do
   [arpEthIn, ipEthIn] <- packetDispatcherC (routeBy _etherType $ 0x0806 :> 0x0800 :> Nil) -< ethIn
-  ipTx <- ipLitePacketizerC <| icmpStack <| filterMetaS (isForMyIp <$> ipS) <| ipDepacketizerLiteC -< ipEthIn
+  ipTx <- ipLitePacketizerC <| packetBufferC d10 d4 <| icmpUdpStack <| packetBufferC d10 d4 <| filterMetaS (isForMyIp <$> ipS) <| ipDepacketizerLiteC -< ipEthIn
   (ipEthOut, arpLookup) <- toEthernetStreamC macAddressS -< ipTx
   arpEthOut <- arpC d10 d5 macAddressS (fst <$> ipS) -< (arpEthIn, arpLookup)
   packetArbiterC RoundRobin -< [arpEthOut, ipEthOut]
 
   where
-    icmpStack = filterMeta ((1 ==) . _ipv4lProtocol)
-                  |> packetBufferC d10 d4
-                  |> icmpEchoResponderC @dom @dataWidth (fst <$> ipS)
+    icmpUdpStack = circuit $ \ipIn -> do
+      [icmpIn, udpIn] <- packetDispatcherC (routeBy _ipv4lProtocol $ 0x0001 :> 0x0011 :> Nil) -< ipIn
+      icmpOut <- icmpEchoResponderC @dom @dataWidth (fst <$> ipS) -< icmpIn
+      udpInParsed <- udpDepacketizerC -< udpIn
+      udpOutParsed <- udpPacketizerC (fst <$> ipS) <| mapMeta (B.second swapPorts) -< udpInParsed
+      packetArbiterC RoundRobin -< [icmpOut, udpOutParsed]
     isForMyIp (ip, subnet) (_ipv4lDestination -> to) = to == ip || to == ipv4Broadcast ip subnet
+    swapPorts hdr@UdpHeaderLite{..} = hdr
+                                        { _udplSrcPort = _udplDstPort
+                                        , _udplDstPort = _udplSrcPort
+                                        } 

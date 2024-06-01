@@ -115,6 +115,7 @@ library
     Clash.Cores.Ethernet.Mac.PaddingInserter
     Clash.Cores.Ethernet.Mac.Preamble
     Clash.Cores.Ethernet.Icmp
+    Clash.Cores.Ethernet.Udp
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.TopEntity
     Clash.Lattice.ECP5.Prims
