@@ -49,11 +49,12 @@ toEthernetStreamC myMac = fromSignals ckt
              , (PacketStreamS2M, Maybe ArpResponse))
           -> (EthernetStreamState, (PacketStreamS2M
              , (Maybe (PacketStreamM2S dataWidth EthernetHeader), Maybe IPv4Address)))
-        go Idle (_, pktIn, (_, arpResponse))
-          = case arpResponse of
-              Nothing -> (Idle, (PacketStreamS2M False, (Nothing, fmap _meta pktIn)))
-              Just ArpEntryNotFound -> (Drop, (PacketStreamS2M False, (Nothing, Nothing)))
-              Just (ArpEntryFound ma) -> (Forward{_mac = ma}, (PacketStreamS2M False, (Nothing, Nothing)))
+        go Idle (_, pktIn, (_, arpResponse)) = (newSt, (PacketStreamS2M False, (Nothing, fmap _meta pktIn)))
+          where
+            newSt = case arpResponse of
+              Nothing -> Idle
+              Just ArpEntryNotFound -> Drop
+              Just (ArpEntryFound ma) -> Forward{_mac = ma}
         go Drop (_, pktIn, (_, _))
           = (nextSt, (PacketStreamS2M True, (Nothing, Nothing)))
           where
