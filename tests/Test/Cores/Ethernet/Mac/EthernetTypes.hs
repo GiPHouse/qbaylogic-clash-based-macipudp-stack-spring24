@@ -60,7 +60,7 @@ toEthernetTest C.SNat macSrc =
     model src = map $ fmap (toEthernet src)
 
     hardCodedMac :: MacAddress
-    hardCodedMac = MacAddress (0x8C C.:> 0x8C C.:> 0xAA C.:> 0xC8 C.:> 0x2B C.:> 0xEE C.:> C.Nil)
+    hardCodedMac = MacAddress (0x00 C.:> 0xe0 C.:> 0x6c C.:> 0x38 C.:> 0xd0 C.:> 0x2c C.:> C.Nil)
 
     toEthernet :: MacAddress -> IPv4Address -> EthernetHeader
     toEthernet src _ = EthernetHeader {

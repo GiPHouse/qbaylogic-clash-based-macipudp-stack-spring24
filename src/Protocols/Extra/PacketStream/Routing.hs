@@ -80,14 +80,8 @@ packetDispatcherC fs = Circuit (second unbundle . unbundle . fmap go . bundle . 
       _ -> (PacketStreamS2M True, repeat Nothing)
     go _ = (PacketStreamS2M False, repeat Nothing)
 
--- | Routing function for `packetDispatcherC` that matches against values with an `Eq` instance.
--- >>> :{
--- dispatcher
---   :: KnownDomain dom
---   => HiddenClockResetEnable dom
---   => Circuit (PacketStream dom n Bool) (Vec 2 (PacketStream dom n Bool))
--- dispatcher = packetDispatcherC (routeBy id $ True :> False :> Nil)
--- :}
+-- | Routing function for `packetDispatcherC` that matches against values with
+-- an `Eq` instance. Useful to route according to a record field.
 routeBy
   :: Eq b
   => (a -> b)
