@@ -104,6 +104,7 @@ library
     Clash.Cores.Ethernet.Examples.EchoStack
     Clash.Cores.Ethernet.Examples.RxStacks
     Clash.Cores.Ethernet.Examples.TxStacks
+    Clash.Cores.Ethernet.IP.EthernetStream
     Clash.Cores.Ethernet.IP.InternetChecksum
     Clash.Cores.Ethernet.IP.IPPacketizers
     Clash.Cores.Ethernet.IP.IPv4Types
@@ -162,6 +163,7 @@ test-suite test-library
   other-modules:
     Test.Cores.Ethernet.Arp.ArpManager
     Test.Cores.Ethernet.Arp.ArpTable
+    Test.Cores.Ethernet.IP.EthernetStream
     Test.Cores.Ethernet.IP.InternetChecksum
     Test.Cores.Ethernet.IP.IPPacketizers
     Test.Cores.Ethernet.Mac.EthernetTypes
