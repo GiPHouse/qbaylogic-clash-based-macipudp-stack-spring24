@@ -6,6 +6,7 @@ module Test.Cores.Ethernet.Icmp where
 
 -- base
 import Data.Bifunctor ( bimap, second )
+import Data.Maybe ( fromMaybe )
 import Prelude
 
 -- clash-prelude
@@ -72,7 +73,7 @@ alignTo n a xs = xs ++ replicate (n - mod (length xs) n) a
 
 updateLast :: (a -> a) -> [a] -> [a]
 updateLast _ [] = []
-updateLast f xs = (init xs) ++ [f $ last xs]
+updateLast f xs = init xs ++ [f $ last xs]
 
 -- This generates a packet with a valid ICMP header prepended including
 -- a correct checksum
@@ -93,11 +94,7 @@ genValidIcmpRequestPacket = do
   let dataBytes = payloadWords >>= \w -> V.toList (C.bitCoerce w :: C.Vec 2 (C.BitVector 8))
 
   ipv4Hdr <- genViaBits @IPv4HeaderLite
-  let toFragments vs = PacketStreamM2S <$>
-                          (pure vs) <*>
-                          (pure Nothing) <*>
-                          (pure ipv4Hdr) <*>
-                          Gen.enumBounded
+  let toFragments vs = PacketStreamM2S vs Nothing ipv4Hdr <$> Gen.enumBounded
   let dataWidth = C.natToNum @dataWidth
   let totalBytes = headerBytes ++ dataBytes
   let lastIdxRaw = mod (length totalBytes) dataWidth
@@ -121,7 +118,7 @@ calcChecksum fragments = checksum
   where
     dataToList PacketStreamM2S{..} = take validData $ V.toList _data
       where
-        validData = 1 + (fromIntegral $ maybe maxBound id _last)
+        validData = 1 + fromIntegral (fromMaybe maxBound _last)
     checksum = pureInternetChecksum
                  $ fmap (C.pack . V.unsafeFromList @2)
                  $ chopBy 2
@@ -137,7 +134,7 @@ icmpResponderPropertyGenerator C.SNat =
   idWithModelSingleDomain
     @C.System
     defExpectOptions
-    (fmap concat $ Gen.list (Range.linear 1 10) genValidIcmpRequestPacket)
+    (concat <$> Gen.list (Range.linear 1 10) genValidIcmpRequestPacket)
     (C.exposeClockResetEnable (concatMap model . chunkByPacket))
     (C.exposeClockResetEnable (icmpEchoResponderC $ pure ourIpAddr))
  where
