@@ -47,7 +47,7 @@ genIpAddr :: Gen IPv4Address
 genIpAddr = IPv4Address <$> C.sequence (C.repeat @4 Gen.enumBounded)
 
 genIPv4HeaderLite :: Gen IPv4HeaderLite
-genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> pure 0
+genIPv4HeaderLite = IPv4HeaderLite <$> genIpAddr <*> genIpAddr <*> Gen.enumBounded <*> pure 0
 
 packetize
   :: 1 C.<= dataWidth

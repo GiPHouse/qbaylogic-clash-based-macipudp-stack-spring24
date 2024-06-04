@@ -6,6 +6,7 @@ module Protocols.Extra.PacketStream.Routing
   ( packetArbiterC
   , ArbiterMode(..)
   , packetDispatcherC
+  , routeBy
   ) where
 
 import Clash.Prelude
@@ -78,3 +79,12 @@ packetDispatcherC fs = Circuit (second unbundle . unbundle . fmap go . bundle . 
       Just i -> (bwds !! i, replace i (Just x) (repeat Nothing))
       _ -> (PacketStreamS2M True, repeat Nothing)
     go _ = (PacketStreamS2M False, repeat Nothing)
+
+-- | Routing function for `packetDispatcherC` that matches against values with
+-- an `Eq` instance. Useful to route according to a record field.
+routeBy
+  :: Eq b
+  => (a -> b)
+  -> Vec p b
+  -> Vec p (a -> Bool)
+routeBy f = fmap $ \x -> (== x) . f
