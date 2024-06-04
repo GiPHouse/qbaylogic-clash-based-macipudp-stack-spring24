@@ -54,8 +54,8 @@ toUdpLite UdpHeader{..} = UdpHeaderLite
   , _udplPayloadLength = _udpLength - 8
   }
 
--- | Parses out the UDP header from an IP stream.
---   The first element of the tuple is the source IP.
+-- | Parses out the UDP header from an IP stream, but ignores the checksum.
+-- The first element of the metadata is the source IP of incoming packets.
 udpDepacketizerC
   :: HiddenClockResetEnable dom
   => KnownNat n
@@ -65,13 +65,14 @@ udpDepacketizerC
        (PacketStream dom n (IPv4Address, UdpHeaderLite))
 udpDepacketizerC = depacketizerC (\udph ipv4lh -> (_ipv4lSource ipv4lh, toUdpLite udph))
 
--- Serializes the UDP packet to an IP stream.
--- The first element of the tuple is the destination IP.
+-- Serializes the UDP packet to an IP stream. The first element of the metadata
+-- is the destination IP for outgoing packets. No checksum is included in the UDP header.
 udpPacketizerC
   :: HiddenClockResetEnable dom
   => KnownNat n
   => 1 <= n
   => Signal dom IPv4Address
+  -- ^ Source IP address
   -> Circuit
       (PacketStream dom n (IPv4Address, UdpHeaderLite))
       (PacketStream dom n IPv4HeaderLite)
