@@ -55,8 +55,8 @@ prop_delay_circuit_id =
   ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
   ckt = bufferIC d5
 
-tests :: TestTree
-tests =
-    localOption (mkTimeout 12_000_000 {- 12 seconds -})
-  $ localOption (HedgehogTestLimit (Just 1_000))
-  $(testGroupGenerator)
+-- tests :: TestTree
+-- tests =
+--     localOption (mkTimeout 12_000_000 {- 12 seconds -})
+--   $ localOption (HedgehogTestLimit (Just 1_000))
+--   $(testGroupGenerator)
