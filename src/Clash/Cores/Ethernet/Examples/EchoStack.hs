@@ -66,6 +66,8 @@ ipEchoStackC rxClk rxRst rxEn txClk txRst txEn mac ip = ckt
             |> packetBufferC d10 d4
             |> mapMeta swapIp
             |> ipTxStack @4 txClk txRst txEn mac
+
+-- | Full stack from ethernet to ethernet.
 fullStackC
   :: forall
        (dom :: Domain)
@@ -86,7 +88,9 @@ fullStackC
   -> Reset domEthTx
   -> Enable domEthTx
   -> Signal dom MacAddress
+  -- ^ My mac address
   -> Signal dom (IPv4Address, IPv4Address)
+  -- ^ Tuple of my IP and subnet mask
   -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthTx 1 ())
 fullStackC rxClk rxRst rxEn txClk txRst txEn mac ip =
   macRxStack @4 rxClk rxRst rxEn mac
@@ -98,6 +102,8 @@ fullStackC rxClk rxRst rxEn txClk txRst txEn mac ip =
                                         , _udplDstPort = _udplSrcPort
                                         }
 
+-- | Wraps a circuit that handles UDP packets into a stack that handles IP, ICMP
+-- and ARP.
 arpIcmpUdpStackC
   :: forall (dataWidth :: Nat) (dom :: Domain)
    . HiddenClockResetEnable dom
