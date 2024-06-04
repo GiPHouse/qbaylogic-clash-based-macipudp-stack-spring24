@@ -1,0 +1,39 @@
+diff --git a/clash-eth.cabal b/clash-eth.cabal
+index b98230d..bf607ff 100644
+--- a/clash-eth.cabal
++++ b/clash-eth.cabal
+@@ -119,6 +119,7 @@ library
+     Protocols.Extra.PacketStream.AsyncFIFO
+     Protocols.Extra.PacketStream.Converters
+     Protocols.Extra.PacketStream.PacketBuffer
++    Protocols.Extra.PacketStream.DelayCircuit
+     Protocols.Extra.PacketStream.Packetizers
+     Protocols.Extra.PacketStream.Routing
+     Protocols.Extra.PacketStream
+@@ -174,6 +175,7 @@ test-suite test-library
+     Test.Protocols.Extra.PacketStream.PacketBuffer
+     Test.Protocols.Extra.PacketStream.Packetizers
+     Test.Protocols.Extra.PacketStream.Routing
++    Test.Protocols.Extra.PacketStream.DelayCircuit
+     Test.Protocols.Extra.PacketStream
+   build-depends:
+     clash-eth,
+diff --git a/tests/unittests.hs b/tests/unittests.hs
+index a94d717..e63cff7 100644
+--- a/tests/unittests.hs
++++ b/tests/unittests.hs
+@@ -19,7 +19,7 @@ import Test.Protocols.Extra.PacketStream.Converters qualified
+ import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
+ import Test.Protocols.Extra.PacketStream.Packetizers qualified
+ import Test.Protocols.Extra.PacketStream.Routing qualified
+-
++import Test.Protocols.Extra.PacketStream.DelayCircuit qualified
+ 
+ main :: IO ()
+ main = defaultMain $ testGroup "."
+@@ -40,4 +40,5 @@ main = defaultMain $ testGroup "."
+   , Test.Protocols.Extra.PacketStream.Packetizers.tests
+   , Test.Protocols.Extra.PacketStream.Routing.tests
+   , Test.Protocols.Extra.PacketStream.tests
++  , Test.Protocols.Extra.PacketStream.DelayCircuit.tests
+   ]

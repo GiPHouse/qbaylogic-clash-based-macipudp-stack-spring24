@@ -119,6 +119,7 @@ library
     Protocols.Extra.PacketStream.AsyncFIFO
     Protocols.Extra.PacketStream.Converters
     Protocols.Extra.PacketStream.PacketBuffer
+    Protocols.Extra.PacketStream.DelayCircuit
     Protocols.Extra.PacketStream.Packetizers
     Protocols.Extra.PacketStream.Routing
     Protocols.Extra.PacketStream
@@ -174,6 +175,7 @@ test-suite test-library
     Test.Protocols.Extra.PacketStream.PacketBuffer
     Test.Protocols.Extra.PacketStream.Packetizers
     Test.Protocols.Extra.PacketStream.Routing
+    Test.Protocols.Extra.PacketStream.DelayCircuit
     Test.Protocols.Extra.PacketStream
   build-depends:
     clash-eth,
