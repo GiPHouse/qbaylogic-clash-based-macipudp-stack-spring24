@@ -71,7 +71,7 @@ bufferI storeI@SNat (fwdIn, bwdIn) = (bwdOut, fwdOut)
     readPrevious = register False r_en
 
     w_en, r_en :: Signal dom Bool
-    (w_en, r_en) = unbundle $ mealy go (BufferIState 0 0 False False False False) (bundle (fwdIn, bwdIn, outFifo))
+    (w_en, r_en) = unbundle $ mealy go (BufferIState 0 0 False False False False) (bundle (fwdIn, bwdIn, fwdOut))
 
     go ::
       BufferIState storeI
