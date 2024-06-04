@@ -7,7 +7,6 @@ module Test.Protocols.Extra.PacketStream.DelayCircuit where
 import Prelude
 
 -- clash-prelude
-import Clash.Prelude hiding ( drop, take, undefined, (++) )
 import Clash.Prelude qualified as C
 
 -- hedgehog
@@ -22,11 +21,11 @@ import Test.Tasty.Hedgehog.Extra ( testProperty )
 import Test.Tasty.TH ( testGroupGenerator )
 
 -- clash-protocols
-import Protocols (Circuit)
-import Protocols.Extra.PacketStream (PacketStreamM2S(..), PacketStream)
-import Protocols.Extra.PacketStream.DelayCircuit ( bufferIC )
-import Protocols.Hedgehog ( idWithModelSingleDomain, defExpectOptions )
-import Test.Protocols.Extra.PacketStream ( makeValid)
+import Protocols ( Circuit )
+import Protocols.Extra.PacketStream ( PacketStream, PacketStreamM2S(..) )
+import Protocols.Extra.PacketStream.DelayCircuit ( delayPacketStreamC )
+import Protocols.Hedgehog ( defExpectOptions, idWithModelSingleDomain )
+import Test.Protocols.Extra.PacketStream ( makeValid )
 
 genVec :: (C.KnownNat n, 1 C.<= n) => Gen a -> Gen (C.Vec n a)
 genVec gen = sequence (C.repeat gen)
@@ -52,11 +51,12 @@ prop_delay_circuit_id =
     (C.exposeClockResetEnable id)
     (C.exposeClockResetEnable ckt)
  where
-  ckt :: HiddenClockResetEnable System => Circuit (PacketStream System 4 ()) (PacketStream System 4 ())
-  ckt = bufferIC d5
+  ckt :: C.HiddenClockResetEnable C.System => Circuit (PacketStream C.System 4 ()) (PacketStream C.System 4 ())
+  ckt = delayPacketStreamC C.d5
 
--- tests :: TestTree
--- tests =
---     localOption (mkTimeout 12_000_000 {- 12 seconds -})
---   $ localOption (HedgehogTestLimit (Just 1_000))
---   $(testGroupGenerator)
+
+tests :: TestTree
+tests =
+    localOption (mkTimeout 30_000_000 {- 12 seconds -})
+  $ localOption (HedgehogTestLimit (Just 1_000))
+  $(testGroupGenerator)

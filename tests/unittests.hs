@@ -16,14 +16,14 @@ import Test.Cores.Ethernet.Mac.Preamble qualified
 import Test.Protocols.Extra.PacketStream qualified
 import Test.Protocols.Extra.PacketStream.AsyncFIFO qualified
 import Test.Protocols.Extra.PacketStream.Converters qualified
+import Test.Protocols.Extra.PacketStream.DelayCircuit qualified
 import Test.Protocols.Extra.PacketStream.PacketBuffer qualified
 import Test.Protocols.Extra.PacketStream.Packetizers qualified
 import Test.Protocols.Extra.PacketStream.Routing qualified
-import Test.Protocols.Extra.PacketStream.DelayCircuit qualified
 
 main :: IO ()
 main = defaultMain $ testGroup "."
-  [ 
+  [
   --   Test.Cores.Ethernet.Arp.ArpManager.tests
   -- , Test.Cores.Ethernet.Arp.ArpTable.tests
   -- , Test.Cores.Ethernet.IP.InternetChecksum.tests
@@ -41,6 +41,6 @@ main = defaultMain $ testGroup "."
   -- , Test.Protocols.Extra.PacketStream.Packetizers.tests
   -- , Test.Protocols.Extra.PacketStream.Routing.tests
   -- , Test.Protocols.Extra.PacketStream.tests
-  -- , 
+  -- ,
   Test.Protocols.Extra.PacketStream.DelayCircuit.tests
   ]
