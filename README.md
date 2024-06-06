@@ -49,18 +49,8 @@ Some of the benefits of using Clash Ethernet are:
 
 - Clash makes it very easy to combine two or more components, see
   [Clash Protocols](https://github.com/clash-lang/clash-protocols).
-  For example:
-
-  ```haskell
-  verifyChecksum |> depacketizerC const |> verifyLength
-  ```
-  <!-- Source: src/Clash/Cores/Ethernet/IP/IPPacketizers.hs -->
-
-  This verifies the checksum of a packet, then separates the header
-  from the payload and finally verifies the contents of the header
-  (`verifyLength` is not the most descriptive name for what it does).
-  Doing the same in either Verilog or LiteEth would require
-  significantly more work.
+  Doing the same in other ethernet cores would require significantly
+  more work.
 
 - Every component in Clash Ethernet is fully tested with random input
   data using
