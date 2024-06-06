@@ -77,8 +77,9 @@ in terms of DFF's (D-Flip-Flops).
 TODO: add Verilog resource usage.
 
 # Documentation
-Clash Ethernet uses the [Nix package manager](https://nixos.org/) to setup its build environment. To generate a local html website of the Clash Ethernet documentation
-run the following commands:
+Clash Ethernet uses the [Nix package manager](https://nixos.org/) to
+setup its build environment. To generate a local html website of the
+Clash Ethernet documentation run the following commands:
 
 ```sh
 nix-shell
