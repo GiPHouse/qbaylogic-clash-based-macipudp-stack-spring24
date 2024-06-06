@@ -1,9 +1,80 @@
+{-|
+  Module      : Clash.Cores.Ethernet.Examples.RxStack
+  Copyright   : 
+  Description : Provides a standard Ethernet MAC receive stack.
+  License     : BSD2 (see the file LICENSE)
+  Maintainer  : QBayLogic B.V. <devops@qbaylogic.com>
+
+A fully modular MAC receive stack which allows for the reception of data over Ethernet II.
+Supports any data width greater than zero.
+
+Example usage:
+
+Start by importing some necessary components:
+
+>>> :set -XFlexibleContexts
+>>> :set -XMultiParamTypeClasses
+>>> import Clash.Prelude
+>>> import Clash.Cores.Crc
+>>> import Clash.Cores.Crc.Catalog
+>>> import Clash.Cores.Ethernet.Mac.EthernetTypes
+>>> import Data.Proxy
+>>> import Protocols
+>>> import Protocols.Extra.PacketStream
+
+To use this stack, you need an Ethernet RX PHY. For an example, see
+`Clash.Lattice.ECP5.RGMII.unsafeRgmiiRxC`, which is an RGMII for the
+Lattice ECP5 board. To use your own PHY, it needs to be adapted to
+the `PacketStream` protocol, so it needs to have the type:
+
+>>> :{
+dummyRxPhy
+  :: HiddenClockResetEnable domEthRx
+  => Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthRx 1 ())
+dummyRxPhy = undefined
+:}
+
+We will use this dummy PHY for our examples, which you should replace
+with your own PHY circuit.
+
+This module provides the most common ethernete MAC RX stack, which is
+sufficient for most cases. It first merges the packetstreams so that
+the stack can be used with slower clock cycles. It sends these packets
+to an async FIFO to cross to a different clock domain. The MAC packets
+are then processed, which includes stripping the preamble, validating
+the frame check sequence, and finally parses the first 14 bytes into
+
+The stack uses `Clash.Cores.Crc.crcEngine` internally to calculate the frame check
+sequence of the Ethernet frame. To be able to use this component, we need to use
+`Clash.Cores.Crc.deriveHardwareCrc` to derive the necessary instance.
+
+The complete stack can be used with:
+>>> :{
+$(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
+myRxStack
+  :: HiddenClockResetEnable dom
+  => KnownDomain domEthRx
+  => Clock domEthRx
+  -> Reset domEthRx
+  -> Enable domEthRx
+  -> Signal dom MacAddress
+  -> Circuit (PacketStream domEthRx 1 ()) (PacketStream dom 4 EthernetHeader)
+myRxStack ethRxClk ethRxRst ethRxEn myMacAddress =
+  exposeClockResetEnable dummyRxPhy ethRxClk ethRxRst ethRxEn
+  |> rxStack @4 ethRxClk ethRxRst ethRxEn myMacAddress
+:}
+
+Need a TX stack that does it a little different? In this case, you can easily create a
+custom stack by importing the individual components and connecting them via the `|>`
+operator, creating one big `Circuit`. For example:
+
+This custom TX stack processes bytes in the ethernet TX domain. In this case, we can omit
+`asyncFifoC` and `downConverterC`. We also use a bigger interpacket gap than usual, i.e. 16 bytes.
+
+-}
+
 {-# language FlexibleContexts #-}
 
-{-|
-Module      : Clash.Cores.Ethernet.Examples.RxStacks
-Description : Provides the entire receive stack as a circuit.
--}
 module Clash.Cores.Ethernet.Examples.RxStacks
   ( macRxStack
   , ipRxStack
