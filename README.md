@@ -66,8 +66,8 @@ and chips are coming soon™.
 # Resource Usage Comparison
 | Component   | Clash-ethernet | LiteEth | Verilog |
 |-------------|:--------------:|:-------:|:-------:|
-| Total LUT4s | 2768           | 3067    |         |
-| Total DFF's | 936            | 1016    |         |
+| Total LUT4s | 2768           | 3067    | n.a.    |
+| Total DFF's | 936            | 1016    | n.a.    |
 
 The table above shows resource usage of Clash Ethernet compared to
 LithEth and Verilog, using a data width of 4 bytes and a simple echo
