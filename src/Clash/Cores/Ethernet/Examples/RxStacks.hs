@@ -1,6 +1,6 @@
 {-|
   Module      : Clash.Cores.Ethernet.Examples.RxStack
-  Copyright   : 
+  Copyright   :
   Description : Provides a standard Ethernet MAC receive stack.
   License     : BSD2 (see the file LICENSE)
   Maintainer  : QBayLogic B.V. <devops@qbaylogic.com>
@@ -120,20 +120,20 @@ import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 --
 -- 1. `upConverterC` merges the packets to packets of the given data width
 --
--- 2. Because the clock domain of the Ethernet RX PHY is usually different from the clock
--- domain on the FPGA internally, `asyncFifoC` is used to cross clock domains.
+-- 2. Because the clock domain of the Ethernet RX PHY is usually different from the
+-- clock domain on the FPGA internally, `asyncFifoC` is used to cross clock domains.
 --
--- 3. The first real manipulation of the stream is stripping the preamble from the front
--- of the frame by `preambleStripperC`.
+-- 3. The first real manipulation of the stream is stripping the preamble from the
+-- front of the frame by `preambleStripperC`.
 --
--- 4. `fcsValidatorC calculates and validates the frame check sequence in the ethernet
--- header, and sets an abort if it is incorrect.
+-- 4. `fcsValidatorC calculates and validates the frame check sequence in the
+-- ethernet header, and sets an abort if it is incorrect.
 --
--- 5. `macDepacketizerC` parses the header from the front of the frame and puts it in the
--- metadata of the stream.
--- 
--- 6. The MAC address of the frame is compared to the given address, and the packet is dropped
--- if we are not the recepient.
+-- 5. `macDepacketizerC` parses the header from the front of the frame and puts it
+-- in the metadata of the stream.
+--
+-- 6. The MAC address of the frame is compared to the given address, and the packet
+-- is dropped if we are not the recepient.
 macRxStack
   :: forall (dataWidth :: Nat) (dom :: Domain) (domEthRx :: Domain)
    . ( HiddenClockResetEnable dom
