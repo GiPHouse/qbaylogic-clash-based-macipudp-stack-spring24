@@ -54,7 +54,7 @@ myTxStack
   -> Enable domEthTx
   -> Circuit (PacketStream dom 4 EthernetHeader) (PacketStream domEthTx 1 ())
 myTxStack ethTxClk ethTxRst ethTxEn =
-  txStack @4 ethTxClk ethTxRst ethTxEn
+  macTxStack @4 ethTxClk ethTxRst ethTxEn
   |> exposeClockResetEnable dummyTxPhy ethTxClk ethTxRst ethTxEn
 :}
 
@@ -101,7 +101,7 @@ import Protocols.Extra.PacketStream ( PacketStream )
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
 import Protocols.Extra.PacketStream.Converters ( downConverterC )
 
-import Clash.Cores.Crc ( HardwareCrc, deriveHardwareCrc )
+import Clash.Cores.Crc ( HardwareCrc )
 import Clash.Cores.Crc.Catalog ( Crc32_ethernet )
 import Clash.Cores.Ethernet.IP.IPPacketizers
 import Clash.Cores.Ethernet.IP.IPv4Types
