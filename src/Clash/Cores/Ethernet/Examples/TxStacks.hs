@@ -34,7 +34,7 @@ dummyTxPhy = undefined
 
 For example, the Lattice ECP5 board uses an RGMII PHY, found at `Clash.Lattice.ECP5.RGMII.rgmiiTxC`.
 
-`txStack` is the most common ethernet MAC TX stack that will be sufficient for
+`macTxStack` is the most common ethernet MAC TX stack that will be sufficient for
 most people. That is, it inserts an interpacket gap of 12 bytes, pads the payload
 to 46 bytes and assumes that you process the bytes in a different clock domain than the
 ethernet TX domain. All you have to do is specify the data width (in this example 4),
