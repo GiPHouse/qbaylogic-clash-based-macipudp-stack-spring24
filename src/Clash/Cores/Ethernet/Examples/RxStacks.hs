@@ -14,15 +14,20 @@ Start by importing some necessary components:
 
 >>> :set -XFlexibleContexts
 >>> :set -XMultiParamTypeClasses
->>> import Clash.Prelude
+>>> import Data.Proxy
 >>> import Clash.Cores.Crc
 >>> import Clash.Cores.Crc.Catalog
->>> import Clash.Cores.Ethernet.Mac.EthernetTypes
->>> import Data.Proxy
+>>> import Clash.Prelude
 >>> import Protocols
 >>> import Protocols.Extra.PacketStream
+>>> import Protocols.Extra.PacketStream.AsyncFIFO
+>>> import Protocols.Extra.PacketStream.Converters
+>>> import Clash.Cores.Ethernet.Mac.EthernetTypes
+>>> import Clash.Cores.Ethernet.Mac.FrameCheckSequence
+>>> import Clash.Cores.Ethernet.Mac.MacPacketizers
+>>> import Clash.Cores.Ethernet.Mac.Preamble
 
-To use this stack, you need an Ethernet RX PHY. For an example, see
+To use this stack, you need an ethernet RX PHY. For an example, see
 `Clash.Lattice.ECP5.RGMII.unsafeRgmiiRxC`, which is an RGMII for the
 Lattice ECP5 board. To use your own PHY, it needs to be adapted to
 the `PacketStream` protocol, so it needs to have the type:
@@ -37,18 +42,20 @@ dummyRxPhy = undefined
 We will use this dummy PHY for our examples, which you should replace
 with your own PHY circuit.
 
-This module provides the most common ethernete MAC RX stack, which is
+This module provides the most common ethernet MAC RX stack, which is
 sufficient for most cases. It first merges the packetstreams so that
-the stack can be used with slower clock cycles. It sends these packets
+the stack can be used with slower clock cycles. Then, it sends these packets
 to an async FIFO to cross to a different clock domain. The MAC packets
 are then processed, which includes stripping the preamble, validating
 the frame check sequence, and finally parses the first 14 bytes into
+an ethernet header. The stack also filters frames for the given mac
+address.
 
 The stack uses `Clash.Cores.Crc.crcEngine` internally to calculate the frame check
-sequence of the Ethernet frame. To be able to use this component, we need to use
+sequence of the ethernet frame. To be able to use this component, we need to use
 `Clash.Cores.Crc.deriveHardwareCrc` to derive the necessary instance.
 
-The complete stack can be used with:
+The complete stack, with a data width of 4, can be used with:
 >>> :{
 $(deriveHardwareCrc (Proxy @Crc32_ethernet) d8 d4)
 myRxStack
@@ -59,17 +66,24 @@ myRxStack
   -> Enable domEthRx
   -> Signal dom MacAddress
   -> Circuit (PacketStream domEthRx 1 ()) (PacketStream dom 4 EthernetHeader)
-myRxStack ethRxClk ethRxRst ethRxEn myMacAddress =
+myRxStack ethRxClk ethRxRst ethRxEn macAddressS =
   exposeClockResetEnable dummyRxPhy ethRxClk ethRxRst ethRxEn
-  |> rxStack @4 ethRxClk ethRxRst ethRxEn myMacAddress
+  |> macRxStack @4 ethRxClk ethRxRst ethRxEn macAddressS
 :}
 
-Need a TX stack that does it a little different? In this case, you can easily create a
-custom stack by importing the individual components and connecting them via the `|>`
-operator, creating one big `Circuit`. For example:
+You can also create a custom RX stack, by combining components using the
+`|>` operator. For example, if you want just a basic stack to process
+frames in the ethernet RX domain, you don't need `upConverterC` or `asyncFifoC`:
 
-This custom TX stack processes bytes in the ethernet TX domain. In this case, we can omit
-`asyncFifoC` and `downConverterC`. We also use a bigger interpacket gap than usual, i.e. 16 bytes.
+myCustomRxStack
+  :: HiddenClockResetEnable domEthRx
+  => HardwareCrc Crc32_ethernet 8 dataWidth
+  -> Circuit (PacketStream domEthRx 1 ()) (PacketStream domEthRx 1 EthernetHeader)
+myCustomRxStack =
+  exposeClockResetEnable dummyRxPhy ethRxClk ethRxRst ethRxEn
+  |> preambleStripperC
+  |> fcsValidatorC
+  |> macDepacketizerC
 
 -}
 
@@ -99,18 +113,18 @@ import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 
 -- | Processes received ethernet frames
 macRxStack
-  :: forall (dataWidth :: Nat) (dom :: Domain) (domEth :: Domain)
+  :: forall (dataWidth :: Nat) (dom :: Domain) (domEthRx :: Domain)
    . ( HiddenClockResetEnable dom
-     , KnownDomain domEth
+     , KnownDomain domEthRx
      , HardwareCrc Crc32_ethernet 8 dataWidth
      , KnownNat dataWidth
      , 1 <= dataWidth
      )
-  => Clock domEth
-  -> Reset domEth
-  -> Enable domEth
+  => Clock domEthRx
+  -> Reset domEthRx
+  -> Enable domEthRx
   -> Signal dom MacAddress
-  -> Circuit (PacketStream domEth 1 ()) (PacketStream dom dataWidth EthernetHeader)
+  -> Circuit (PacketStream domEthRx 1 ()) (PacketStream dom dataWidth EthernetHeader)
 macRxStack ethClk ethRst ethEn macAddressS =
     upConverterC'
     |> asyncFifoC'
