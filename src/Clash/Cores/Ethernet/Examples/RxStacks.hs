@@ -71,7 +71,7 @@ myRxStack ethRxClk ethRxRst ethRxEn macAddressS =
   |> macRxStack @4 ethRxClk ethRxRst ethRxEn macAddressS
 :}
 
-You can also create a custom RX stack, by combining components using the
+You can also create a custom RX stack, by combining circuits using the
 `|>` operator. For example, if you want just a basic stack to process
 frames in the ethernet RX domain, you don't need `upConverterC` or `asyncFifoC`:
 
@@ -84,6 +84,11 @@ myCustomRxStack =
   |> preambleStripperC
   |> fcsValidatorC
   |> macDepacketizerC
+
+If you want to only use MAC, then you are now ready. If you also want to use IP,
+then you should continue reading.
+
+TODO: Add IP stack example
 
 -}
 
@@ -111,7 +116,24 @@ import Clash.Cores.Ethernet.Mac.FrameCheckSequence ( fcsValidatorC )
 import Clash.Cores.Ethernet.Mac.MacPacketizers ( macDepacketizerC )
 import Clash.Cores.Ethernet.Mac.Preamble ( preambleStripperC )
 
--- | Processes received ethernet frames
+-- | Processes received ethernet frames in the following way:
+--
+-- 1. `upConverterC` merges the packets to packets of the given data width
+--
+-- 2. Because the clock domain of the Ethernet RX PHY is usually different from the clock
+-- domain on the FPGA internally, `asyncFifoC` is used to cross clock domains.
+--
+-- 3. The first real manipulation of the stream is stripping the preamble from the front
+-- of the frame by `preambleStripperC`.
+--
+-- 4. `fcsValidatorC calculates and validates the frame check sequence in the ethernet
+-- header, and sets an abort if it is incorrect.
+--
+-- 5. `macDepacketizerC` parses the header from the front of the frame and puts it in the
+-- metadata of the stream.
+-- 
+-- 6. The MAC address of the frame is compared to the given address, and the packet is dropped
+-- if we are not the recepient.
 macRxStack
   :: forall (dataWidth :: Nat) (dom :: Domain) (domEthRx :: Domain)
    . ( HiddenClockResetEnable dom
