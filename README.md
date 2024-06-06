@@ -28,6 +28,7 @@ So far, Clash Ethernet implements the following internet protocols:
 - ICMP
 - IP
 - ARP
+- UDP
 
 # Comparison with Other Ethernet Stacks
 
@@ -38,7 +39,7 @@ So far, Clash Ethernet implements the following internet protocols:
 | DHCP                     | :x:                                      | :x:                | :white_check_mark:              |
 | ICMP(echo)               | :white_check_mark:                       | :x:                | :white_check_mark:              |
 | IP                       | :white_check_mark:                       | :white_check_mark: | :white_check_mark:              |
-| UDP                      | :x:                                      | :white_check_mark: | :white_check_mark:              |
+| UDP                      | :white_check_mark:                       | :white_check_mark: | :white_check_mark:              |
 
 Some of the benefits of using Clash Ethernet are:
 - Every protocol is fully configurable in data width. This is
