@@ -26,7 +26,7 @@ import Clash.Lattice.ECP5.RGMII ( RGMIIRXChannel(..), RGMIITXChannel(..), rgmiiT
 
 import Protocols ( toSignals, (|>) )
 
-import Clash.Cores.Ethernet.Examples.EchoStack ( fullStackC )
+import Clash.Cores.Ethernet.Examples.FullUdpStack ( fullStackC )
 import Data.Proxy ( Proxy(Proxy) )
 
 
