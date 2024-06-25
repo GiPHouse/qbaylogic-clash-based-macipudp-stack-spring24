@@ -1,6 +1,7 @@
 {-# language AllowAmbiguousTypes #-}
 {-# language FlexibleContexts #-}
 {-# language RecordWildCards #-}
+{-# language UndecidableInstances #-}
 
 {-|
 Module      : Protocols.Extra.PacketStream.Packetizers
@@ -244,6 +245,7 @@ depacketizerT
             (metaOut :: Type)
    . BitSize header ~ headerBytes * 8
   => BitPack header
+  => NFDataX metaIn
   => DepacketizerCt headerBytes dataWidth
   => DeForwardBufSize headerBytes dataWidth <= dataWidth
   => headerBytes <= dataWidth * headerBytes `DivRU` dataWidth
@@ -341,6 +343,7 @@ depacketizerC
             (headerBytes :: Nat) .
   ( HiddenClockResetEnable dom
   , NFDataX metaOut
+  , NFDataX metaIn
   , BitPack header
   , BitSize header ~ headerBytes * 8
   , KnownNat headerBytes
@@ -408,8 +411,8 @@ packetizeFromDfT toMetaOut toHeader DfIdle (Data dataIn, bwdIn) = (nextStOut, (b
       SNatLE -> (DfIdle, Ack (_ready bwdIn), Just l)
         where
           l = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-            SNatLE -> natToNum @(dataWidth - 1)
             SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
+            _ -> natToNum @(dataWidth - 1)
       SNatGT -> (DfInsert 0 hdrBuf, Ack False, Nothing)
 
     nextStOut = if _ready bwdIn then nextSt else DfIdle
@@ -422,8 +425,8 @@ packetizeFromDfT toMetaOut _ st@DfInsert{..} (Data dataIn, bwdIn) = (nextStOut, 
     outPkt = PacketStreamM2S dataOut newLast (toMetaOut dataIn) False
 
     newLast = toMaybe (_dfCounter == maxBound) $ case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-      SNatLE -> natToNum @(dataWidth - 1)
       SNatGT -> natToNum @(headerBytes `Mod` dataWidth - 1)
+      _ -> natToNum @(dataWidth - 1)
 
     bwdOut = Ack (_ready bwdIn && _dfCounter == maxBound)
     nextSt = if _dfCounter == maxBound then DfIdle else DfInsert (succ _dfCounter) newHdrBuf
@@ -525,8 +528,8 @@ depacketizeToDfT toOut st@Parse {..} (Just (PacketStreamM2S {..}), Ack readyIn) 
 
     prematureEnd idx
       = case compareSNat (SNat @(headerBytes `Mod` dataWidth)) d0 of
-          SNatLE -> idx < (natToNum @(dataWidth - 1))
           SNatGT -> idx < (natToNum @(headerBytes `Mod` dataWidth - 1))
+          _ -> idx < (natToNum @(dataWidth - 1))
 
     (nextSt, fwdOut)
       = case (_dfDeCounter == 0, _last) of

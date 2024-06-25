@@ -101,14 +101,14 @@ abortOnBackPressure
   HiddenClockResetEnable dom
   => KnownNat dataWidth
   => NFDataX metaType
-  => ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))
+  => ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
-  -> ( CSignal dom ()
+  -> ( Signal dom ()
      , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      )
   -- ^ Does not give backpressure, sends an abort forward instead
-abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle (fwdInS, bwdInS))
+abortOnBackPressure (fwdInS, bwdInS) = (pure (), go <$> bundle (fwdInS, bwdInS))
   where
     go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
 

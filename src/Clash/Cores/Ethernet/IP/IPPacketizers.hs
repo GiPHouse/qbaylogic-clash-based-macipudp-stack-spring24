@@ -60,6 +60,7 @@ setChecksumC
   :: forall dom dataWidth
    . HiddenClockResetEnable dom
   => KnownDomain dom
+  => KnownNat dataWidth
   => Circuit (PacketStream dom dataWidth IPv4Header) (PacketStream dom dataWidth IPv4Header)
 setChecksumC = Circuit $ \(fwdInS, bwdInS) ->
   let

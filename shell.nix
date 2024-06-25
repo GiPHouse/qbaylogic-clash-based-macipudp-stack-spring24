@@ -10,7 +10,7 @@ in pkgs.haskellPackages.shellFor {
   nativeBuildInputs = [
     pkgs.haskellPackages.cabal-install
     pkgs.haskellPackages.stylish-haskell
-    pkgs.haskellPackages.haskell-language-server
+    # pkgs.haskellPackages.haskell-language-server
     pkgs.gtkwave
     pkgs.yosys
     pkgs.yosys-ecp5-infer-outreg

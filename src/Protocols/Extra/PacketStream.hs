@@ -177,12 +177,12 @@ instance
 
 -- | Circuit to convert a CSignal into a PacketStream. This is unsafe, because it drops backpressure.
 unsafeToPacketStream :: Circuit (CSignal dom (Maybe (PacketStreamM2S n a))) (PacketStream dom n a)
-unsafeToPacketStream = Circuit (\(CSignal fwdInS, _) -> (CSignal $ pure (), fwdInS))
+unsafeToPacketStream = Circuit (\(fwdInS, _) -> (pure (), fwdInS))
 
 -- | Converts a PacketStream into a CSignal.
 fromPacketStream :: forall dom n meta. HiddenClockResetEnable dom
   => Circuit (PacketStream dom n meta) (CSignal dom (Maybe (PacketStreamM2S n meta)))
-fromPacketStream = forceResetSanity |> Circuit (\(inFwd, _) -> (pure (PacketStreamS2M True), CSignal inFwd))
+fromPacketStream = forceResetSanity |> Circuit (\(inFwd, _) -> (pure (PacketStreamS2M True), inFwd))
 
 -- | Ensures a circuit does not send out ready on reset
 forceResetSanity :: forall dom n meta. HiddenClockResetEnable dom => Circuit (PacketStream dom n meta) (PacketStream dom n meta)
