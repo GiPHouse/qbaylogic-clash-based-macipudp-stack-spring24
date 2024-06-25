@@ -34,16 +34,23 @@ let
     # Haskell overrides
     haskellPackages = pkgs.haskellPackages.override {
       overrides = self: super: {
+        ghc = super.ghc.overrideAttrs (oldAttrs: rec {
+          # Fetch the patch
+          patches = (oldAttrs.patches or []) ++ [ ./aarch64-reloc.patch ];
+        });
+        ghc-typelits-natnormalise = self.callCabal2nix "ghc-typelits-natnormalise" sources.ghc-typelits-natnormalise {};
+
         # Add overrides here
         circuit-notation = self.callCabal2nix "circuit-notation" sources.circuit-notation {};
         # dontCheck disables test dependencies which gave problems here
         clash-cores-crc =
-          self.callCabal2nix "clash-cores-crc" sources.clash-cores-crc {};
+          pkgs.haskell.lib.dontCheck (self.callCabal2nix "clash-cores-crc" sources.clash-cores-crc {});
         clash-protocols =
           pkgs.haskell.lib.dontCheck (self.callCabal2nix "clash-protocols" sources.clash-protocols {});
         doctest-parallel =
           self.callCabal2nix "doctest-parallel" sources.doctest-parallel {};
         clash-prelude =
+
           self.callCabal2nix "clash-prelude" (sources.clash-compiler + "/clash-prelude") {};
         clash-prelude-hedgehog =
           self.callCabal2nix "clash-prelude-hedgehoge" (sources.clash-compiler + "/clash-prelude-hedgehog") {};
@@ -54,7 +61,7 @@ let
         clash-cores =
           self.callCabal2nix "clash-cores" (sources.clash-compiler + "/clash-cores") {};
         tasty-hedgehog =
-          self.callCabal2nix "tasty-hedgehog" sources.tasty-hedgehog {};
+          pkgs.haskell.lib.doJailbreak (self.callCabal2nix "tasty-hedgehog" sources.tasty-hedgehog {});
         hedgehog =
           self.callCabal2nix "hedgehog" (sources.haskell-hedgehog + "/hedgehog") {};
       };

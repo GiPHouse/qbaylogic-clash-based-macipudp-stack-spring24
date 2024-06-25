@@ -55,6 +55,7 @@ arpConstC response = fromSignals ckt
 testCircuit
   :: forall (dom :: Domain) (dataWidth :: Nat)
    . HiddenClockResetEnable dom
+  => KnownNat dataWidth
   => KnownDomain dom
   => ArpResponse
   -> Circuit (PacketStream dom dataWidth IPv4Address) (PacketStream dom dataWidth EthernetHeader)

@@ -14,6 +14,7 @@ import Clash.Cores.Crc.Catalog
 import Clash.Prelude
 
 import Protocols ( Circuit, (|>) )
+import Protocols.Df qualified as DfConv
 import Protocols.Extra.PacketStream ( PacketStream )
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
 import Protocols.Extra.PacketStream.Converters ( downConverterC )

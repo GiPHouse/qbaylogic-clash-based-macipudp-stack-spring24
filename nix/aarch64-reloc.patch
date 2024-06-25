@@ -1,0 +1,64 @@
+From 2c25b93cf5a8b828eeb301d78f944be536eb2cd6 Mon Sep 17 00:00:00 2001
+From: Sylvain Henry <sylvain@haskus.fr>
+Date: Wed, 19 Jun 2024 16:55:18 +0200
+Subject: [PATCH] Linker: use m32 allocator for sections when NEED_PLT (#24432)
+
+Use M32 allocator to avoid fragmentation when allocating ELF sections.
+We already did this when NEED_PLT was undefined. Failing to do this led
+to relocations impossible to fulfil (#24432).
+---
+ rts/linker/Elf.c | 26 ++++++++++++--------------
+ 1 file changed, 12 insertions(+), 14 deletions(-)
+
+diff --git a/rts/linker/Elf.c b/rts/linker/Elf.c
+index 9132d9d3973..8168103e4e5 100644
+--- a/rts/linker/Elf.c
++++ b/rts/linker/Elf.c
+@@ -863,25 +863,23 @@ ocGetNames_ELF ( ObjectCode* oc )
+
+           unsigned nstubs = numberOfStubsForSection(oc, i);jjjj
+           unsigned stub_space = STUB_SIZE * nstubs;
++          unsigned full_size = size+stub_space;
+
+-          void * mem = mmapAnonForLinker(size+stub_space);
++          // use M32 allocator to avoid fragmentation and relocations impossible
++          // to fulfil (cf #24432)
++          bool executable = kind == SECTIONKIND_CODE_OR_RODATA;
++          m32_allocator *allocator = executable ? oc->rx_m32 : oc->rw_m32;
+
+-          if( mem == MAP_FAILED ) {
+-            barf("failed to mmap allocated memory to load section %d. "
+-                 "errno = %d", i, errno);
+-          }
++          // Correctly align the section. This is particularly important for
++          // the alignment of .rodata.cstNN sections.
++          start = m32_alloc(allocator, full_size, align);
++          if (start == NULL) goto fail;
++          alloc = SECTION_M32;
+
+           /* copy only the image part over; we don't want to copy data
+            * into the stub part.
+            */
+-          memcpy( mem, oc->image + offset, size );
+-
+-          alloc = SECTION_MMAP;
+-
+-          mapped_offset = 0;
+-          mapped_size = roundUpToPage(size+stub_space);
+-          start = mem;
+-          mapped_start = mem;
++          memcpy(start, oc->image + offset, size);
+ #else
+           if (USE_CONTIGUOUS_MMAP || RtsFlags.MiscFlags.linkerAlwaysPic) {
+               // already mapped.
+@@ -918,7 +916,7 @@ ocGetNames_ELF ( ObjectCode* oc )
+
+ #if defined(NEED_PLT)
+           oc->sections[i].info->nstubs = 0;
+-          oc->sections[i].info->stub_offset = (uint8_t*)mem + size;
++          oc->sections[i].info->stub_offset = (uint8_t*)start + size;
+           oc->sections[i].info->stub_size = stub_space;
+           oc->sections[i].info->stubs = NULL;
+ #else
+--
+GitLab

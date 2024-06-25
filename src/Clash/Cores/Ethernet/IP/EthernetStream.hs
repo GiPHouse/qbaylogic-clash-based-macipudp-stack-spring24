@@ -29,6 +29,7 @@ data EthernetStreamState
 toEthernetStreamC
   :: forall (dom :: Domain) (dataWidth :: Nat)
   .  HiddenClockResetEnable dom
+  => KnownNat dataWidth
   => Signal dom MacAddress
   -- ^ My Mac address
   -> Circuit

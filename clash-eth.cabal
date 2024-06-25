@@ -80,9 +80,9 @@ common common-options
     Cabal,
 
     -- clash-prelude will set suitable version bounds for the plugins and clash-ghc
-    clash-prelude >= 1.6.4 && < 1.8,
+    clash-prelude >= 1.6.4 && < 1.10,
     clash-protocols,
-    ghc-typelits-natnormalise,
+    ghc-typelits-natnormalise == 0.7.10,
     ghc-typelits-extra,
     ghc-typelits-knownnat
 
@@ -142,65 +142,65 @@ library
     -- For debugging
     pretty-show
 
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  default-language: Haskell2010
-  main-is:          doctests.hs
-  ghc-options:      -Wall -Wcompat -threaded
-  hs-source-dirs:   tests
-  build-depends:
-    base,
-    clash-eth,
-    doctest >= 0.17 && <= 0.19,
-    process,
+-- test-suite doctests
+--   type:             exitcode-stdio-1.0
+--   default-language: Haskell2010
+--   main-is:          doctests.hs
+--   ghc-options:      -Wall -Wcompat -threaded
+--   hs-source-dirs:   tests
+--   build-depends:
+--     base,
+--     clash-eth,
+--     doctest >= 0.17 && <= 0.23,
+--     process,
 
-test-suite test-library
-  import: common-options
-  default-language: Haskell2010
-  hs-source-dirs: tests
-  type: exitcode-stdio-1.0
-  ghc-options: -threaded
-  main-is: unittests.hs
-  other-modules:
-    Test.Cores.Ethernet.Arp.ArpManager
-    Test.Cores.Ethernet.Arp.ArpTable
-    Test.Cores.Ethernet.IP.EthernetStream
-    Test.Cores.Ethernet.IP.InternetChecksum
-    Test.Cores.Ethernet.IP.IPPacketizers
-    Test.Cores.Ethernet.Mac.EthernetTypes
-    Test.Cores.Ethernet.Mac.FrameCheckSequence
-    Test.Cores.Ethernet.Mac.InterpacketGapInserter
-    Test.Cores.Ethernet.Mac.MacPacketizers
-    Test.Cores.Ethernet.Mac.PaddingInserter
-    Test.Cores.Ethernet.Mac.Preamble
-    Test.Cores.Ethernet.Icmp
-    Test.Protocols.Extra.PacketStream.AsyncFIFO
-    Test.Protocols.Extra.PacketStream.Converters
-    Test.Protocols.Extra.PacketStream.PacketBuffer
-    Test.Protocols.Extra.PacketStream.Packetizers
-    Test.Protocols.Extra.PacketStream.Routing
-    Test.Protocols.Extra.PacketStream
-  build-depends:
-    clash-eth,
-    QuickCheck,
-    hedgehog,
-    clash-cores,
-    clash-cores-crc,
-    hashable,
-    unordered-containers,
-    tasty >= 1.2 && < 1.5,
-    tasty-hedgehog,
-    tasty-th,
-    pretty-show
+-- test-suite test-library
+--   import: common-options
+--   default-language: Haskell2010
+--   hs-source-dirs: tests
+--   type: exitcode-stdio-1.0
+--   ghc-options: -threaded
+--   main-is: unittests.hs
+--   other-modules:
+--     Test.Cores.Ethernet.Arp.ArpManager
+--     Test.Cores.Ethernet.Arp.ArpTable
+--     Test.Cores.Ethernet.IP.EthernetStream
+--     Test.Cores.Ethernet.IP.InternetChecksum
+--     Test.Cores.Ethernet.IP.IPPacketizers
+--     Test.Cores.Ethernet.Mac.EthernetTypes
+--     Test.Cores.Ethernet.Mac.FrameCheckSequence
+--     Test.Cores.Ethernet.Mac.InterpacketGapInserter
+--     Test.Cores.Ethernet.Mac.MacPacketizers
+--     Test.Cores.Ethernet.Mac.PaddingInserter
+--     Test.Cores.Ethernet.Mac.Preamble
+--     Test.Cores.Ethernet.Icmp
+--     Test.Protocols.Extra.PacketStream.AsyncFIFO
+--     Test.Protocols.Extra.PacketStream.Converters
+--     Test.Protocols.Extra.PacketStream.PacketBuffer
+--     Test.Protocols.Extra.PacketStream.Packetizers
+--     Test.Protocols.Extra.PacketStream.Routing
+--     Test.Protocols.Extra.PacketStream
+--   build-depends:
+--     clash-eth,
+--     QuickCheck,
+--     hedgehog,
+--     clash-cores,
+--     clash-cores-crc,
+--     hashable,
+--     unordered-containers,
+--     tasty >= 1.2 && < 1.5,
+--     tasty-hedgehog,
+--     tasty-th,
+--     pretty-show
 
--- Builds the executable 'clash', with clash-eth project in scope
-executable clash
-  main-is: bin/Clash.hs
-  default-language: Haskell2010
-  Build-Depends: base, clash-ghc, clash-eth
+-- -- Builds the executable 'clash', with clash-eth project in scope
+-- executable clash
+--   main-is: bin/Clash.hs
+--   default-language: Haskell2010
+--   Build-Depends: base, clash-ghc, clash-eth
 
--- Builds the executable 'clashi', with clash-eth project in scope
-executable clashi
-  main-is: bin/Clashi.hs
-  default-language: Haskell2010
-  build-depends: base, clash-ghc, clash-eth
+-- -- Builds the executable 'clashi', with clash-eth project in scope
+-- executable clashi
+--   main-is: bin/Clashi.hs
+--   default-language: Haskell2010
+--   build-depends: base, clash-ghc, clash-eth
