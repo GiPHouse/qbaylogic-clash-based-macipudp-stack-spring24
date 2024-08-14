@@ -142,7 +142,7 @@ arpTable SNat SNat = Circuit (hideReset ckt)
         writeCmd :: Signal dom (Maybe (Unsigned depth, (ArpEntry, Index (maxAgeSeconds + 1))))
         (outReady, readAddr, writeCmd, arpResponse) =
           unbundle (mealy arpTableT (Active False) input)
-        
+
         input = bundle
           ( unsafeToActiveHigh reset
           , tableEntry
