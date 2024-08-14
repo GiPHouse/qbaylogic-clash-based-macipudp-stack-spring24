@@ -90,8 +90,8 @@ crg clkin = (clk50, clkEthTx, rst50, rstEthTx)
   where
     (clk50, locked50) = pll50 clkin
     (clkEthTx, lockedEthTx) = pll125 clkin
-    rst50 = resetSynchronizer clk50 (unsafeFromLowPolarity locked50)
-    rstEthTx = resetSynchronizer clkEthTx (unsafeFromLowPolarity lockedEthTx)
+    rst50 = resetSynchronizer clk50 (unsafeFromActiveLow locked50)
+    rstEthTx = resetSynchronizer clkEthTx (unsafeFromActiveLow lockedEthTx)
 
 -- | Generate a 50Mhz clock from 25Mhz
 pll50
@@ -99,7 +99,7 @@ pll50
   -- ^ Input 25 Mhz clock
   -> (Clock Dom50, Signal Dom50 Bool)
   -- ^ Output 50Mhz clock and unsynchronized reset signal
-pll50 !_ = (clockGen, unsafeToLowPolarity resetGen)
+pll50 !_ = (clockGen, unsafeToActiveLow resetGen)
 {-# ANN pll50 (InlinePrimitive [Verilog] $ unindent [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Colorlight.CRG.pll50"
@@ -159,7 +159,7 @@ pll125
   -- ^ Input 25 Mhz clock
   -> (Clock DomEthTx, Signal DomEthTx Bool)
   -- ^ Output 125Mhz clock and unsynchronized reset signal
-pll125 !_ = (clockGen, unsafeToLowPolarity resetGen)
+pll125 !_ = (clockGen, unsafeToActiveLow resetGen)
 {-# ANN pll125 (InlinePrimitive [Verilog] $ unindent [i|
   [ { "BlackBox" :
       { "name"     : "Clash.Lattice.ECP5.Colorlight.CRG.pll125"

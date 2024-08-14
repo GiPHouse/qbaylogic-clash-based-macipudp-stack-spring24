@@ -11,9 +11,8 @@ module Protocols.Extra.PacketStream.PacketBuffer
 
 import Clash.Prelude
 
-import Protocols ( Circuit(..), fromSignals, (|>) )
+import Protocols
 import Protocols.Extra.PacketStream
-import Protocols.Internal ( CSignal(..) )
 
 import Data.Maybe
 import Data.Maybe.Extra
@@ -101,16 +100,16 @@ abortOnBackPressure
   HiddenClockResetEnable dom
   => KnownNat dataWidth
   => NFDataX metaType
-  => ( CSignal dom (Maybe (PacketStreamM2S dataWidth metaType))
+  => ( Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      , Signal dom PacketStreamS2M
      )
-  -> ( CSignal dom ()
+  -> ( Signal dom ()
      , Signal dom (Maybe (PacketStreamM2S dataWidth metaType))
      )
   -- ^ Does not give backpressure, sends an abort forward instead
-abortOnBackPressure (CSignal fwdInS, bwdInS) = (CSignal $ pure (), go <$> bundle (fwdInS, bwdInS))
-  where
-    go (fwdIn, bwdIn) = fmap (\pkt -> pkt { _abort = _abort pkt || not (_ready bwdIn) }) fwdIn
+abortOnBackPressure (fwdInS, bwdInS) = (pure (), go <$> bundle (fwdInS, bwdInS))
+ where
+  go (fwdIn, bwdIn) = fmap (\pkt -> pkt{_abort = _abort pkt || not (_ready bwdIn)}) fwdIn
 
 -- | Packet buffer, a circuit which stores words in a buffer until the packet is complete
 -- once a packet is complete it will send the entire packet out at once without stalls.

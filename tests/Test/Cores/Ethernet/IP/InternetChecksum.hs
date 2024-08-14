@@ -56,7 +56,7 @@ flipBit :: Int -> Int -> [(Bool, Maybe (C.BitVector 16))] -> [(Bool, Maybe (C.Bi
 flipBit listIndex bitIndex bitList = replaceAtIndex listIndex newWord bitList
   where
     replaceAtIndex :: Int -> a -> [a] -> [a]
-    replaceAtIndex n item ls = a ++ (item:b) where (a, _ : b) = splitAt n ls
+    replaceAtIndex n item ls = a ++ (item : drop 1 b) where (a, b) = splitAt n ls
 
     newWord = fb <$> (bitList !! listIndex)
 

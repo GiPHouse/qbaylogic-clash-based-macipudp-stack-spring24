@@ -45,7 +45,7 @@ instance Bits IPv4Address where
   complement = bitCoerceMap @(BitVector 32) complement
   shift a n = bitCoerceMap @(BitVector 32) (`shift` n) a
   rotate a n = bitCoerceMap @(BitVector 32) (`rotate` n) a
-  bitSize = bitSize . bitCoerce @IPv4Address @(BitVector 32)
+  bitSize = finiteBitSize . bitCoerce @IPv4Address @(BitVector 32)
   bitSizeMaybe = bitSizeMaybe . bitCoerce @IPv4Address @(BitVector 32)
   isSigned = isSigned . bitCoerce @IPv4Address @(BitVector 32)
   testBit = testBit . bitCoerce @IPv4Address @(BitVector 32)

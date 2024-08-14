@@ -124,7 +124,7 @@ ofs1p3bx
   -- ^ Data input from fabric
   -> Signal dom a
   -- ^ Output to pin
-ofs1p3bx clk rst en inp = fs1p3bx# "O" clk (unsafeToHighPolarity rst) (fromEnable en) inp
+ofs1p3bx clk rst en inp = fs1p3bx# "O" clk (unsafeToActiveHigh rst) (fromEnable en) inp
 
 -- | PIC input flip flip with Asynchronous clear
 ifs1p3bx
@@ -138,7 +138,7 @@ ifs1p3bx
   -- ^ Data input from pin
   -> Signal dom a
   -- ^ Output to fabric
-ifs1p3bx clk rst en inp = fs1p3bx# "I" clk (unsafeToHighPolarity rst) (fromEnable en) inp
+ifs1p3bx clk rst en inp = fs1p3bx# "I" clk (unsafeToActiveHigh rst) (fromEnable en) inp
 
 fs1p3bx#
   :: KnownDomain dom        -- 0
@@ -156,7 +156,7 @@ fs1p3bx#
   -- ^ Data input from pin or output register block
   -> Signal dom a
   -- ^ Output
-fs1p3bx# !_ clk rst en inp = let rst' = unsafeFromHighPolarity rst
+fs1p3bx# !_ clk rst en inp = let rst' = unsafeFromActiveHigh rst
                                  en' = toEnable en
                                  -- Reset value is defined as 1
                                  resetVal = unpack $ complement 0

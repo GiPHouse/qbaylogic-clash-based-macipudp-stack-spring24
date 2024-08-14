@@ -56,6 +56,7 @@ testCircuit
   :: forall (dom :: Domain) (dataWidth :: Nat)
    . HiddenClockResetEnable dom
   => KnownDomain dom
+  => KnownNat dataWidth
   => ArpResponse
   -> Circuit (PacketStream dom dataWidth IPv4Address) (PacketStream dom dataWidth EthernetHeader)
 testCircuit response = circuit $ \packet -> do

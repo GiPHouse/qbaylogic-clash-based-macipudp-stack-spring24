@@ -80,7 +80,7 @@ common common-options
     Cabal,
 
     -- clash-prelude will set suitable version bounds for the plugins and clash-ghc
-    clash-prelude >= 1.6.4 && < 1.8,
+    clash-prelude >= 1.8.1 && < 1.10,
     clash-protocols,
     ghc-typelits-natnormalise,
     ghc-typelits-extra,
@@ -151,7 +151,7 @@ test-suite doctests
   build-depends:
     base,
     clash-eth,
-    doctest >= 0.17 && <= 0.19,
+    doctest,
     process,
 
 test-suite test-library

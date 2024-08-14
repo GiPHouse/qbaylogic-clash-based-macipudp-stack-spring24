@@ -46,7 +46,7 @@ let
         clash-prelude =
           self.callCabal2nix "clash-prelude" (sources.clash-compiler + "/clash-prelude") {};
         clash-prelude-hedgehog =
-          self.callCabal2nix "clash-prelude-hedgehoge" (sources.clash-compiler + "/clash-prelude-hedgehog") {};
+          self.callCabal2nix "clash-prelude-hedgehog" (sources.clash-compiler + "/clash-prelude-hedgehog") {};
         clash-lib =
           self.callCabal2nix "clash-lib" (sources.clash-compiler + "/clash-lib") {};
         clash-ghc =
