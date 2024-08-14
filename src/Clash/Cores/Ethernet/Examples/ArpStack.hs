@@ -59,6 +59,6 @@ arpStackC rxClk rxRst rxEn txClk txRst txEn ourMacS ourIPv4S =
     ethStream <- macRxStack @4 rxClk rxRst rxEn ourMacS -< stream
     [arpStream] <- packetDispatcherC (singleton $ \hdr -> _etherType hdr == arpEtherType) -< ethStream
     lookupIn <- constArpLookup -< ()
-    arpOtp <- arpC d10 d5 ourMacS ourIPv4S -< (arpStream, lookupIn)
+    arpOtp <- arpC d300 d2 d6 ourMacS ourIPv4S -< (arpStream, lookupIn)
     ethOtp <- packetArbiterC RoundRobin -< [arpOtp]
     macTxStack txClk txRst txEn -< ethOtp

@@ -42,6 +42,7 @@ arpC
      (maxAgeSeconds :: Nat)
      (maxWaitSeconds :: Nat)
      (dataWidth :: Nat)
+     (tableDepth :: Nat)
    . HiddenClockResetEnable dom
   => KnownNat dataWidth
   => KnownNat (DomainPeriod dom)
@@ -50,23 +51,27 @@ arpC
   => 1 <= maxAgeSeconds
   => 1 <= maxWaitSeconds
   => 1 <= dataWidth
+  => 1 <= tableDepth
+  => tableDepth <= 32
   => SNat maxAgeSeconds
   -- ^ ARP entries will expire after this many seconds
   -> SNat maxWaitSeconds
   -- ^ The maximum amount of seconds we wait for an incoming ARP reply
   --   if the lookup IPv4 address was not found in our ARP table
+  -> SNat tableDepth
+  -- ^ The ARP table will contain @2^tableDepth@ entries
   -> Signal dom MacAddress
   -- ^ Our MAC address
   -> Signal dom IPv4Address
   -- ^ Our IPv4 address
   -> Circuit (PacketStream dom dataWidth EthernetHeader, ArpLookup dom)
              (PacketStream dom dataWidth EthernetHeader)
-arpC maxAge maxWait ourMacS ourIPv4S =
+arpC maxAge maxWait tableDepth ourMacS ourIPv4S =
   -- TODO waiting for an ARP reply in seconds is too coarse.
   -- Make this timer less coarse, e.g. milliseconds
   circuit $ \(ethStream, lookupIn) -> do
     (entry, replyOut) <- arpReceiverC ourIPv4S -< ethStream
     (lookupOut, requestOut) <- arpManagerC maxWait -< lookupIn
-    () <- arpTable maxAge -< (lookupOut, entry)
+    () <- arpTable tableDepth maxAge -< (lookupOut, entry)
     arpPktOut <- Df.roundrobinCollect Df.Skip -< [replyOut, requestOut]
     arpTransmitterC ourMacS ourIPv4S -< arpPktOut

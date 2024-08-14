@@ -163,7 +163,6 @@ test-suite test-library
   main-is: unittests.hs
   other-modules:
     Test.Cores.Ethernet.Arp.ArpManager
-    Test.Cores.Ethernet.Arp.ArpTable
     Test.Cores.Ethernet.IP.EthernetStream
     Test.Cores.Ethernet.IP.InternetChecksum
     Test.Cores.Ethernet.IP.IPPacketizers
