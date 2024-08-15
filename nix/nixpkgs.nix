@@ -1,6 +1,7 @@
 { sources ? import ./sources.nix }:
 
 let
+  haskell_compiler = "ghc965";
   overlay = _: pkgs:
 
   let
@@ -31,8 +32,19 @@ let
     trellis = trellis;
     nextpnr = nextpnr;
 
+    haskell = pkgs.haskell // {
+      compiler = pkgs.haskell.compiler // {
+        "${haskell_compiler}" = pkgs.haskell.compiler.${haskell_compiler}.overrideAttrs (old: {
+          # Fix for linking issues: https://gitlab.haskell.org/ghc/ghc/-/issues/24432
+          patches =
+           let isAarch64 = pkgs.stdenv.hostPlatform.system == "aarch64-linux";
+           in (old.patches or [ ]) ++ pkgs.lib.optional isAarch64 [ ./aarch64-reloc.patch ];
+        });
+      };
+    };
+
     # Haskell overrides
-    haskellPackages = pkgs.haskellPackages.override {
+    haskellPackages = pkgs.haskell.packages.${haskell_compiler}.override {
       overrides = self: super: {
         # Add overrides here
         circuit-notation = self.callCabal2nix "circuit-notation" sources.circuit-notation {};
