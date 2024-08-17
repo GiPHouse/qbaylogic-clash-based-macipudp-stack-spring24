@@ -21,6 +21,7 @@ main = do
     pluginFlags =
       [ "-fplugin", "GHC.TypeLits.KnownNat.Solver"
       , "-fplugin", "GHC.TypeLits.Normalise"
-      , "-fplugin", "GHC.TypeLits.Extra.Solver" ]
+      , "-fplugin", "GHC.TypeLits.Extra.Solver"
+      , "-fconstraint-solver-iterations=10" ]
 
   doctest (flags ++ extraFlags ++ pkgs ++ pluginFlags ++ module_sources)
