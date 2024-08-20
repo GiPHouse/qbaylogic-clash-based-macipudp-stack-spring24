@@ -295,7 +295,7 @@ arpIcmpUdpStackC
   -> Signal dom (IPv4Address, IPv4Address)
   -- ^ My IP address and the subnet
   -> Circuit (PacketStream dom dataWidth (IPv4Address, UdpHeaderLite)) (PacketStream dom dataWidth (IPv4Address, UdpHeaderLite))
-  -- ^ UDP handler circuit
+  -- ^ Reversed UDP handler circuit
   -> Circuit (PacketStream dom dataWidth EthernetHeader) (PacketStream dom dataWidth EthernetHeader)
 arpIcmpUdpStackC macAddressS ipS udpCkt = circuit $ \ethIn -> do
   [arpEthIn, ipEthIn] <- packetDispatcherC (routeBy _etherType $ 0x0806 :> 0x0800 :> Nil) -< ethIn

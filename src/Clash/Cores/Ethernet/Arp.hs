@@ -72,6 +72,6 @@ arpC maxAge maxWait tableDepth ourMacS ourIPv4S =
   circuit $ \(ethStream, lookupIn) -> do
     (entry, replyOut) <- arpReceiverC ourIPv4S -< ethStream
     (lookupOut, requestOut) <- arpManagerC maxWait -< lookupIn
-    () <- arpTable tableDepth maxAge -< (lookupOut, entry)
+    () <- arpTable maxAge -< (lookupOut, entry)
     arpPktOut <- Df.roundrobinCollect Df.Skip -< [replyOut, requestOut]
     arpTransmitterC ourMacS ourIPv4S -< arpPktOut

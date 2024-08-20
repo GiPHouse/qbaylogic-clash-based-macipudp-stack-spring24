@@ -102,6 +102,7 @@ library
     Clash.Cores.Ethernet.Arp.ArpTypes
     Clash.Cores.Ethernet.Examples.ArpStack
     Clash.Cores.Ethernet.Examples.FullUdpStack
+    Clash.Cores.Ethernet.Examples.UdpCoreStack
     Clash.Cores.Ethernet.Examples.RxStacks
     Clash.Cores.Ethernet.Examples.TxStacks
     Clash.Cores.Ethernet.IP.EthernetStream
@@ -118,6 +119,7 @@ library
     Clash.Cores.Ethernet.Udp
     Clash.Lattice.ECP5.Colorlight.CRG
     Clash.Lattice.ECP5.Colorlight.TopEntity
+    Clash.Lattice.ECP5.Colorlight.UdpCore
     Clash.Lattice.ECP5.Prims
     Clash.Lattice.ECP5.RGMII
     Protocols.Extra.PacketStream.AsyncFIFO

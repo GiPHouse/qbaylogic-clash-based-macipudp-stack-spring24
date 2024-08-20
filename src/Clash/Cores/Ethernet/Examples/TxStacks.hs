@@ -13,7 +13,11 @@ import Clash.Cores.Crc
 import Clash.Cores.Crc.Catalog
 import Clash.Prelude
 
+import Data.Proxy
+
+
 import Protocols ( Circuit, (|>) )
+import qualified Protocols.DfConv as DfConv
 import Protocols.Extra.PacketStream ( PacketStream )
 import Protocols.Extra.PacketStream.AsyncFIFO ( asyncFifoC )
 import Protocols.Extra.PacketStream.Converters ( downConverterC )
@@ -47,9 +51,17 @@ macTxStack ethClk ethRst ethEn =
   |> fcsInserterC
   |> preambleInserterC
   |> asyncFifoC d4 hasClock hasReset hasEnable ethClk ethRst ethEn
+  -- TODO: We can propbably easily remove some buffers here
+  |> exposeClockResetEnable (DfConv.registerBwd packetStreamProxyN packetStreamProxyN) ethClk ethRst ethEn
+  |> exposeClockResetEnable (DfConv.registerFwd packetStreamProxyN packetStreamProxyN) ethClk ethRst ethEn
   |> exposeClockResetEnable downConverterC ethClk ethRst ethEn
+  |> exposeClockResetEnable (DfConv.registerBwd packetStreamProxy1 packetStreamProxy1) ethClk ethRst ethEn
+  |> exposeClockResetEnable (DfConv.registerFwd packetStreamProxy1 packetStreamProxy1) ethClk ethRst ethEn
   |> exposeClockResetEnable interpacketGapInserterC ethClk ethRst ethEn d12
-
+  |> exposeClockResetEnable (DfConv.registerFwd packetStreamProxy1 packetStreamProxy1) ethClk ethRst ethEn
+ where
+  packetStreamProxyN = Proxy @(PacketStream domEth dataWidth ())
+  packetStreamProxy1 = Proxy @(PacketStream domEth 1 ())
 -- | Sends IP packets to a known mac address
 ipTxStack
   :: forall (dataWidth :: Nat) (dom :: Domain) (domEth :: Domain)
